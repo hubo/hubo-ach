@@ -60,6 +60,11 @@
 #include <string.h>
 #include <inttypes.h>
 
+// for timer
+#include <time.h>
+#include <sched.h>
+#include <sys/io.h>
+
 #include "ach.h"
 
 
@@ -106,7 +111,7 @@ void periodic_logger(void) {
         size_t fs;
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
-        printf("%f\t%f\t%f\n", X[0], X[1], X[2]);
+        printf("dan - %f\t%f\t%f\n", X[0], X[1], X[2]);
         usleep((int) (1e6 * 0.1)); /* 10 Hertz */
     }
     exit(0);
@@ -123,7 +128,7 @@ void full_logger(void) {
         size_t fs;
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
-        fprintf(fp,"%f\t%f\t%f\n", X[0], X[1], X[2]);
+        fprintf(fp,"dan - %f\t%f\t%f\n", X[0], X[1], X[2]);
     }
     fclose(fp);
     exit(0);
@@ -142,6 +147,28 @@ void controller(void) {
     exit(0);
 }
 
+// Dan input
+void dan(void) {
+    	int r = ach_open(&chan_feedback, "feedback", NULL);
+	struct timespec t;
+
+	
+
+
+
+
+
+
+
+
+
+	assert(ACH_OK == r);
+	while(1){
+		printf("test");
+		usleep((int)(1e6 * 1e-1)); // KHZ
+	}
+}
+
 int main(int argc, char **argv) {
     (void) argc; (void)argv;
     int r;
@@ -150,10 +177,19 @@ int main(int argc, char **argv) {
     assert( ACH_OK == r || ACH_ENOENT == r);
     r = ach_unlink("feedback");              /* delete first */
     assert( ACH_OK == r || ACH_ENOENT == r);
+    r = ach_unlink("dan");
+    assert( ACH_OK == r || ACH_ENOENT == r);
+
+
     r = ach_create("control", 10ul, 256ul, NULL );
     assert(ACH_OK == r);
     r = ach_create("feedback", 10ul, 256ul, NULL );
     assert(ACH_OK == r);
+    r = ach_create("dan", 10ul, 256ul, NULL );
+    assert(ACH_OK == r);
+
+
+
 
     /* fork processes */
     int pid_ctrl = fork();
@@ -171,6 +207,10 @@ int main(int argc, char **argv) {
     int pid_full = fork();
     assert(pid_full >= 0);
     if(!pid_full) full_logger();
+
+    int pid_dan = fork();
+    assert(pid_dan >=0);
+    if(!pid_dan) dan();
 
     /* wait for a signal */
     pause();
