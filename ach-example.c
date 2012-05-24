@@ -67,6 +67,8 @@
 
 #include "ach.h"
 
+#define NSEC_PER_SEC    1000000000
+
 
 typedef double x_t[3]; /* state / feedback: time, position, velocity */
 typedef double u_t[1]; /* input message: velocity */
@@ -147,26 +149,51 @@ void controller(void) {
     exit(0);
 }
 
+
+
+
+
+static inline void tsnorm(struct timespec *ts)
+{
+   while (ts->tv_nsec >= NSEC_PER_SEC) {
+      ts->tv_nsec -= NSEC_PER_SEC;
+      ts->tv_sec++;
+   }
+}
+
+
 // Dan input
 void dan(void) {
     	int r = ach_open(&chan_feedback, "feedback", NULL);
 	struct timespec t;
 
-	
-
-
-
-
-
-
-
-
-
 	assert(ACH_OK == r);
-	while(1){
-		printf("test");
-		usleep((int)(1e6 * 1e-1)); // KHZ
+	// time interveral in nano sec
+
+	int interval = 500000000;
+		
+	// get current time
+	clock_gettime(0,&t);
+
+	// start one second after
+	t.tv_sec++;
+
+	while(1)
+	{
+		// wait until next shot
+		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+
+		// do sutff
+		printf("dan - Shot\n");
+
+
+		// calculate next shot
+		t.tv_nsec+=interval;
+		tsnorm(&t);
+		
 	}
+
+
 }
 
 int main(int argc, char **argv) {
