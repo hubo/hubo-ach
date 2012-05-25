@@ -72,7 +72,7 @@
 
 typedef double x_t[3]; /* state / feedback: time, position, velocity */
 typedef double u_t[1]; /* input message: velocity */
-
+typedef int	d[3];	// this is the for testing from thread to thread
 /* channels */
 ach_channel_t chan_control;
 ach_channel_t chan_feedback;
@@ -114,6 +114,9 @@ void periodic_logger(void) {
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
         printf("dan - %f\t%f\t%f\n", X[0], X[1], X[2]);
+
+	
+
         usleep((int) (1e6 * 0.1)); /* 10 Hertz */
     }
     exit(0);

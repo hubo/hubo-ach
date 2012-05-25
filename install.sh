@@ -1,1 +1,1 @@
-gcc -g ach-example.c -o ach-example -lach
+gcc -g hubo-ach.c -o hubo-ach -lach
