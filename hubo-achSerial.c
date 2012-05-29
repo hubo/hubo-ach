@@ -25,8 +25,9 @@
 
 #include "ach.h"
 
+// for serial
+#include <termios.h>
 #define NSEC_PER_SEC    1000000000
-
 // For Serial
 int 	fd1;
 int 	fd2;
@@ -39,6 +40,57 @@ typedef	int	d[1];	// data xfer for testing
 
 // ach channels
 ach_channel_t chan_num;
+// 
+ 
+void set_serial(int fd){
+   struct termios options;
+
+    /*
+     * Get the current options for the port...
+     */
+
+    tcgetattr(fd, &options);
+
+    /*
+     * Set the baud rates to 19200...
+     */
+
+    cfsetispeed(&options, B19200);
+    cfsetospeed(&options, B19200);
+
+    /*
+     * Enable the receiver and set local mode...
+     */
+
+    options.c_cflag |= (CLOCAL | CREAD);
+
+    /*
+     * Set the new options for the port...
+     */
+
+    tcsetattr(fd, TCSANOW, &options);
+}
+
+   int open_port(void)
+    {
+      int fd; /* File descriptor for the port */
+
+
+      fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
+      if (fd == -1)
+      {
+       /*
+	* Could not open the port.
+	*/
+
+	perror("open_port: Unable to open /dev/ttyUSB0 - ");
+      }
+      else
+	fcntl(fd, F_SETFL, 0);
+
+      return (fd);
+    }
+
 
 
 
@@ -56,19 +108,15 @@ void printNum(void){
 
 
 	struct timespec t;
-	int interval = 100000000;
+	int interval = 1000000000;
 
 
 	// open serial 
-	fd1 = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY );
-	if(fd1 == -1)	{
-		printf("Could not open ttyUSB0\n");
-	}
-	else	{
-		print("ttyUSB0 Open\n");
-	}
+	fd1 = open_port();
 
-      	// get current time
+	set_serial(fd1);
+
+	// get current time
         clock_gettime(0,&t);
 
         // start one second after
@@ -88,10 +136,10 @@ void printNum(void){
 		size_t fs;
 		r = ach_get( &chan_num, D, sizeof(D), &fs, NULL, ACH_O_WAIT );
 
-		printf("num2 = %f\n", (float)D[0]);
+		//printf("num2 = %f\n", (float)D[0]);
+		wr=write(fd1,"t0126010203040506\r",18);
 
-
-
+		printf("Bytes sent are %d \n",wr);
 		//------------------------------
 		//-----[ do stuff stop ]--------
 		//------------------------------
