@@ -108,14 +108,16 @@ void printNum(void){
 
 
 	struct timespec t;
-	int interval = 1000000000;
+	int interval = 100000000;
 
 
 	// open serial 
 	fd1 = open_port();
 
 	set_serial(fd1);
-
+	// open CAN
+	wr=write(fd1,"O\r",2);
+	printf("Bytes sent are %d \n",wr);
 	// get current time
         clock_gettime(0,&t);
 
@@ -139,7 +141,7 @@ void printNum(void){
 		//printf("num2 = %f\n", (float)D[0]);
 		wr=write(fd1,"t0126010203040506\r",18);
 
-		printf("Bytes sent are %d \n",wr);
+//		printf("Bytes sent are %d \n",wr);
 		//------------------------------
 		//-----[ do stuff stop ]--------
 		//------------------------------
