@@ -55,8 +55,8 @@ void set_serial(int fd){
      * Set the baud rates to 19200...
      */
 
-    cfsetispeed(&options, B19200);
-    cfsetospeed(&options, B19200);
+    cfsetispeed(&options, B115200);
+    cfsetospeed(&options, B115200);
 
     /*
      * Enable the receiver and set local mode...
