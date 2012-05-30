@@ -49,7 +49,7 @@ double now() {
 }
 
 double setNum(void){
-	int r =  ach_open(&chan_num, "getNum", NULL);
+	int r =  ach_open(&chan_num, "CAN", NULL);
 	assert( ACH_OK == r);
 	int i = 0;
 	while(1){
@@ -61,7 +61,7 @@ double setNum(void){
 }
 
 void printNum(void){
-	int r = ach_open(&chan_num, "getNum", NULL);
+	int r = ach_open(&chan_num, "CAN", NULL);
 	assert( ACH_OK == r );
 
 
@@ -111,10 +111,10 @@ int main(int argc, char **argv){
 	int r;
 
 	// create chanels
-	r = ach_unlink("getNum");
+	r = ach_unlink("CAN");
 	assert( ACH_OK == r || ACH_ENOENT == r );
 
-	r = ach_create("getNum", 10ul, 256ul, NULL);
+	r = ach_create("CAN", 10ul, 256ul, NULL);
 	assert( ACH_OK == r);
 
 
