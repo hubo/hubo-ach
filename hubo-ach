@@ -1,0 +1,26 @@
+#!/bin/sh
+
+
+# SysV Init Script for Hubo SocketCAN Ach Driver
+
+start() {
+
+}
+
+
+
+stop() {
+# NOP for now
+
+}
+
+
+
+
+
+case $1 in
+    start)
+    ;;
+    stop)
+    ;;
+esac
