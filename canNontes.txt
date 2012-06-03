@@ -1,0 +1,81 @@
+Board0
+can1
+IRQ 12 
+Basic Port 1 Memory da000h
+HW reset Basic Port 1 da100h
+
+
+can2
+IRQ 15
+Basic Port 2 Memory da200
+HW reset Basic Port 2 da300
+
+sudo modprobe sja1000_isa "mem=0xda000,0xda200" "irq=12,15" 
+
+
+
+
+Board1
+can1
+IRQ 10 
+Basic Port 1 Memory CC00h:CCFFh
+HW reset Basic Port 1 CD00h:CDFFh
+
+
+can2
+IRQ 11
+Basic Port 2 Memory CE00h:CEFFh
+HW reset Basic Port 2 CF00h:CFFFh
+
+
+
+sudo modprobe sja1000_isa "mem=0xda000,0xda200,0xcc000,0xcc200" "irq=12,15,10,11" 
+
+put in /etc/modules
+sja1000_isa "mem=0xda000,0xda200,0xcc000,0xcc200" "irq=12,15,10,11"
+
+ /etc/ssh/sshd_config:78 setting UseDNS no
+
+bing can up and down
+sudo ifconfig can0 down
+
+
+// set can0 to baud 500000
+sudo ip link set can0 type can tq 125 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1
+
+// show details
+ip -details link show can0
+
+// says it is 1mb
+sudo ip link set can0 type can tq 125 prop-seg 5 phase-seg1 1 phase-seg2 1 sjw 1
+
+// says it is 1mb
+sudo ip link set can1 type can tq 125 prop-seg 5 phase-seg1 1 phase-seg2 1 sjw 1
+
+// says it is 1mb - robs try
+sudo ip link set can1 type can tq 100 prop-seg 1 phase-seg1 2 phase-seg2 4 sjw 2
+
+// says it is 1mb - from kavaser
+sudo ip link set can1 type can tq 125 prop-seg 1 phase-seg1 2 phase-seg2 4 sjw 1
+flush
+fflush
+fsflush
+
+
+bit timing calculator:
+http://www.kvaser.com/en/support/bit-timing-calculator.html
+
+// send a can packet
+cansend can1 123#1122334455667788
+
+// driver info
+http://svn.berlios.de/wsvn/socketcan/trunk/kernel/2.6/Documentation/networking/can.txt
+
+// useful document
+http://www.google.com/url?sa=t&rct=j&q=socketcan%20example%20code&source=web&cd=45&ved=0CFcQFjAEOCg&url=http%3A%2F%2Fchemnitzer.linux-tage.de%2F2012%2Fvortraege%2Ffolien%2F1044_SocketCAN.pdf&ei=XM_KT7j3Iez46QGu55Qv&usg=AFQjCNHnubhtEhcfjU4nr76NvZBbrOoxsg&sig2=Mukg5QcV_r2loxtt6-SrMg
+
+// to read data
+select or poll()
+it sends a file discripter to the kernel and it says if it is read tobe read or not
+richard stevens advanced programmign in tyheunixx enviroment v2 in bookmarks
+'also look a ppoll()

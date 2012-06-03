@@ -74,7 +74,7 @@ int open_can(void)
 	
 	// locate the interface you wish to use
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, "can1");
+	strcpy(ifr.ifr_name, "can0");
 	ioctl(skt, SIOCGIFINDEX, &ifr); // ifr.ifr_ifindex gets filled with that devices index
 	
 	// select that CAN interface and bind the socket to it
@@ -103,7 +103,7 @@ void mainLoop(void){
 
 
 	struct timespec t;
-	int interval = 100000000;
+	int interval = 200000000;
 	
 	// open can
 	int skt = open_can();
@@ -131,18 +131,18 @@ void mainLoop(void){
 		// send can
 		struct can_frame frame;
 		memset(&frame,0,sizeof(frame));
-		frame.can_id = 0x123;
-		strcpy( frame.data, "abcdefgh" );
-		frame.can_dlc = strlen( frame.data );
-		int bytes_sent = write (skt, &frame, sizeof(frame) );
-
+		//frame.can_id = 0x123;
+		//strcpy( frame.data, "xxxxxxxx" );
+		//frame.can_dlc = strlen( frame.data );
+		//int bytes_sent = write (skt, &frame, sizeof(frame) );
+		int bytes_read = read( skt, &frame, sizeof(frame) );
 
 		//printf("num2 = %f\n", (float)D[0]);
-		if ( bytes_sent < 0 ) 
+		if ( bytes_read < 0 ) 
 		{
 			perror("write failed");
 		}
-		printf("Bytes sent are %d \n",bytes_sent);
+		printf("Bytes sent are %d  - %s\n",bytes_read, frame.data);
 
 		/*
 		if( fflush(skt) )i

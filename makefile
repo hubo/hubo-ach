@@ -1,3 +1,4 @@
+default: hubo-ach hubo-achCAN hubo-achCAN-Read
 hubo-ach: hubo-ach.c
 	gcc -g hubo-ach.c -o hubo-ach -lach
 hubo-achCAN: hubo-achCAN.c
