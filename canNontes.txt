@@ -68,6 +68,12 @@ http://www.kvaser.com/en/support/bit-timing-calculator.html
 // send a can packet
 cansend can1 123#1122334455667788
 
+(note ctrl+r looks for recent termanal searchers)
+
+// cansend source
+svn checkout svn://svn.berlios.de/socketcan/trunk
+
+
 // driver info
 http://svn.berlios.de/wsvn/socketcan/trunk/kernel/2.6/Documentation/networking/can.txt
 
@@ -79,3 +85,10 @@ select or poll()
 it sends a file discripter to the kernel and it says if it is read tobe read or not
 richard stevens advanced programmign in tyheunixx enviroment v2 in bookmarks
 'also look a ppoll()
+
+ARCH=x86 make menuconfig  // this configures it
+ARCH=x86 make -j4 deb-pkg               // where 4 is the number of cores you want to use
+
+the file is .confg in the source directory
+this will make a debian package then you just install the debian package
+
