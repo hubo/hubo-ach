@@ -74,13 +74,13 @@ int open_can(void)
 	
 	// locate the interface you wish to use
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, "can0");
+	strcpy(ifr.ifr_name, "can1");
 	ioctl(skt, SIOCGIFINDEX, &ifr); // ifr.ifr_ifindex gets filled with that devices index
 	
 	// select that CAN interface and bind the socket to it
 	struct sockaddr_can addr;
 	addr.can_family = AF_CAN;
-	addr.canifindex = ifr.ifr_ifindex;
+	addr.can_ifindex = ifr.ifr_ifindex;
 	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
 	
       	return (skt);
@@ -98,12 +98,12 @@ static inline void tsnorm(struct timespec *ts){
 
 
 void mainLoop(void){
-	int r = ach_open(&chan_num, "getNum", NULL);
+	int r = ach_open(&chan_num, "can", NULL);
 	assert( ACH_OK == r );
 
 
 	struct timespec t;
-	int interval = 100000000;
+	int interval = 200000000;
 	
 	// open can
 	int skt = open_can();
@@ -128,8 +128,29 @@ void mainLoop(void){
 		size_t fs;
 		r = ach_get( &chan_num, D, sizeof(D), &fs, NULL, ACH_O_WAIT );
 
+		// send can
+		struct can_frame frame;
+		memset(&frame,0,sizeof(frame));
+		frame.can_id = 0x123;
+		strcpy( frame.data, "abcdefgh" );
+		frame.can_dlc = strlen( frame.data );
+		int bytes_sent = write (skt, &frame, sizeof(frame) );
+
+
+
 		//printf("num2 = %f\n", (float)D[0]);
-//		printf("Bytes sent are %d \n",wr);
+		if ( bytes_sent < 0 ) 
+		{
+			perror("write failed");
+		}
+		printf("Bytes sent are %d \n",bytes_sent);
+
+		/*
+		if( fflush(skt) )i
+		{
+			perror("something failed");
+		}
+*/
 		//------------------------------
 		//-----[ do stuff stop ]--------
 		//------------------------------
@@ -155,7 +176,7 @@ int main(int argc, char **argv){
 //	assert( ACH_OK == r);
 
 
-	r = ach_open(&chan_num, "getNum", NULL);
+	r = ach_open(&chan_num, "can", NULL);
 	assert(ACH_OK == r);
 
 	mainLoop();
