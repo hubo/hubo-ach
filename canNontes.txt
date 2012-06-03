@@ -92,3 +92,16 @@ ARCH=x86 make -j4 deb-pkg               // where 4 is the number of cores you wa
 the file is .confg in the source directory
 this will make a debian package then you just install the debian package
 
+
+setup vcan
+Try
+
+modprobe vcan
+
+and
+
+ip link add type vcan
+
+and
+
+ifconfig vcan0 up
