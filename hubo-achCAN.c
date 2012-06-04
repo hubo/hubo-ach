@@ -74,7 +74,7 @@ int open_can(void)
 	
 	// locate the interface you wish to use
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, "can1");
+	strcpy(ifr.ifr_name, "vcan0");
 	ioctl(skt, SIOCGIFINDEX, &ifr); // ifr.ifr_ifindex gets filled with that devices index
 	
 	// select that CAN interface and bind the socket to it
