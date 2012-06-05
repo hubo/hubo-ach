@@ -71,7 +71,7 @@ int open_can(void)
 {
       	// create a socket
 	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
-	int skt = socket( PF_CAN, SOCK_RAW, 0);
+	//int skt = socket( PF_CAN, SOCK_RAW, 0);
 	
 	// locate the interface you wish to use
 	struct ifreq ifr;
@@ -82,8 +82,8 @@ int open_can(void)
 	struct sockaddr_can addr;
 	addr.can_family = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
-	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
-//	connect(skt, (struct sockaddr*)&addr, sizeof(addr) );
+//	ibind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+	connect(skt, (struct sockaddr*)&addr, sizeof(addr) );
 	
       	return (skt);
 }
@@ -136,8 +136,8 @@ void mainLoop(void){
 		frame.can_id = 0x123;
 		strcpy( frame.data, "abcdefgh" );
 		frame.can_dlc = strlen( frame.data );
+		int bytes_sent = write (skt, &frame, sizeof(frame) );
 		//int bytes_sent = write (skt, &frame, sizeof(frame) );
-		int bytes_sent = send(skt,&frame,sizeof(frame), TCP_NODELAY );
 		//int bytes_sent = send(skt,&frame,sizeof(frame), TCP_NODELAY );
 		//int bytes_sent = pwrite(skt,&frame,sizeof(frame), MSG_DONTWAIT );
 
