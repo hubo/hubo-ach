@@ -75,15 +75,15 @@ int open_can(void)
 	
 	// locate the interface you wish to use
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, "vcan0");
+	strcpy(ifr.ifr_name, "vcan1");
 	ioctl(skt, SIOCGIFINDEX, &ifr); // ifr.ifr_ifindex gets filled with that devices index
 	
 	// select that CAN interface and bind the socket to it
 	struct sockaddr_can addr;
 	addr.can_family = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
-//	ibind( skt, (struct sockaddr*)&addr, sizeof(addr) );
-	connect(skt, (struct sockaddr*)&addr, sizeof(addr) );
+	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+//	connect(skt, (struct sockaddr*)&addr, sizeof(addr) );
 	
       	return (skt);
 }
