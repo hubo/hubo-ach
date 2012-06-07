@@ -50,6 +50,14 @@
 #define AF_CAN PF_CAN
 #endif
 
+ /*---------- Timing values */
+ /* generated bit rate table by
+  * http://www.port.de/engl/canprod/sv_req_form.html
+  */
+
+// #  define CAN_TIM0_1000K      0
+// #  define CAN_TIM1_1000K      0x14
+
 
 
 // For Serial

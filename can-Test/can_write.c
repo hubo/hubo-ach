@@ -38,6 +38,8 @@ int main(int argc, char **argv) {
    addr.can_ifindex = ifr.ifr_ifindex;
    bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
 
+	printf("CAN_CALC_BITTIMING = %i",CAN_CALC_BITTIMING);
+
    /* Send a message to the CAN bus */
    struct can_frame frame;
 
