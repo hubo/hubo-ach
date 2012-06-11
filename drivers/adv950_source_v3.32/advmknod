@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+# Advantech IAG eAutomation PCI-954/16C950 device node utility
+#
+
+
+TTYNAME="$1"
+MAJOR="$2"
+TTYNUM="$3"
+
+if [ "$1" = "" ] ; then
+	echo "Invalid TTYNAME"
+	exit 1
+fi
+if [ "$2" = "" ] ; then
+	echo "Invalid MAJOR number"
+	exit 2
+fi
+if [ "$3" = "" ] ; then
+	echo "Invalid tty number"
+	exit 3
+fi
+#echo "TTYNAME is $TTYNAME"
+if [ $TTYNAME = "ttap" ] ; then
+	[ -d /dev/$TTYNAME ] && rm -rf /dev/$TTYNAME
+	mkdir /dev/$TTYNAME
+fi
+if [ $TTYNAME = "ttac" ] ; then
+	[ -d /dev/$TTYNAME ] && rm -rf /dev/$TTYNAME
+	mkdir /dev/$TTYNAME
+fi
+
+port=0
+minor=0
+while [ $port -lt $TTYNUM ]
+	do
+		mport=`expr $port`
+
+		if [ $TTYNAME = "ttap" ] ; then
+ 			#[ -d /dev/$TTYNAME ] && rm -rf /dev/$TTYNAME
+ 			#mkdir /dev/$TTYNAME
+                        ttydev=/dev/$TTYNAME/$mport
+		fi		
+		if [ $TTYNAME = "ttyAP" ] ; then
+			[ -c /dev/$TTYNAME$mport ] && rm -rf /dev/$TTYNAME$mport
+			ttydev=/dev/$TTYNAME$mport
+		fi
+		if [ $TTYNAME = "ttac" ] ; then
+			#[ -d /dev/$TTYNAME ] && rm -rf /dev/$TTYNAME
+			#mkdir /dev/$TTYNAME
+			ttydev=/dev/$TTYNAME/$mport
+		fi
+		if [ $TTYNAME = "ttyAC" ] ; then
+			[ -c /dev/$TTYNAME$mport ] && rm -rf /dev/$TTYNAME$mport
+			ttydev=/dev/$TTYNAME$mport
+		fi
+
+		mknod $ttydev c $MAJOR $minor
+		chmod a+wx $ttydev
+
+		port=`expr $port + 1`
+		minor=`expr $minor + 1`
+done

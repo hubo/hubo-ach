@@ -1,0 +1,35 @@
+ChangeLog of AdvCan Linux Driver
+
+Version 2.6
+	Date 2007/04/17
+	Edit by WangMao
+	changelog: 1. Fixed bug of lost transmit interrupt on high baud rate
+		   2. Support 64bit and SMP arch.
+Version 2.07 
+	Date 2008/08/21
+	Edit by james
+	changelog: to support FC9
+
+Version 2.08
+        Date 2009/07/07
+        Edit by james
+        changelog: to support EAMB-PH007 device
+
+Version 2.09
+        Date 2009/10/08
+        Edit by james
+        changelog: to support C001,C002,C004,C101,C102,C104
+		   to support new linux distribution(FC10,FC11,debian 5.0,ubuntu 9.04) 
+
+Version 2.10  
+        Date 2010/03/25
+        Edit by james
+        changelog:	
+		modify canclk register from 0x80 to 0xc7
+      		to support FC10,FC11,FC12,SUSE 11.2 Madriva 2010
+Version 2.11  
+        Date 2011/03/25
+        Edit by james
+        changelog:	
+      		to support FC13,FC14, SUSE 11.3,Debian 6.0,Ubuntu 10.10 
+			
