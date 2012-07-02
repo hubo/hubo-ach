@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
    /* Locate the interface you wish to use */
    struct ifreq ifr;
    //strcpy(ifr.ifr_name, "vcan0");
-   strcpy(ifr.ifr_name, "can1");
+   strcpy(ifr.ifr_name, "can0");
    ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
                                   * with that device's index */
 
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
    addr.can_ifindex = ifr.ifr_ifindex;
    bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
 
-	printf("CAN_CALC_BITTIMING = %i",CAN_CALC_BITTIMING);
+//	printf("CAN_CALC_BITTIMING = %i",CAN_CALC_BITTIMING);
 
    /* Send a message to the CAN bus */
    struct can_frame frame;
