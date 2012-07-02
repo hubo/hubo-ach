@@ -24,6 +24,7 @@
 int main(int argc, char **argv) {
    /* Create the socket */
    int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
+   //int skt = socket( PF_CAN, SOCK_RAW, 0 );
 
    /* Locate the interface you wish to use */
    struct ifreq ifr;
@@ -60,5 +61,13 @@ int main(int argc, char **argv) {
        }
 
        sleep(1);
+
+/*
+	printf("Press enter to continue\n");
+	char enter = 0;
+	while (enter != '\r' && enter != '\n') { enter = getchar(); }
+	printf("Thank you for pressing enter\n");
+*/
+
    }
 }
