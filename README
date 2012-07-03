@@ -12,3 +12,11 @@ How to install and run hubo-ACH
 (2) sudo apt-get update
 (3) sudo apt-get install libach0 libach-dev
 
+
+* To run
+
+(1) build the system
+	$ make
+
+(2) run run.sh, this will open all 4 can devices, initilize them to 1mbps and run hubo-main
+	$ ./run.sh

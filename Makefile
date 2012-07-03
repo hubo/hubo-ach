@@ -1,7 +1,7 @@
-default: can_write_100hz
+default: hubo-main
 
-can_write_100hz: can_write_100hz.c
+hubo-main: hubo-main.c
 	gcc -o $@ $< -lach
 
 clean: 
-	rm can_write_100hz
+	rm hubo-main
