@@ -40,6 +40,7 @@ static inline void tsnorm(struct timespec *ts){
         }
 }
 
+// Start get frame setup
 void getMotorPosFrame(int temp) {
 }
 
