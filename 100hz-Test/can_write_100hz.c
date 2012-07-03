@@ -67,7 +67,8 @@ int main(int argc, char **argv) {
 
 	// time info
 	struct timespec t;
-	int interval = 500000000;
+	// int interval = 500000000; // 2hz (0.5 sec)
+	int interval = 10000000; // 100 hz (0.01 sec)
 	
 	// get current time
         //clock_gettime( CLOCK_MONOTONIC,&t);
@@ -88,7 +89,7 @@ int main(int argc, char **argv) {
        		if( bytes_sent < 0 ) {
        	    		perror("bad write");
        		} else {
-       	    		printf("%d bytes sent\n", bytes_sent);
+       	    		//printf("%d bytes sent\n", bytes_sent);
        		}
 
 		t.tv_nsec+=interval;
