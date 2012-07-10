@@ -72,7 +72,7 @@ struct sensImu {
 struct hubo {
 	struct jnt joint[50];	// joints
 	struct sensImu imu;	// imu
-	struct sensFt ft;	// ft
+	struct sensFt ft[4];	// ft
 };
 
 

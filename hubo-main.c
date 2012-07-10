@@ -13,8 +13,24 @@
 #include <sched.h>
 #include <sys/io.h>
 
+// for RT
+#include <stdlib.h>
+#include <sys/mman.h>
+
 // for hubo
 #include "hubo.h"
+
+// for ach
+#include <errno.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <math.h>
+#include <inttypes.h>
+#include "ach.h"
 
 /* At time of writing, these constants are not defined in the headers */
 #ifndef PF_CAN
@@ -29,11 +45,30 @@
 
 /* Somewhere in your app */
 
+// Priority
+#define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
+                            as the priority of kernel tasklets
+                            and interrupt handler by default */
 
+#define MAX_SAFE_STACK (128*1024) /* The maximum stack size which is
+                                   guaranteed safe to access without
+                                   faulting */
 
 
 // Timing info
 #define NSEC_PER_SEC    1000000000
+
+// ach message type
+typedef struct hubo hubo;
+
+// ach channels
+ach_channel_t chan_num;
+
+void stack_prefault(void) {
+	unsigned char dummy[MAX_SAFE_STACK];
+	memset( dummy, 0, MAX_SAFE_STACK );
+}
+
 
 
 static inline void tsnorm(struct timespec *ts){
@@ -65,12 +100,13 @@ int openCAN(char* name) {
 	return skt;
 }
 
-int main(int argc, char **argv) {
-   	
+void huboLoop() {
+
+	// make can channels
 	int skt1 	= 	openCAN("can1");
 	int skt0	=	openCAN("can0");
-
-   	/* Send a message to the CAN bus */
+   	
+	/* Send a message to the CAN bus */
    	struct can_frame frame;
 
 	// time info
@@ -110,14 +146,46 @@ int main(int argc, char **argv) {
 
 		t.tv_nsec+=interval;
                 tsnorm(&t);
-       //	sleep(1);
-
-/*
-	printf("Press enter to continue\n");
-	char enter = 0;
-	while (enter != '\r' && enter != '\n') { enter = getchar(); }
-	printf("Thank you for pressing enter\n");
-*/
-
 	}
+
+
+}
+
+int main(int argc, char **argv) {
+
+	// RT 
+	struct sched_param param;
+	/* Declare ourself as a real time task */
+
+        param.sched_priority = MY_PRIORITY;
+        if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+                perror("sched_setscheduler failed");
+                exit(-1);
+        }
+
+        /* Lock memory */
+
+        if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1) {
+                perror("mlockall failed");
+                exit(-2);
+        }
+
+        /* Pre-fault our stack */
+
+        stack_prefault();
+
+	// open ach channel
+	int r = ach_open(&chan_num, "hubo", NULL);
+	assert( ACH_OK == r );
+
+   	
+	// run hubo main loop
+	int pid_hubo = fork();
+	assert(pid_hubo >= 0);
+	if(!pid_hubo) huboLoop();
+	printf("hubo main loop started\n");
+
+	pause();
+	return 0;
+
 }
