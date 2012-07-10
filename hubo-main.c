@@ -13,6 +13,9 @@
 #include <sched.h>
 #include <sys/io.h>
 
+// for hubo
+#include "hubo.h"
+
 /* At time of writing, these constants are not defined in the headers */
 #ifndef PF_CAN
 #define PF_CAN 29
@@ -40,30 +43,32 @@ static inline void tsnorm(struct timespec *ts){
         }
 }
 
-void getMotorPosFrame(int temp) {
+void getMotorPosFrame(int motor, struct can_frame *frame) {
 }
 
+int openCAN(char* name) {
 
-
-int main(int argc, char **argv) {
    	/* Create the socket */
    	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
-   	//int skt = socket( PF_CAN, SOCK_RAW, 0 );
-
+	
    	/* Locate the interface you wish to use */
    	struct ifreq ifr;
    	//strcpy(ifr.ifr_name, "vcan0");
-   	strcpy(ifr.ifr_name, "can0");
+   	strcpy(ifr.ifr_name, name);
    	ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
                                   * with that device's index */
-
    	/* Select that CAN interface, and bind the socket to it. */
    	struct sockaddr_can addr;
    	addr.can_family = AF_CAN;
    	addr.can_ifindex = ifr.ifr_ifindex;
    	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+	return skt;
+}
 
-//	printf("CAN_CALC_BITTIMING = %i",CAN_CALC_BITTIMING);
+int main(int argc, char **argv) {
+   	
+	int skt1 	= 	openCAN("can1");
+	int skt0	=	openCAN("can0");
 
    	/* Send a message to the CAN bus */
    	struct can_frame frame;
@@ -88,8 +93,16 @@ int main(int argc, char **argv) {
 
        		//frame.can_id = counter++;
        		frame.can_id = 13;
-       		int bytes_sent = write( skt, &frame, sizeof(frame) );
-       		if( bytes_sent < 0 ) {
+       		int bytes_sent0 = write( skt0, &frame, sizeof(frame) );
+       		if( bytes_sent0 < 0 ) {
+       	    		perror("bad write");
+       		} else {
+       	    		//printf("%d bytes sent\n", bytes_sent);
+       		}
+
+       		frame.can_id = 14;
+       		int bytes_sent1 = write( skt1, &frame, sizeof(frame) );
+       		if( bytes_sent1 < 0 ) {
        	    		perror("bad write");
        		} else {
        	    		//printf("%d bytes sent\n", bytes_sent);
