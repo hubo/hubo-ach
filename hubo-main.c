@@ -121,11 +121,25 @@ void huboLoop() {
 	sprintf( frame.data, "hello" );
 	frame.can_dlc = strlen( frame.data );
 
+
+	// temp ach channel num;
+
+	int r = 0;	
 	while(1) {
+
 
 		// wait until next shot
 		//clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+
+
+		// get data from ach
+		hubo h;
+		size_t fs;
+		r = ach_get( &chan_num, h, sizeof(h), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
+		//r = ach_get( &chan_num, h, sizeof(h), &fs, NULL, ACH_O_WAIT );
+		assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(h) == fs );
+
 
        		//frame.can_id = counter++;
        		frame.can_id = 13;
