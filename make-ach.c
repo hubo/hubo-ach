@@ -26,6 +26,20 @@
 
 #define NSEC_PER_SEC    1000000000
 
+// ach message type
+typedef struct hubo hubo[1];
+
+// ach channels
+ach_channel_t chan_num;
+
+
+void setDefaults() {
+	// open ach channel
+        int r = ach_open(&chan_num, "hubo", NULL);
+        assert( ACH_OK == r );
+
+	
+}
 
 
 int main(int argc, char **argv){
@@ -36,8 +50,17 @@ int main(int argc, char **argv){
 	r = ach_unlink("hubo");
 	assert( ACH_OK == r || ACH_ENOENT == r );
 
-	r = ach_create("hubo", 10ul, 256ul, NULL);
+	struct hubo h;
+	r = ach_create("hubo", 10ul, sizeof(h), NULL);
+	//r = ach_create("hubo", 10ul, 256ul, NULL);
 	assert( ACH_OK == r);
+
+
+	h.imu.bno = 7;
+	h.joint[4].bno = 77;
+
+	hubo H = {h};
+	ach_put(&chan_num, H, sizeof(H));
 
 
 	printf("hubo - ACH Channel Created\n");

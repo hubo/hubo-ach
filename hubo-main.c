@@ -50,7 +50,7 @@
                             as the priority of kernel tasklets
                             and interrupt handler by default */
 
-#define MAX_SAFE_STACK (128*1024) /* The maximum stack size which is
+#define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
                                    guaranteed safe to access without
                                    faulting */
 
@@ -59,7 +59,7 @@
 #define NSEC_PER_SEC    1000000000
 
 // ach message type
-typedef struct hubo hubo;
+typedef struct hubo hubo[1];
 
 // ach channels
 ach_channel_t chan_num;
@@ -102,6 +102,9 @@ int openCAN(char* name) {
 
 void huboLoop() {
 
+	
+	printf("7");
+	
 	// make can channels
 	int skt1 	= 	openCAN("can1");
 	int skt0	=	openCAN("can0");
@@ -118,13 +121,17 @@ void huboLoop() {
         //clock_gettime( CLOCK_MONOTONIC,&t);
         clock_gettime( 0,&t);
 
+	printf("8");
 	sprintf( frame.data, "hello" );
 	frame.can_dlc = strlen( frame.data );
 
 
+	printf("9");
 	// temp ach channel num;
 
-	int r = 0;	
+	int r = 0;
+	hubo H;
+	printf("0");
 	while(1) {
 
 
@@ -134,11 +141,14 @@ void huboLoop() {
 
 
 		// get data from ach
-		hubo h;
 		size_t fs;
-		r = ach_get( &chan_num, h, sizeof(h), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
+
+		printf("1");
+		r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
 		//r = ach_get( &chan_num, h, sizeof(h), &fs, NULL, ACH_O_WAIT );
-		assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(h) == fs );
+		printf("2");
+		assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(H) == fs );
+		printf("3");
 
 
        		//frame.can_id = counter++;
@@ -185,9 +195,9 @@ int main(int argc, char **argv) {
         }
 
         /* Pre-fault our stack */
-
         stack_prefault();
 
+	
 	// open ach channel
 	int r = ach_open(&chan_num, "hubo", NULL);
 	assert( ACH_OK == r );
@@ -197,6 +207,7 @@ int main(int argc, char **argv) {
 	int pid_hubo = fork();
 	assert(pid_hubo >= 0);
 	if(!pid_hubo) huboLoop();
+
 	printf("hubo main loop started\n");
 
 	pause();
