@@ -150,7 +150,6 @@ void huboLoop() {
 		assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(H) == fs );
 		printf("3");
 
-
        		//frame.can_id = counter++;
        		frame.can_id = 13;
        		int bytes_sent0 = write( skt0, &frame, sizeof(frame) );
