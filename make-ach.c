@@ -46,6 +46,7 @@ int main(int argc, char **argv){
 	(void) argc; (void)argv;
 	int r;
 
+/*
 	// create chanels
 	r = ach_unlink("hubo");
 	assert( ACH_OK == r || ACH_ENOENT == r );
@@ -54,7 +55,10 @@ int main(int argc, char **argv){
 	r = ach_create("hubo", 10ul, sizeof(h), NULL);
 	//r = ach_create("hubo", 10ul, 256ul, NULL);
 	assert( ACH_OK == r);
+*/
 
+	struct hubo h;
+	setDefaults();
 
 	h.imu.bno = 7;
 	h.joint[4].bno = 77;

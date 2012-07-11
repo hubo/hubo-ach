@@ -103,7 +103,6 @@ int openCAN(char* name) {
 void huboLoop() {
 
 	
-	printf("7");
 	
 	// make can channels
 	int skt1 	= 	openCAN("can1");
@@ -121,17 +120,14 @@ void huboLoop() {
         //clock_gettime( CLOCK_MONOTONIC,&t);
         clock_gettime( 0,&t);
 
-	printf("8");
 	sprintf( frame.data, "hello" );
 	frame.can_dlc = strlen( frame.data );
 
 
-	printf("9");
 	// temp ach channel num;
 
 	int r = 0;
 	hubo H;
-	printf("0");
 	while(1) {
 
 
@@ -143,13 +139,14 @@ void huboLoop() {
 		// get data from ach
 		size_t fs;
 
-		printf("1");
-		r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
+		r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
+		//r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
 		//r = ach_get( &chan_num, h, sizeof(h), &fs, NULL, ACH_O_WAIT );
-		printf("2");
-		assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(H) == fs );
-		printf("3");
-
+		assert( sizeof(H) == fs );
+		//assert( ACH_OK==r && sizeof(H) == fs );
+		//assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(H) == fs );
+		
+		//printf("Id = %f\n",(float)H[0].imu.bno);
        		//frame.can_id = counter++;
        		frame.can_id = 13;
        		int bytes_sent0 = write( skt0, &frame, sizeof(frame) );
