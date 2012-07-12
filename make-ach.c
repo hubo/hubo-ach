@@ -39,32 +39,24 @@ void setDefaults() {
         assert( ACH_OK == r );
 
 	
-}
-
-
-int main(int argc, char **argv){
-	(void) argc; (void)argv;
-	int r;
-
-/*
-	// create chanels
-	r = ach_unlink("hubo");
-	assert( ACH_OK == r || ACH_ENOENT == r );
-
 	struct hubo h;
-	r = ach_create("hubo", 10ul, sizeof(h), NULL);
-	//r = ach_create("hubo", 10ul, 256ul, NULL);
-	assert( ACH_OK == r);
-*/
-
-	struct hubo h;
-	setDefaults();
-
 	h.imu.bno = 7;
 	h.joint[4].bno = 77;
 
 	hubo H = {h};
 	ach_put(&chan_num, H, sizeof(H));
+
+}
+
+
+int main(int argc, char **argv){
+	(void) argc; (void)argv;
+
+	// open ach channel
+        int r = ach_open(&chan_num, "hubo", NULL);
+        assert( ACH_OK == r );
+
+	setDefaults();
 
 
 	printf("hubo - ACH Channel Created\n");

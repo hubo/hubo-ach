@@ -12,6 +12,7 @@
 #include <time.h>
 #include <sched.h>
 #include <sys/io.h>
+#include <unistd.h>
 
 // for RT
 #include <stdlib.h>
@@ -73,7 +74,8 @@ void stack_prefault(void) {
 
 static inline void tsnorm(struct timespec *ts){
         while (ts->tv_nsec >= NSEC_PER_SEC) {
-                ts->tv_nsec -= NSEC_PER_SEC;
+                usleep(100);	// sleep for 100us (1us = 1/1,000,000 sec)
+		ts->tv_nsec -= NSEC_PER_SEC;
                 ts->tv_sec++;
         }
 }
