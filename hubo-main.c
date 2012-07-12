@@ -73,8 +73,11 @@ void stack_prefault(void) {
 
 
 static inline void tsnorm(struct timespec *ts){
+
+//	clock_nanosleep( NSEC_PER_SEC, TIMER_ABSTIME, ts, NULL);
+	// calculates the next shot
         while (ts->tv_nsec >= NSEC_PER_SEC) {
-                usleep(100);	// sleep for 100us (1us = 1/1,000,000 sec)
+                //usleep(100);	// sleep for 100us (1us = 1/1,000,000 sec)
 		ts->tv_nsec -= NSEC_PER_SEC;
                 ts->tv_sec++;
         }
