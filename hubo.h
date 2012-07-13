@@ -1,3 +1,4 @@
+#include "canId.h"
 //888888888888888888888888888888888888888888
 //-----[Static Definitions and Offsets]-----
 //888888888888888888888888888888888888888888
@@ -42,14 +43,69 @@
 // BOFF=0x80 	for BNO >= 0x30
 
 
+/* Joint Numbers/Index values */
+#define		RHY		0		//	Right Hip Yaw
+#define		RHR		1		//	Right Hip Roll
+#define		RHP		2		//	Right Hip Pitch
+#define		RKN		3		//	Right Knee Pitch
+#define		RAP		4		//	Right Ankle Pitch
+#define		RAR		5		//	Right Ankle Roll
+#define		LHY		6		//	Left Hip Yaw
+#define		LHR		7		//	Left Hip Roll
+#define		LHP		8		//	Left Hip Pitch
+
+#define		LKN		9		//	Left Knee Pitch
+#define		LAP		10		//	Left Ankle Pitch
+#define		LAR		11		//	Left Ankle Roll
+
+#define		RSP		12		//	Right Shoulder Pitch
+#define		RSR		13		//	Right Shoulder Pitch
+#define		RSY		14		//	Right Shoulder Roll
+#define		REB		15		//	Right Elbow Pitch
+#define		RWY		16		// right wrist yaw
+#define		RWP		17		// right wrist Pitch
+
+#define		LSP		18		//	Left Shoulder Pitch
+#define		LSR		19		//	Left Shoulder Yaw
+#define		LSY		20		//	Left Shoulder Roll
+#define		LEB		21		//	Left Elbow Pitch
+#define		LWY		22		// left wrist yaw
+#define		LWP		23		// left wrist pitch
+
+#define		NKY		24		// neck yaw
+#define		NK1		25		// neck 1
+#define		NK2		26		// neck 2
+
+#define		WST		27		//	Trunk Yaw
+
+#define		RF1		28		//	Right Finger
+#define		RF2		29		//	Right Finger
+#define		RF3		30		//	Right Finger
+#define		RF4		31		//	Right Finger
+#define		RF5		32		//	Right Finger
+#define		LF1		33		//	Left Finger
+#define		LF2		34		//	Left Finger
+#define		LF3		35		//	Left Finger
+#define		LF4		36		//	Left Finger
+#define		LF5		37		//	Left Finger
+
+
+
+
+
+
 struct jnt {
 	int bno;	// board number
 	int jntNo;	// joint number
 	double ref;	// reference (rad)
-	double ratio;	// gear ratio
+	double drive;	// size of drive wheel
+	double driven;	// size of driven wheel
+	double harmonic;// gear ratio of harmonic drive
+	double enc;	// encoder size
 	int dir;	// direction
 	char *name;	// name
 	int jmc;	// motor controller number
+	int can;	// can channel
 };
 
 struct sensFt {
