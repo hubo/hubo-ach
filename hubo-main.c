@@ -105,6 +105,44 @@ int openCAN(char* name) {
 	return skt;
 }
 
+
+int getEncRef(int jnt, struct hubo h)
+{
+	return (int)((double)h.joint[jnt].drive/(double)h.joint[jnt].driven/(double)h.joint[jnt].harmonic/(double)h.joint[jnt].enc*2*pi);
+}
+
+void setFet(int jnt, int onOff struct hubo h, struct can_frame *f) {
+
+//	struct can_frame f;
+	f->can_id 	= CMD_TXDF;	// Set ID
+	char data[3];
+	data[0] 	= (char)h.joint[jnt].jmc;
+	data[1]		= (char)HipEnable;
+	data[2]		= (char)onOff;
+	sprintf(f->data, "%s", data);	
+	f->can_dlc = strlen( f->data );	// Set DLC
+
+}
+
+/**
+* Sends CAN packet to desired channel
+* 
+* @param $first
+*	"@param" is the socket you want to send to
+* @param $second
+*	CAN frame to send
+*/
+int sendCan(int skt, struct can_frame *f) {
+	int bytes_sent = write( skt, &f, sizeof(f) );
+	if( bytes_sent < 0 ) {
+		perror("bad write");
+	} else {
+		//printf("%d bytes sent\n", bytes_sent);
+	}
+
+	return bytes_sent;
+}
+
 void huboLoop() {
 
 	
@@ -145,14 +183,8 @@ void huboLoop() {
 		size_t fs;
 
 		r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
-		//r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
-		//r = ach_get( &chan_num, h, sizeof(h), &fs, NULL, ACH_O_WAIT );
 		assert( sizeof(H) == fs );
-		//assert( ACH_OK==r && sizeof(H) == fs );
-		//assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(H) == fs );
 		
-		//printf("Id = %f\n",(float)H[0].imu.bno);
-       		//frame.can_id = counter++;
        		frame.can_id = 13;
        		int bytes_sent0 = write( skt0, &frame, sizeof(frame) );
        		if( bytes_sent0 < 0 ) {
@@ -175,6 +207,7 @@ void huboLoop() {
 
 
 }
+
 
 int main(int argc, char **argv) {
 

@@ -12,5 +12,5 @@ sudo ifconfig can2 up
 sudo ifconfig can3 up
 sudo ach -U hubo
 sudo ach -C hubo
-sudo ./make-ach
+sudo ./hubo-default
 sudo ./hubo-main

@@ -89,19 +89,19 @@
 #define		LF4		36		//	Left Finger
 #define		LF5		37		//	Left Finger
 
-
+#define 	pi		3.141596
 
 
 
 
 struct jnt {
-	int bno;	// board number
-	int jntNo;	// joint number
+	int motNo;	// joint number (on board i.e. 0, 1, 2)
+	int jntNo;	// what overall number joint is it i.e. what RSP=23
 	double ref;	// reference (rad)
-	double drive;	// size of drive wheel
-	double driven;	// size of driven wheel
-	double harmonic;// gear ratio of harmonic drive
-	double enc;	// encoder size
+	int drive;	// size of drive wheel
+	int driven;	// size of driven wheel
+	int harmonic;// gear ratio of harmonic drive
+	int enc;	// encoder size
 	int dir;	// direction
 	char *name;	// name
 	int jmc;	// motor controller number

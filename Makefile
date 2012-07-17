@@ -1,12 +1,11 @@
-default: hubo-main make-ach
+default: hubo-main hubo-default
 
 hubo-main: hubo-main.c
 	gcc -o $@ $< -lach -lrt
 
-make-ach: make-ach.c
-
+hubo-default: hubo-default.c
 	gcc -o $@ $< -lach -lrt
 
 clean: 
 	rm hubo-main
-	rm make-ach
+	rm hubo-default
