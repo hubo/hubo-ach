@@ -111,17 +111,40 @@ int getEncRef(int jnt, struct hubo h)
 	return (int)((double)h.joint[jnt].drive/(double)h.joint[jnt].driven/(double)h.joint[jnt].harmonic/(double)h.joint[jnt].enc*2*pi);
 }
 
-void setFet(int jnt, int onOff struct hubo h, struct can_frame *f) {
-
-//	struct can_frame f;
+void fSetFet(int jnt, int onOff, struct hubo *h, struct can_frame *f) {
+	
+	//struct can_frame f;
 	f->can_id 	= CMD_TXDF;	// Set ID
-	char data[3];
-	data[0] 	= (char)h.joint[jnt].jmc;
-	data[1]		= (char)HipEnable;
-	data[2]		= (char)onOff;
+	//char data[3];
+	//data[0] 	= (char)h->joint[jnt].jmc;
+	//data[1]		= (char)HipEnable;
+	//data[2]		= (char)onOff;
+	__u8 data[3];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1]		= HipEnable;
+	data[2]		= onOff;
 	sprintf(f->data, "%s", data);	
-	f->can_dlc = strlen( f->data );	// Set DLC
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
 
+}
+
+void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[2];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1] 	= 0xFA;
+	sprintf(f->data, "%s", data);
+	f->can_dlc = 2;
+}
+
+
+void fEnableFeedback(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[2];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1] 	= 0x0E;
+	sprintf(f->data, "%s", data);
+	f->can_dlc = 2;
 }
 
 /**
@@ -133,7 +156,8 @@ void setFet(int jnt, int onOff struct hubo h, struct can_frame *f) {
 *	CAN frame to send
 */
 int sendCan(int skt, struct can_frame *f) {
-	int bytes_sent = write( skt, &f, sizeof(f) );
+
+	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( bytes_sent < 0 ) {
 		perror("bad write");
 	} else {
@@ -142,35 +166,101 @@ int sendCan(int skt, struct can_frame *f) {
 
 	return bytes_sent;
 }
+int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
+	int n_left;
+	int n_read;
+	char *ptr;
+	ptr = buff;
+	n_left = n;
+	struct timeval timeout;
+	fd_set fds;
+
+	timeout.tv_sec = 0;    
+  	timeout.tv_usec = timeo; 
+  	FD_ZERO(&fds);
+  	FD_SET(sockfd, &fds);
+
+	while(n_left>0){
+		
+		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){ 
+			if((n_read=read(sockfd,ptr,n_left))<0){	
+				if(errno == EINTR)
+					n_read=0;
+				else{
+					return -1;	
+				}
+			}
+			else if(n_read==0){			
+				printf("n_read=0\n");
+				break;
+			}
+			n_left-=n_read;	
+			printf("%s\n", ptr);
+			ptr+=n_read;			
+			
+		}
+		else{
+			return -1;
+		}
+	}
+	return (n-n_left);
+}
+
+int readCan(int skt, struct can_frame *f) {
+
+	int bytes_read = readn( skt, &f, sizeof(f), 1 );
+	if( bytes_read < 0 ) {
+		perror("bad read");
+	} else {
+		//printf("%d bytes read -- %d:%s\n", bytes_read, frame.can_id, frame.data);
+	}
+	return bytes_read;
+}
+
+void hInitilize(int jnt, struct hubo *h, struct can_frame *f) {
+
+	fInitializeBoard(jnt, h, f);
+	int skt = h->socket[h->joint[jnt].can];
+	sendCan(skt, f);
+	readCan(skt, f);
+	
+
+}
 
 void huboLoop() {
-
-	
+	// get initial values for hubo
+	hubo H;
+	size_t fs;
+	int r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
 	
 	// make can channels
 	int skt1 	= 	openCAN("can1");
 	int skt0	=	openCAN("can0");
+
+	H->socket[0] 	=	skt0;
+	H->socket[1]	=	skt1;
+	
+	ach_put( &chan_num, H, sizeof(H));
+
+
    	
 	/* Send a message to the CAN bus */
    	struct can_frame frame;
 
 	// time info
 	struct timespec t;
-	// int interval = 500000000; // 2hz (0.5 sec)
-	int interval = 10000000; // 100 hz (0.01 sec)
+	int interval = 500000000; // 2hz (0.5 sec)
+	//int interval = 10000000; // 100 hz (0.01 sec)
 	
 	// get current time
         //clock_gettime( CLOCK_MONOTONIC,&t);
         clock_gettime( 0,&t);
 
-	sprintf( frame.data, "hello" );
+	sprintf( frame.data, "1234578" );
 	frame.can_dlc = strlen( frame.data );
 
 
-	// temp ach channel num;
 
-	int r = 0;
-	hubo H;
 	while(1) {
 
 
@@ -179,27 +269,17 @@ void huboLoop() {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 
-		// get data from ach
-		size_t fs;
 
 		r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
 		assert( sizeof(H) == fs );
-		
-       		frame.can_id = 13;
-       		int bytes_sent0 = write( skt0, &frame, sizeof(frame) );
-       		if( bytes_sent0 < 0 ) {
-       	    		perror("bad write");
-       		} else {
-       	    		//printf("%d bytes sent\n", bytes_sent);
-       		}
 
-       		frame.can_id = 14;
-       		int bytes_sent1 = write( skt1, &frame, sizeof(frame) );
-       		if( bytes_sent1 < 0 ) {
-       	    		perror("bad write");
-       		} else {
-       	    		//printf("%d bytes sent\n", bytes_sent);
-       		}
+//		fSetFet(RSP, 1, H, &frame);
+//		frame.can_id = 14;
+		
+//		sendCan(skt0, frame);		
+
+		hInitilize(RSP, H, &frame);
+
 
 		t.tv_nsec+=interval;
                 tsnorm(&t);

@@ -126,9 +126,10 @@ struct sensImu {
 };
 
 struct hubo {
-	struct jnt joint[50];	// joints
-	struct sensImu imu;	// imu
-	struct sensFt ft[4];	// ft
+	struct 	jnt joint[50];	// joints
+	struct 	sensImu imu;	// imu
+	struct 	sensFt ft[4];	// ft
+	int	socket[4];	// can channel
 };
 
 
