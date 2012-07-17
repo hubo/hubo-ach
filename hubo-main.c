@@ -195,7 +195,7 @@ int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
 				break;
 			}
 			n_left-=n_read;	
-			printf("%s\n", ptr);
+			//printf("%s\n", ptr);
 			ptr+=n_read;			
 			
 		}
@@ -206,9 +206,13 @@ int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
 	return (n-n_left);
 }
 
-int readCan(int skt, struct can_frame *f) {
 
-	int bytes_read = readn( skt, &f, sizeof(f), 1 );
+int readCan(int skt, struct can_frame *f, double timeoD) {
+	// note timeo is the time out in seconds
+
+	int timeo = (int)(timeoD*1000000.0);
+	int bytes_read = readn( skt, &f, sizeof(f), timeo );
+	//int bytes_read = read( skt, &f, sizeof(f));
 	if( bytes_read < 0 ) {
 		perror("bad read");
 	} else {
@@ -222,7 +226,7 @@ void hInitilize(int jnt, struct hubo *h, struct can_frame *f) {
 	fInitializeBoard(jnt, h, f);
 	int skt = h->socket[h->joint[jnt].can];
 	sendCan(skt, f);
-	readCan(skt, f);
+	readCan(skt, f, 6);
 	
 
 }
@@ -278,7 +282,7 @@ void huboLoop() {
 		
 //		sendCan(skt0, frame);		
 
-		hInitilize(RSP, H, &frame);
+		hInitilize(RAP, H, &frame);
 
 
 		t.tv_nsec+=interval;
