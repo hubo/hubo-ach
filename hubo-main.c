@@ -231,16 +231,24 @@ void hInitilize(int jnt, struct hubo *h, struct can_frame *f) {
 
 }
 
-void huboLoop() {
+void huboLoop(int vCan) {
 	// get initial values for hubo
 	hubo H;
 	size_t fs;
 	int r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
 	
 	// make can channels
-	int skt1 	= 	openCAN("can1");
-	int skt0	=	openCAN("can0");
 
+	int skt1;
+	int skt0;
+	if(vCan == 1){
+		skt1 	= 	openCAN("vcan1");
+		skt0	=	openCAN("vcan0");
+	}
+	else {
+		skt1 	= 	openCAN("can1");
+		skt0	=	openCAN("can0");
+	}
 	H->socket[0] 	=	skt0;
 	H->socket[1]	=	skt1;
 	
@@ -295,6 +303,19 @@ void huboLoop() {
 
 int main(int argc, char **argv) {
 
+	int vflag = 0;
+	int c;
+/* arguements from command line */
+	while ((c = getopt (argc, argv, "v")) != -1) {
+		switch(c) {
+			case 'v':
+				vflag = 1;
+				break;
+			default:
+				abort();
+		}
+	}
+
 	// RT 
 	struct sched_param param;
 	/* Declare ourself as a real time task */
@@ -324,7 +345,7 @@ int main(int argc, char **argv) {
 	// run hubo main loop
 	int pid_hubo = fork();
 	assert(pid_hubo >= 0);
-	if(!pid_hubo) huboLoop();
+	if(!pid_hubo) huboLoop(vflag);
 
 	printf("hubo main loop started\n");
 

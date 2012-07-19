@@ -19,4 +19,7 @@ How to install and run hubo-ACH
 	$ make
 
 (2) run run.sh, this will open all 4 can devices, initilize them to 1mbps and run hubo-main
-	$ ./run.sh
+	For Hardware CAN run
+		$ ./run.sh
+	For Virturl CAN run
+		$ ./vrun.sh
