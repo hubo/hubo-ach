@@ -44,50 +44,53 @@
 
 
 /* Joint Numbers/Index values */
-#define		RHY		0		//	Right Hip Yaw
-#define		RHR		1		//	Right Hip Roll
-#define		RHP		2		//	Right Hip Pitch
-#define		RKN		3		//	Right Knee Pitch
-#define		RAP		4		//	Right Ankle Pitch
-#define		RAR		5		//	Right Ankle Roll
-#define		LHY		6		//	Left Hip Yaw
-#define		LHR		7		//	Left Hip Roll
-#define		LHP		8		//	Left Hip Pitch
+#define		RHY		26		//	Right Hip Yaw
+#define		RHR		27		//	Right Hip Roll
+#define		RHP		28		//	Right Hip Pitch
+#define		RKN		29		//	Right Knee Pitch
+#define		RAP		30		//	Right Ankle Pitch
+#define		RAR		31		//	Right Ankle Roll
 
-#define		LKN		9		//	Left Knee Pitch
-#define		LAP		10		//	Left Ankle Pitch
-#define		LAR		11		//	Left Ankle Roll
+#define		LHY		19		//	Left Hip Yaw
+#define		LHR		20		//	Left Hip Roll
+#define		LHP		21		//	Left Hip Pitch
+#define		LKN		22		//	Left Knee Pitch
+#define		LAP		23		//	Left Ankle Pitch
+#define		LAR		24		//	Left Ankle Roll
 
-#define		RSP		12		//	Right Shoulder Pitch
-#define		RSR		13		//	Right Shoulder Pitch
-#define		RSY		14		//	Right Shoulder Roll
-#define		REB		15		//	Right Elbow Pitch
-#define		RWY		16		// right wrist yaw
+#define		RSP		11		//	Right Shoulder Pitch
+#define		RSR		12		//	Right Shoulder Pitch
+#define		RSY		13		//	Right Shoulder Roll
+#define		REB		14		//	Right Elbow Pitch
+#define		RWY		15		// right wrist yaw
+#define		RWR		16		// right wrist roll
 #define		RWP		17		// right wrist Pitch
 
-#define		LSP		18		//	Left Shoulder Pitch
-#define		LSR		19		//	Left Shoulder Yaw
-#define		LSY		20		//	Left Shoulder Roll
-#define		LEB		21		//	Left Elbow Pitch
-#define		LWY		22		// left wrist yaw
-#define		LWP		23		// left wrist pitch
+#define		LSP		3		//	Left Shoulder Pitch
+#define		LSR		4		//	Left Shoulder Yaw
+#define		LSY		5		//	Left Shoulder Roll
+#define		LEB		6		//	Left Elbow Pitch
+#define		LWY		7		// left wrist yaw
+#define		LWR		8		// left wrist roll
+#define		LWP		9		// left wrist pitch
 
-#define		NKY		24		// neck yaw
-#define		NK1		25		// neck 1
-#define		NK2		26		// neck 2
+#define		NKY		1		// neck yaw
+#define		NKP		2		// neck pitch
+#define		NK1		2		// neck 1
+#define		NK2		2		// neck 2
 
-#define		WST		27		//	Trunk Yaw
+#define		WST		0		//	Trunk Yaw
 
-#define		RF1		28		//	Right Finger
-#define		RF2		29		//	Right Finger
-#define		RF3		30		//	Right Finger
-#define		RF4		31		//	Right Finger
-#define		RF5		32		//	Right Finger
-#define		LF1		33		//	Left Finger
-#define		LF2		34		//	Left Finger
-#define		LF3		35		//	Left Finger
-#define		LF4		36		//	Left Finger
-#define		LF5		37		//	Left Finger
+#define		RF1		32		//	Right Finger
+#define		RF2		33		//	Right Finger
+#define		RF3		34		//	Right Finger
+#define		RF4		35		//	Right Finger
+#define		RF5		36		//	Right Finger
+#define		LF1		37		//	Left Finger
+#define		LF2		38		//	Left Finger
+#define		LF3		39		//	Left Finger
+#define		LF4		40		//	Left Finger
+#define		LF5		41		//	Left Finger
 
 #define 	pi		3.141596
 
