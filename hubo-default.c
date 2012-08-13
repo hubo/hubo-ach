@@ -32,11 +32,25 @@ typedef struct hubo hubo[1];
 // ach channels
 ach_channel_t chan_num;
 
+void setPosZeros() {
+	// open ach channel
+//        int r = ach_open(&chan_num, "hubo", NULL);
+//        assert( ACH_OK == r );
+
+	struct hubo h;
+	int i = 0;
+	for( i = 0; i < numOfJoints; i++) {
+		h.joint[i].ref = 0.0;
+	}
+	hubo H = {h};
+	ach_put(&chan_num, H, sizeof(H));
+}
+
 
 void setDefaults() {
 	// open ach channel
-        int r = ach_open(&chan_num, "hubo", NULL);
-        assert( ACH_OK == r );
+//        int r = ach_open(&chan_num, "hubo", NULL);
+//        assert( ACH_OK == r );
 
 	
 	struct hubo h;
@@ -427,8 +441,8 @@ int main(int argc, char **argv){
         int r = ach_open(&chan_num, "hubo", NULL);
         assert( ACH_OK == r );
 
-	setDefaults();
-
+//	setDefaults();
+	setPosZeros();
 
 	printf("hubo - ACH Channel Created\n");
 	return 0;

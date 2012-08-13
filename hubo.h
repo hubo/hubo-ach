@@ -92,6 +92,9 @@
 #define		LF4		40		//	Left Finger
 #define		LF5		41		//	Left Finger
 
+
+#define		numOfJoints	50		// 	the size of the array
+						//	for the joints
 #define 	pi		3.141596
 
 
