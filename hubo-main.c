@@ -33,6 +33,7 @@
 #include <inttypes.h>
 #include "ach.h"
 
+
 /* At time of writing, these constants are not defined in the headers */
 #ifndef PF_CAN
 #define PF_CAN 29
@@ -60,7 +61,7 @@
 #define NSEC_PER_SEC    1000000000
 
 // ach message type
-typedef struct hubo hubo[1];
+typedef struct hubo h[1];
 
 // ach channels
 ach_channel_t chan_num;
@@ -128,24 +129,76 @@ void fSetFet(int jnt, int onOff, struct hubo *h, struct can_frame *f) {
 
 }
 
+// 28
 void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[2];
 	data[0] 	= h->joint[jnt].jmc;
+	printf("jmc = %i\n",data[0]);
+	//data[0] 	= (uint8_t)88;
 	data[1] 	= 0xFA;
 	sprintf(f->data, "%s", data);
 	f->can_dlc = 2;
 }
 
+// 10
+void fEnableMotorDriver(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[3];
+	data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	data[1] 	= 0x0B;
+	data[2] 	= 0x01;
+	sprintf(f->data, "%s", data);
+	f->can_dlc = 3;
+}
 
-void fEnableFeedback(int jnt, struct hubo *h, struct can_frame *f) {
+// 13
+void fEnableFeedbackController(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[2];
-	data[0] 	= h->joint[jnt].jmc;
+	data[0] 	= (uint8_t)h->joint[jnt].jmc;
 	data[1] 	= 0x0E;
 	sprintf(f->data, "%s", data);
 	f->can_dlc = 2;
 }
+
+// 14
+void fDisableFeedbackController(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[2];
+	data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	data[1] 	= 0x0F;
+	sprintf(f->data, "%s", data);
+	f->can_dlc = 2;
+}
+
+// 15
+void fSetPositionController(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[3];
+	data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	data[1] 	= 0x10;
+	data[2]		= 0x00;	// position control
+	sprintf(f->data, "%s", data);
+	f->can_dlc = 3;
+}
+
+// 16
+void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[8];
+	data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	data[1] 	= 0x11;
+	data[2] 	= ((uint8_t)h->joint[jnt].motNo << 4)|2; // set /DT high
+	data[3]  	= 0x00;
+	data[4]  	= 0x00;
+	data[5]  	= 0x00;
+	data[6]  	= 0x00;
+	data[7]  	= 0x00;
+	sprintf(f->data, "%s", data);
+	f->can_dlc = 8;
+}
+
 
 /**
 * Sends CAN packet to desired channel
@@ -156,7 +209,6 @@ void fEnableFeedback(int jnt, struct hubo *h, struct can_frame *f) {
 *	CAN frame to send
 */
 int sendCan(int skt, struct can_frame *f) {
-
 	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( bytes_sent < 0 ) {
 		perror("bad write");
@@ -222,20 +274,35 @@ int readCan(int skt, struct can_frame *f, double timeoD) {
 }
 
 void hInitilize(int jnt, struct hubo *h, struct can_frame *f) {
-
 	fInitializeBoard(jnt, h, f);
-	int skt = h->socket[h->joint[jnt].can];
-	sendCan(skt, f);
-	readCan(skt, f, 6);
+	//int skt = h->socket[h->joint[jnt].can];
+	//sendCan(skt, f);
+	sendCan(h->socket[h->joint[jnt].can], f);
+//	readCan(h->socket[h->joint[jnt].can], f, 6);
 	
 
 }
 
+void hIniAll(struct hubo *H, struct can_frame *f) {
+// --std=c99
+		printf("2\n");
+	int i = 0;	
+	for( i = 0; i < numOfJoints; i++ ) {
+		if(H->joint[i].active) {
+			hInitilize(i, H, f);
+			printf("%i\n",i);
+		}
+	}
+}
+
 void huboLoop(int vCan) {
 	// get initial values for hubo
-	hubo H;
+	struct hubo H;
 	size_t fs;
-	int r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+//	printf("fs = %i, H = %i\n",fs, sizeof(H));
+ 	assert( sizeof(H) == fs );
+//	assert( ACH_OK == r );
 	
 	// make can channels
 
@@ -249,10 +316,10 @@ void huboLoop(int vCan) {
 		skt1 	= 	openCAN("can1");
 		skt0	=	openCAN("can0");
 	}
-	H->socket[0] 	=	skt0;
-	H->socket[1]	=	skt1;
+	H.socket[0] 	=	skt0;
+	H.socket[1]	=	skt1;
 	
-	ach_put( &chan_num, H, sizeof(H));
+	ach_put( &chan_num, &H, sizeof(H));
 
 
    	
@@ -272,7 +339,7 @@ void huboLoop(int vCan) {
 	frame.can_dlc = strlen( frame.data );
 
 
-
+	int a = 0;
 	while(1) {
 
 
@@ -282,15 +349,33 @@ void huboLoop(int vCan) {
 
 
 
-		r = ach_get( &chan_num, H, sizeof(H), &fs, NULL, ACH_O_LAST );
+		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 		assert( sizeof(H) == fs );
 
 //		fSetFet(RSP, 1, H, &frame);
 //		frame.can_id = 14;
-		
-//		sendCan(skt0, frame);		
+//		sendCan(skt0, &frame);		
 
-		hInitilize(RAP, H, &frame);
+//		hInitilize(RAP, H, &frame);
+
+
+		if(a == 0) {
+			printf("1\n");
+
+			hIniAll(&H, &frame);
+			a = 1;
+		}
+
+
+
+		//hInitilize(REB, &H, &frame);
+/*
+		int i = 0;
+		for( i = 0; i < numOfJoints; i++) {
+			printf("i = %i, jnt = %i\n", i, H.joint[i].can);
+		}
+
+*/
 
 
 		t.tv_nsec+=interval;
@@ -343,12 +428,16 @@ int main(int argc, char **argv) {
 
    	
 	// run hubo main loop
+
+/*
 	int pid_hubo = fork();
 	assert(pid_hubo >= 0);
 	if(!pid_hubo) huboLoop(vflag);
 
 	printf("hubo main loop started\n");
+*/
 
+	huboLoop(vflag);
 	pause();
 	return 0;
 

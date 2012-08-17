@@ -1,4 +1,8 @@
 #include "canId.h"
+#include <stdint.h>
+
+//#define true 1;
+//#define false 0;
 //888888888888888888888888888888888888888888
 //-----[Static Definitions and Offsets]-----
 //888888888888888888888888888888888888888888
@@ -101,42 +105,44 @@
 
 
 struct jnt {
-	int motNo;	// joint number (on board i.e. 0, 1, 2)
-	int jntNo;	// what overall number joint is it i.e. what RSP=23
+	uint16_t motNo;	// joint number (on board i.e. 0, 1, 2)
+	uint16_t jntNo;	// what overall number joint is it i.e. what RSP=23
 	double ref;	// reference (rad)
-	int drive;	// size of drive wheel
-	int driven;	// size of driven wheel
-	int harmonic;// gear ratio of harmonic drive
-	int enc;	// encoder size
-	int dir;	// direction
+	uint16_t drive;	// size of drive wheel
+	uint16_t driven;	// size of driven wheel
+	uint16_t harmonic;// gear ratio of harmonic drive
+	uint16_t enc;	// encoder size
+	uint8_t dir;	// direction
 	char *name;	// name
-	int jmc;	// motor controller number
-	int can;	// can channel
-};
+	uint16_t jmc;	// motor controller number
+	uint8_t can;	// can channel
+	uint8_t active; 	// checks if the joint is active or not
+}__attribute__((packed));
 
 struct sensFt {
-	int bno;
+	uint8_t bno;
 	double x;
 	double y;
 	double z;
-};
+}__attribute__((packed));
 
 struct sensImu {
-	int bno;
+	uint8_t bno;
 	double wx;
 	double wy;
 	double wz;
 	double ax;
 	double ay;
 	double az;
-};
+}__attribute__((packed));
 
 struct hubo {
+// packed struct gcc
 	struct 	jnt joint[50];	// joints
 	struct 	sensImu imu;	// imu
 	struct 	sensFt ft[4];	// ft
-	int	socket[4];	// can channel
-};
+	uint8_t	socket[4];	// can channel
+}__attribute__((packed));
 
 
 
