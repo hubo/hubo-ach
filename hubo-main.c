@@ -215,8 +215,8 @@ int sendCan(int skt, struct can_frame *f) {
 	} else {
 		printf("%d bytes sent -- ", bytes_sent);
 		int i = 0;
-		for(i = 0; i < sizeof(f->data); i++) {
-			printf(" %i ",(int)f->data[i]);
+		for(i = 0; i < f->can_dlc; i++) {
+			printf(" %i ",f->data[i]);
 		}
 		printf("\n");
 	}
@@ -269,7 +269,7 @@ int readCan(int skt, struct can_frame *f, int lframe, double timeoD) {
 
 	int timeo = (int)(timeoD*1000000.0);
 	//int bytes_read = readn( skt, &f, sizeof(f), timeo );
-	struct	can_frame F;
+//	struct	can_frame F;
 /*
 	F.data[0] = 3;
 	F.data[1] = 3;
@@ -282,20 +282,21 @@ int readCan(int skt, struct can_frame *f, int lframe, double timeoD) {
 // read can with timeout
 //	int bytes_read = readn( skt, &f, sizeof(f), timeo );
 //	int bytes_read = read( skt, &f, sizeof(f));
-	int bytes_read = read( skt, &F, sizeof(F));
+	int bytes_read = read( skt, f, sizeof(*f));
 	if( bytes_read < 0 ) {
 		perror("bad read");
 	} else {
 		//printf("%d bytes read -- %d:%s\n", bytes_read, f->can_id, f->data);
-		printf("%d bytes sent -- ", bytes_read);
+		printf("%d bytes read -- ", bytes_read);
 		int i = 0;
-		printf(" ID=%i DLC=%i Data= ",F.can_id, F.can_dlc);
-		for(i = 0; i < F.can_dlc; i++) {
-			printf(" %d ",F.data[i]);
+		printf(" ID=%i DLC=%i Data= ",f->can_id, f->can_dlc);
+		for(i = 0; i < f->can_dlc; i++) {
+			printf(" %d ",f->data[i]);
 //			printf(" %i ",(int)sizeof(f->data));
 		}
 		printf("\n");
 	}
+
 	return bytes_read;
 }
 
