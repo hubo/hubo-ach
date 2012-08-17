@@ -66,6 +66,8 @@ typedef struct hubo h[1];
 // ach channels
 ach_channel_t chan_num;
 
+int debug = 0;
+
 void stack_prefault(void) {
 	unsigned char dummy[MAX_SAFE_STACK];
 	memset( dummy, 0, MAX_SAFE_STACK );
@@ -212,8 +214,10 @@ int sendCan(int skt, struct can_frame *f) {
 	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( bytes_sent < 0 ) {
 		perror("bad write");
-	} else {
+	} else if( debug == 1 ) {
+
 		printf("%d bytes sent -- ", bytes_sent);
+		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
 		int i = 0;
 		for(i = 0; i < f->can_dlc; i++) {
 			printf(" %i ",f->data[i]);
@@ -285,14 +289,12 @@ int readCan(int skt, struct can_frame *f, int lframe, double timeoD) {
 	int bytes_read = read( skt, f, sizeof(*f));
 	if( bytes_read < 0 ) {
 		perror("bad read");
-	} else {
-		//printf("%d bytes read -- %d:%s\n", bytes_read, f->can_id, f->data);
+	} else if( debug == 1 ) { 
 		printf("%d bytes read -- ", bytes_read);
 		int i = 0;
-		printf(" ID=%i DLC=%i Data= ",f->can_id, f->can_dlc);
+		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
 		for(i = 0; i < f->can_dlc; i++) {
 			printf(" %d ",f->data[i]);
-//			printf(" %i ",(int)sizeof(f->data));
 		}
 		printf("\n");
 	}
@@ -365,7 +367,6 @@ void huboLoop(int vCan) {
 	sprintf( frame.data, "1234578" );
 	frame.can_dlc = strlen( frame.data );
 
-
 	int a = 0;
 	while(1) {
 
@@ -418,14 +419,26 @@ int main(int argc, char **argv) {
 	int vflag = 0;
 	int c;
 /* arguements from command line */
+/*
 	while ((c = getopt (argc, argv, "v")) != -1) {
 		switch(c) {
 			case 'v':
 				vflag = 1;
 				break;
+			case 'd':
+				break;
 			default:
 				abort();
 		}
+	}
+*/
+
+	int i = 1;
+	while(argc > i) {
+		if(strcmp(argv[i], "-d") == 0) {
+			debug = 1;
+		}
+		i++;
 	}
 
 	// RT 
