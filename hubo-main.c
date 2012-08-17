@@ -109,26 +109,87 @@ int openCAN(char* name) {
 }
 
 
-int getEncRef(int jnt, struct hubo h)
+int getEncRef(int jnt, struct hubo *h)
 {
-	return (int)((double)h.joint[jnt].drive/(double)h.joint[jnt].driven/(double)h.joint[jnt].harmonic/(double)h.joint[jnt].enc*2*pi);
+	return (int)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].enc*2.0*pi);
 }
 
-void fSetFet(int jnt, int onOff, struct hubo *h, struct can_frame *f) {
-	
-	//struct can_frame f;
+// 9.1
+void fEnableFet(int jnt, struct hubo *h, struct can_frame *f) {
+	// turn on FETS
 	f->can_id 	= CMD_TXDF;	// Set ID
-	//char data[3];
-	//data[0] 	= (char)h->joint[jnt].jmc;
-	//data[1]		= (char)HipEnable;
-	//data[2]		= (char)onOff;
 	__u8 data[3];
 	data[0] 	= h->joint[jnt].jmc;
 	data[1]		= HipEnable;
-	data[2]		= onOff;
+	data[2]		= 1;
 	sprintf(f->data, "%s", data);	
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
+}
 
+// 5
+void fResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f) {
+	/* Reset Encoder to Zero (REZ: 0x06)
+	CH: Channel No.
+	CH= 0 ~ 4 according to the board.
+	CH= 0xF selects ALL Channel
+	Action:
+	1. Set encoder(s) to Zero.
+	2. Initialize internal parameters.
+	3. Reset Fault and Error Flags.
+	*/
+
+	f->can_id 	= CMD_TXDF;	// Set ID
+	__u8 data[3];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1]		= EncZero;
+	data[2] 	= h->joint[jnt].motNo;
+	sprintf(f->data, "%s", data);	
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
+}
+// 4
+void fGetCurrentValue(int jnt, struct hubo *h, struct can_frame *f) {
+	// get the value of the current in 10mA units A = V/100
+	f->can_id 	= CMD_TXDF;	// Set ID
+	__u8 data[2];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1]		= SendCurrent;
+	sprintf(f->data, "%s", data);	
+	f->can_dlc = 2; //= strlen( data );	// Set DLC
+}
+
+// 2
+void fGetBoardStatusAndErrorFlags(int jnt, struct hubo *h, struct can_frame *f) {
+	// get board status and error flags
+	f->can_id 	= CMD_TXDF;	// Set ID
+	__u8 data[2];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1]		= SendEncoder;
+	sprintf(f->data, "%s", data);	
+	f->can_dlc = 2; //= strlen( data );	// Set DLC
+}
+
+// 3
+void fGetEncoderPos(int jnt, struct hubo *h, struct can_frame *f) {
+	// requests Encoder Pos
+	f->can_id 	= CMD_TXDF;	// Set ID
+	__u8 data[3];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1]		= SendEncoder;
+	data[2]		= 0;
+	sprintf(f->data, "%s", data);	
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
+}
+
+// 9.2
+void fDisableFet(int jnt, struct hubo *h, struct can_frame *f) {
+	// turn off FETS
+	f->can_id 	= CMD_TXDF;	// Set ID
+	__u8 data[3];
+	data[0] 	= h->joint[jnt].jmc;
+	data[1]		= HipEnable;
+	data[2]		= 0;
+	sprintf(f->data, "%s", data);	
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 
 // 28
@@ -268,7 +329,7 @@ int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
 }
 
 
-int readCan(int skt, struct can_frame *f, int lframe, double timeoD) {
+int readCan(int skt, struct can_frame *f, double timeoD) {
 	// note timeo is the time out in seconds
 
 	int timeo = (int)(timeoD*1000000.0);
@@ -284,9 +345,11 @@ int readCan(int skt, struct can_frame *f, int lframe, double timeoD) {
 	F.data[6] = 3;
 */
 // read can with timeout
-//	int bytes_read = readn( skt, &f, sizeof(f), timeo );
+	int bytes_read = readn( skt, f, sizeof(*f), timeo );
 //	int bytes_read = read( skt, &f, sizeof(f));
-	int bytes_read = read( skt, f, sizeof(*f));
+
+// this is the working one with no timeout
+//	int bytes_read = read( skt, f, sizeof(*f));
 	if( bytes_read < 0 ) {
 		perror("bad read");
 	} else if( debug == 1 ) { 
@@ -307,7 +370,7 @@ void hInitilizeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	//int skt = h->socket[h->joint[jnt].can];
 	//sendCan(skt, f);
 	sendCan(h->socket[h->joint[jnt].can], f);
-	readCan(h->socket[h->joint[jnt].can], f, 7, 4);	// 8 bytes to read and 4 sec timeout
+	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 	
 
 }
@@ -372,7 +435,6 @@ void huboLoop(int vCan) {
 
 
 		// wait until next shot
-		//clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 
@@ -380,31 +442,12 @@ void huboLoop(int vCan) {
 		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 		assert( sizeof(H) == fs );
 
-//		fSetFet(RSP, 1, H, &frame);
-//		frame.can_id = 14;
-//		sendCan(skt0, &frame);		
-
-//		hInitilize(RAP, H, &frame);
-
-
 		if(a == 0) {
-			printf("1\n");
-
 //			hIniAll(&H, &frame);
 			a = 1;
 		}
 
-
-
 		hInitilizeBoard(RAP, &H, &frame);
-/*
-		int i = 0;
-		for( i = 0; i < numOfJoints; i++) {
-			printf("i = %i, jnt = %i\n", i, H.joint[i].can);
-		}
-
-*/
-
 
 		t.tv_nsec+=interval;
                 tsnorm(&t);
