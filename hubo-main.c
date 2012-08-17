@@ -213,7 +213,12 @@ int sendCan(int skt, struct can_frame *f) {
 	if( bytes_sent < 0 ) {
 		perror("bad write");
 	} else {
-		//printf("%d bytes sent\n", bytes_sent);
+		printf("%d bytes sent -- ", bytes_sent);
+		int i = 0;
+		for(i = 0; i < sizeof(f->data); i++) {
+			printf(" %i ",(int)f->data[i]);
+		}
+		printf("\n");
 	}
 
 	return bytes_sent;
@@ -259,26 +264,47 @@ int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
 }
 
 
-int readCan(int skt, struct can_frame *f, double timeoD) {
+int readCan(int skt, struct can_frame *f, int lframe, double timeoD) {
 	// note timeo is the time out in seconds
 
 	int timeo = (int)(timeoD*1000000.0);
-	int bytes_read = readn( skt, &f, sizeof(f), timeo );
-	//int bytes_read = read( skt, &f, sizeof(f));
+	//int bytes_read = readn( skt, &f, sizeof(f), timeo );
+	struct	can_frame F;
+/*
+	F.data[0] = 3;
+	F.data[1] = 3;
+	F.data[2] = 3;
+	F.data[3] = 3;
+	F.data[4] = 3;
+	F.data[5] = 3;
+	F.data[6] = 3;
+*/
+// read can with timeout
+//	int bytes_read = readn( skt, &f, sizeof(f), timeo );
+//	int bytes_read = read( skt, &f, sizeof(f));
+	int bytes_read = read( skt, &F, sizeof(F));
 	if( bytes_read < 0 ) {
 		perror("bad read");
 	} else {
-		//printf("%d bytes read -- %d:%s\n", bytes_read, frame.can_id, frame.data);
+		//printf("%d bytes read -- %d:%s\n", bytes_read, f->can_id, f->data);
+		printf("%d bytes sent -- ", bytes_read);
+		int i = 0;
+		printf(" ID=%i DLC=%i Data= ",F.can_id, F.can_dlc);
+		for(i = 0; i < F.can_dlc; i++) {
+			printf(" %d ",F.data[i]);
+//			printf(" %i ",(int)sizeof(f->data));
+		}
+		printf("\n");
 	}
 	return bytes_read;
 }
 
-void hInitilize(int jnt, struct hubo *h, struct can_frame *f) {
+void hInitilizeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	fInitializeBoard(jnt, h, f);
 	//int skt = h->socket[h->joint[jnt].can];
 	//sendCan(skt, f);
 	sendCan(h->socket[h->joint[jnt].can], f);
-//	readCan(h->socket[h->joint[jnt].can], f, 6);
+	readCan(h->socket[h->joint[jnt].can], f, 7, 4);	// 8 bytes to read and 4 sec timeout
 	
 
 }
@@ -289,7 +315,7 @@ void hIniAll(struct hubo *H, struct can_frame *f) {
 	int i = 0;	
 	for( i = 0; i < numOfJoints; i++ ) {
 		if(H->joint[i].active) {
-			hInitilize(i, H, f);
+			hInitilizeBoard(i, H, f);
 			printf("%i\n",i);
 		}
 	}
@@ -362,13 +388,13 @@ void huboLoop(int vCan) {
 		if(a == 0) {
 			printf("1\n");
 
-			hIniAll(&H, &frame);
+//			hIniAll(&H, &frame);
 			a = 1;
 		}
 
 
 
-		//hInitilize(REB, &H, &frame);
+		hInitilizeBoard(RAP, &H, &frame);
 /*
 		int i = 0;
 		for( i = 0; i < numOfJoints; i++) {
