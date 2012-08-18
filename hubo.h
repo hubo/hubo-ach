@@ -108,6 +108,7 @@ struct jnt {
 	uint16_t motNo;	// joint number (on board i.e. 0, 1, 2)
 	uint16_t jntNo;	// what overall number joint is it i.e. what RSP=23
 	double ref;	// reference (rad)
+	uint32_t refEnc; // encoder reference
 	uint16_t drive;	// size of drive wheel
 	uint16_t driven;	// size of driven wheel
 	uint16_t harmonic;// gear ratio of harmonic drive

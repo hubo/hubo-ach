@@ -108,11 +108,45 @@ int openCAN(char* name) {
 	return skt;
 }
 
-
-int getEncRef(int jnt, struct hubo *h)
+/*
+uint32_t getEncRef(int jnt, struct hubo *h)
 {
-	return (int)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].enc*2.0*pi);
+	//return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].enc*2.0*pi);
+	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*pi);
 }
+*/
+
+void setEncRef(int jnt, struct hubo *h) {
+	// set encoder from reference
+	//h->joint[jnt].enc = (uint32_t)(1675545.2);// (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*pi);
+	h->joint[jnt].refEnc = (uint32_t)((double)h->joint[jnt].driven/(double)h->joint[jnt].drive*(double)h->joint[jnt].harmonic*(double)h->joint[jnt].enc*(double)h->joint[jnt].ref/2.0/pi);
+}
+
+
+// Set Ref
+void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
+	// set ref
+	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
+	__u8 data[6];
+
+	uint32_t d 	= 0x00000000;
+	d 		= h->joint[jnt].refEnc;
+	//uint32_t d2	= d;
+	data[0] 	= (uint8_t)( d & 0xff);//	& 0x000000ff); 
+	data[1]		= (uint8_t)((d & 0xff00)   >> 8);// 	& 0x0000ff00) >> 8);
+	data[2]		= (uint8_t)((0xaaaaaa & 0xff0000) >> 16);//	& 0x00ff0000) >> 16);
+	data[3] 	= 0;//4;//(__u8)(d	& 0x000000ff); 
+	data[4]		= 0;//5;//(__u8)((d 	& 0x0000ff00) >> 8);
+	data[5]		= 0;//6;//(__u8)((d 	& 0x00ff0000) >> 16);
+	//sprintf(f->data, "%s", data);
+
+	int i = 0;
+	for( i = 0; i < f->can_dlc; i++) {
+		f->data[i] = data[i];
+	}	
+	f->can_dlc = 6; //= strlen( data );	// Set DLC
+}
+
 
 // 9.1
 void fEnableFet(int jnt, struct hubo *h, struct can_frame *f) {
@@ -272,6 +306,7 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
 *	CAN frame to send
 */
 int sendCan(int skt, struct can_frame *f) {
+	//int bytes_sent = write( skt, f, sizeof(*f) );
 	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( bytes_sent < 0 ) {
 		perror("bad write");
@@ -367,12 +402,14 @@ int readCan(int skt, struct can_frame *f, double timeoD) {
 
 void hInitilizeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	fInitializeBoard(jnt, h, f);
-	//int skt = h->socket[h->joint[jnt].can];
-	//sendCan(skt, f);
 	sendCan(h->socket[h->joint[jnt].can], f);
 	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
-	
+}
 
+void hSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
+	fSetEncRef(jnt, h, f);
+	sendCan(h->socket[h->joint[jnt].can], f);
+//	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
 void hIniAll(struct hubo *H, struct can_frame *f) {
@@ -446,9 +483,12 @@ void huboLoop(int vCan) {
 //			hIniAll(&H, &frame);
 			a = 1;
 		}
-
-		hInitilizeBoard(RAP, &H, &frame);
-
+		//hInitilizeBoard(RAP, &H, &frame);
+	//	H.joint[RAP].enc = 0xffffcc;
+		H.joint[RAP].ref = 0.001;
+		setEncRef(RAP,&H);
+		printf("ref = %i\n",H.joint[RAP].refEnc);
+		hSetEncRef(RAP, &H, &frame);
 		t.tv_nsec+=interval;
                 tsnorm(&t);
 	}
