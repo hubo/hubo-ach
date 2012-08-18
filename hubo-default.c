@@ -356,7 +356,54 @@ void setDefaults() {
 	H.joint[LF3].can = 1;
 	H.joint[LF4].can = 1;
 	H.joint[LF5].can = 1;
-	
+
+
+        /* numMot */
+        H.joint[RHY].numMot = 2;
+        H.joint[RHR].numMot = 2;
+        H.joint[RHP].numMot = 1;
+        H.joint[RKN].numMot = 1;
+        H.joint[RAP].numMot = 2;
+        H.joint[RAR].numMot = 2;
+
+        H.joint[LHY].numMot = 2;
+        H.joint[LHR].numMot = 2;
+        H.joint[LHP].numMot = 1;
+        H.joint[LKN].numMot = 1;
+        H.joint[LAP].numMot = 2;
+        H.joint[LAR].numMot = 2;
+
+        H.joint[RSP].numMot = 2;
+        H.joint[RSR].numMot = 2;
+        H.joint[RSY].numMot = 2;
+        H.joint[REB].numMot = 2;
+        H.joint[RWY].numMot = 2;
+        H.joint[RWP].numMot = 2;
+
+        H.joint[LSP].numMot = 2;
+        H.joint[LSR].numMot = 2;
+        H.joint[LSY].numMot = 2;
+        H.joint[LEB].numMot = 2;
+        H.joint[LWY].numMot = 2;
+        H.joint[LWP].numMot = 2;
+
+        H.joint[NKY].numMot = 3;
+        H.joint[NK1].numMot = 3;
+        H.joint[NK2].numMot = 3;
+        H.joint[WST].numMot = 1;
+
+        H.joint[RF1].numMot = 5;
+        H.joint[RF2].numMot = 5;
+        H.joint[RF3].numMot = 5;
+        H.joint[RF4].numMot = 5;
+        H.joint[RF5].numMot = 5;
+
+        H.joint[LF1].numMot = 5;
+        H.joint[LF2].numMot = 5;
+        H.joint[LF3].numMot = 5;
+        H.joint[LF4].numMot = 5;
+        H.joint[LF5].numMot = 5;
+
 
 	/* JMC */
 	H.joint[RHY].jmc = JMC0;
@@ -496,6 +543,51 @@ void setDefaults() {
 	H.joint[LF4].dir = 1;
 	H.joint[LF5].dir = 1;
 
+        /* JMC LOCATIONS */
+        H.driver[JMC0].jmc[H.joint[RHY].motNo] = RHY;
+        H.driver[JMC0].jmc[H.joint[RHR].motNo] = RHR;
+        H.driver[JMC1].jmc[H.joint[RHP].motNo] = RHP;
+        H.driver[JMC2].jmc[H.joint[RKN].motNo] = RKN;
+        H.driver[JMC3].jmc[H.joint[RAP].motNo] = RAP;
+        H.driver[JMC3].jmc[H.joint[RAR].motNo] = RAR;
+
+        H.driver[JMC4].jmc[H.joint[LHY].motNo] = LHY;
+        H.driver[JMC4].jmc[H.joint[LHR].motNo] = LHR;
+        H.driver[JMC5].jmc[H.joint[LHP].motNo] = LHP;
+        H.driver[JMC6].jmc[H.joint[LKN].motNo] = LKN;
+        H.driver[JMC7].jmc[H.joint[LAP].motNo] = LAP;
+        H.driver[JMC7].jmc[H.joint[LAR].motNo] = LAR;
+
+        H.driver[JMC8].jmc[H.joint[RSP].motNo] = RSP;
+        H.driver[JMC8].jmc[H.joint[RSR].motNo] = RSR;
+        H.driver[JMC9].jmc[H.joint[RSY].motNo] = RSY;
+        H.driver[JMC9].jmc[H.joint[REB].motNo] = REB;
+        H.driver[EJMC0].jmc[H.joint[RWY].motNo] = RWY;
+        H.driver[EJMC0].jmc[H.joint[RWP].motNo] = RWP;
+
+        H.driver[JMC10].jmc[H.joint[LSP].motNo] = LSP;
+        H.driver[JMC10].jmc[H.joint[LSR].motNo] = LSR;
+        H.driver[JMC11].jmc[H.joint[LSY].motNo] = LSY;
+        H.driver[JMC11].jmc[H.joint[LEB].motNo] = LEB;
+        H.driver[EJMC1].jmc[H.joint[LWY].motNo] = LWY;
+        H.driver[EJMC1].jmc[H.joint[LWP].motNo] = LWP;
+
+        H.driver[EJMC2].jmc[H.joint[NKY].motNo] = NKY;
+        H.driver[EJMC2].jmc[H.joint[NK1].motNo] = NK1;
+        H.driver[EJMC2].jmc[H.joint[NK2].motNo] = NK2;
+        H.driver[EJMC3].jmc[H.joint[WST].motNo] = WST;
+
+        H.driver[EJMC4].jmc[H.joint[RF1].motNo] = RF1;
+        H.driver[EJMC4].jmc[H.joint[RF2].motNo] = RF2;
+        H.driver[EJMC4].jmc[H.joint[RF3].motNo] = RF3;
+        H.driver[EJMC4].jmc[H.joint[RF4].motNo] = RF4;
+        H.driver[EJMC4].jmc[H.joint[RF5].motNo] = RF5;
+
+        H.driver[EJMC5].jmc[H.joint[LF1].motNo] = LF1;
+        H.driver[EJMC5].jmc[H.joint[LF2].motNo] = LF2;
+        H.driver[EJMC5].jmc[H.joint[LF3].motNo] = LF3;
+        H.driver[EJMC5].jmc[H.joint[LF4].motNo] = LF4;
+        H.driver[EJMC5].jmc[H.joint[LF5].motNo] = LF5; 
 //	hubo H = {h};
 	ach_put(&chan_num, &H, sizeof(H));
 

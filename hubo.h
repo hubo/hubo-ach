@@ -103,6 +103,10 @@
 
 
 
+struct jmcDriver{
+	uint8_t jmc[5]; // other motors on the same drive
+}__attribute__((packed));
+
 
 struct jnt {
 	uint16_t motNo;	// joint number (on board i.e. 0, 1, 2)
@@ -118,6 +122,7 @@ struct jnt {
 	uint16_t jmc;	// motor controller number
 	uint8_t can;	// can channel
 	uint8_t active; 	// checks if the joint is active or not
+	uint8_t numMot;		// number of motors 
 }__attribute__((packed));
 
 struct sensFt {
@@ -143,8 +148,8 @@ struct hubo {
 	struct 	sensImu imu;	// imu
 	struct 	sensFt ft[4];	// ft
 	uint8_t	socket[4];	// can channel
+	struct 	jmcDriver driver[0x40];	// motor driver conneciton info
 }__attribute__((packed));
-
 
 
 

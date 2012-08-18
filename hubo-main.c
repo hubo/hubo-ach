@@ -122,28 +122,38 @@ void setEncRef(int jnt, struct hubo *h) {
 	h->joint[jnt].refEnc = (uint32_t)((double)h->joint[jnt].driven/(double)h->joint[jnt].drive*(double)h->joint[jnt].harmonic*(double)h->joint[jnt].enc*(double)h->joint[jnt].ref/2.0/pi);
 }
 
-
+void setEncRefAll( struct hubo *h) {
+	int i = 0;
+	for( i = 0; i < numOfJoints; i++) {	
+		setEncRef(i,h);
+	}
+}
 // Set Ref
 void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
 	__u8 data[6];
+	uint8_t jmc = h->joint[jnt].jmc;
+	if(h->joint[jnt].numMot == 2) {
+		__u8 m0 = h->driver[jmc].jmc[0];
+		__u8 m1 = h->driver[jmc].jmc[1];
+//		printf("m0 = %i, m1= %i \n",m0, m1);
+		f->data[0] =    (uint8_t)h->joint[m0].refEnc;
+		f->data[1] = 	(uint8_t)((h->joint[m0].refEnc & 0x0000ff00) >> 8);
+		f->data[2] = 	(uint8_t)((h->joint[m0].refEnc & 0x007f0000) >> 16);
+		f->data[3] =    (uint8_t)h->joint[m1].refEnc;
+		f->data[4] = 	(uint8_t)((h->joint[m1].refEnc & 0x0000ff00) >> 8);
+		f->data[5] = 	(uint8_t)((h->joint[m1].refEnc & 0x007f0000) >> 16);
 
-	uint32_t d 	= 0x00000000;
-	d 		= h->joint[jnt].refEnc;
-	//uint32_t d2	= d;
-	data[0] 	= (uint8_t)( d & 0xff);//	& 0x000000ff); 
-	data[1]		= (uint8_t)((d & 0xff00)   >> 8);// 	& 0x0000ff00) >> 8);
-	data[2]		= (uint8_t)((0xaaaaaa & 0xff0000) >> 16);//	& 0x00ff0000) >> 16);
-	data[3] 	= 0;//4;//(__u8)(d	& 0x000000ff); 
-	data[4]		= 0;//5;//(__u8)((d 	& 0x0000ff00) >> 8);
-	data[5]		= 0;//6;//(__u8)((d 	& 0x00ff0000) >> 16);
+		if(h->driver[jmc].jmc[0] < 0) {
+			f->data[2] = f->data[2] | 0x80;
+		}
+		if(h->driver[jmc].jmc[1] < 0) {
+			f->data[5] = f->data[5] | 0x80;
+		}
+	}
 	//sprintf(f->data, "%s", data);
 
-	int i = 0;
-	for( i = 0; i < f->can_dlc; i++) {
-		f->data[i] = data[i];
-	}	
 	f->can_dlc = 6; //= strlen( data );	// Set DLC
 }
 
@@ -153,10 +163,10 @@ void fEnableFet(int jnt, struct hubo *h, struct can_frame *f) {
 	// turn on FETS
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
-	data[0] 	= h->joint[jnt].jmc;
-	data[1]		= HipEnable;
-	data[2]		= 1;
-	sprintf(f->data, "%s", data);	
+	f->data[0] 	= h->joint[jnt].jmc;
+	f->data[1]		= HipEnable;
+	f->data[2]		= 1;
+	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 
@@ -174,10 +184,10 @@ void fResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f) {
 
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
-	data[0] 	= h->joint[jnt].jmc;
-	data[1]		= EncZero;
-	data[2] 	= h->joint[jnt].motNo;
-	sprintf(f->data, "%s", data);	
+	f->data[0] 	= h->joint[jnt].jmc;
+	f->data[1]		= EncZero;
+	f->data[2] 	= h->joint[jnt].motNo;
+	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 // 4
@@ -185,9 +195,9 @@ void fGetCurrentValue(int jnt, struct hubo *h, struct can_frame *f) {
 	// get the value of the current in 10mA units A = V/100
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[2];
-	data[0] 	= h->joint[jnt].jmc;
-	data[1]		= SendCurrent;
-	sprintf(f->data, "%s", data);	
+	f->data[0] 	= h->joint[jnt].jmc;
+	f->data[1]		= SendCurrent;
+	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 2; //= strlen( data );	// Set DLC
 }
 
@@ -196,9 +206,9 @@ void fGetBoardStatusAndErrorFlags(int jnt, struct hubo *h, struct can_frame *f) 
 	// get board status and error flags
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[2];
-	data[0] 	= h->joint[jnt].jmc;
-	data[1]		= SendEncoder;
-	sprintf(f->data, "%s", data);	
+	f->data[0] 	= h->joint[jnt].jmc;
+	f->data[1]		= SendEncoder;
+	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 2; //= strlen( data );	// Set DLC
 }
 
@@ -207,10 +217,10 @@ void fGetEncoderPos(int jnt, struct hubo *h, struct can_frame *f) {
 	// requests Encoder Pos
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
-	data[0] 	= h->joint[jnt].jmc;
-	data[1]		= SendEncoder;
-	data[2]		= 0;
-	sprintf(f->data, "%s", data);	
+	f->data[0] 	= h->joint[jnt].jmc;
+	f->data[1]		= SendEncoder;
+	f->data[2]		= 0;
+	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 
@@ -219,10 +229,10 @@ void fDisableFet(int jnt, struct hubo *h, struct can_frame *f) {
 	// turn off FETS
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
-	data[0] 	= h->joint[jnt].jmc;
-	data[1]		= HipEnable;
-	data[2]		= 0;
-	sprintf(f->data, "%s", data);	
+	f->data[0] 	= h->joint[jnt].jmc;
+	f->data[1]		= HipEnable;
+	f->data[2]		= 0;
+	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 
@@ -230,11 +240,11 @@ void fDisableFet(int jnt, struct hubo *h, struct can_frame *f) {
 void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[2];
-	data[0] 	= h->joint[jnt].jmc;
+	f->data[0] 	= h->joint[jnt].jmc;
 	printf("jmc = %i\n",data[0]);
 	//data[0] 	= (uint8_t)88;
-	data[1] 	= 0xFA;
-	sprintf(f->data, "%s", data);
+	f->data[1] 	= 0xFA;
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 2;
 }
 
@@ -242,10 +252,10 @@ void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 void fEnableMotorDriver(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[3];
-	data[0] 	= (uint8_t)h->joint[jnt].jmc;
-	data[1] 	= 0x0B;
-	data[2] 	= 0x01;
-	sprintf(f->data, "%s", data);
+	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	f->data[1] 	= 0x0B;
+	f->data[2] 	= 0x01;
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 3;
 }
 
@@ -253,9 +263,9 @@ void fEnableMotorDriver(int jnt, struct hubo *h, struct can_frame *f) {
 void fEnableFeedbackController(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[2];
-	data[0] 	= (uint8_t)h->joint[jnt].jmc;
-	data[1] 	= 0x0E;
-	sprintf(f->data, "%s", data);
+	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	f->data[1] 	= 0x0E;
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 2;
 }
 
@@ -263,9 +273,9 @@ void fEnableFeedbackController(int jnt, struct hubo *h, struct can_frame *f) {
 void fDisableFeedbackController(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[2];
-	data[0] 	= (uint8_t)h->joint[jnt].jmc;
-	data[1] 	= 0x0F;
-	sprintf(f->data, "%s", data);
+	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	f->data[1] 	= 0x0F;
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 2;
 }
 
@@ -273,10 +283,10 @@ void fDisableFeedbackController(int jnt, struct hubo *h, struct can_frame *f) {
 void fSetPositionController(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[3];
-	data[0] 	= (uint8_t)h->joint[jnt].jmc;
-	data[1] 	= 0x10;
-	data[2]		= 0x00;	// position control
-	sprintf(f->data, "%s", data);
+	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	f->data[1] 	= 0x10;
+	f->data[2]		= 0x00;	// position control
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 3;
 }
 
@@ -284,15 +294,15 @@ void fSetPositionController(int jnt, struct hubo *h, struct can_frame *f) {
 void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[8];
-	data[0] 	= (uint8_t)h->joint[jnt].jmc;
-	data[1] 	= 0x11;
-	data[2] 	= ((uint8_t)h->joint[jnt].motNo << 4)|2; // set /DT high
-	data[3]  	= 0x00;
-	data[4]  	= 0x00;
-	data[5]  	= 0x00;
-	data[6]  	= 0x00;
-	data[7]  	= 0x00;
-	sprintf(f->data, "%s", data);
+	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	f->data[1] 	= 0x11;
+	f->data[2] 	= ((uint8_t)h->joint[jnt].motNo << 4)|2; // set /DT high
+	f->data[3]  	= 0x00;
+	f->data[4]  	= 0x00;
+	f->data[5]  	= 0x00;
+	f->data[6]  	= 0x00;
+	f->data[7]  	= 0x00;
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 8;
 }
 
@@ -469,25 +479,25 @@ void huboLoop(int vCan) {
 
 	int a = 0;
 	while(1) {
-
-
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
-
-
-
+		
+		/* Get latest ACH message */
 		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 		assert( sizeof(H) == fs );
+
+
 
 		if(a == 0) {
 //			hIniAll(&H, &frame);
 			a = 1;
 		}
-		//hInitilizeBoard(RAP, &H, &frame);
-	//	H.joint[RAP].enc = 0xffffcc;
-		H.joint[RAP].ref = 0.001;
-		setEncRef(RAP,&H);
-		printf("ref = %i\n",H.joint[RAP].refEnc);
+		H.joint[RAP].ref = -0.001;
+		H.joint[RAR].ref = 0.001;
+		//setEncRef(RAP,&H);
+		//setEncRef(RAR,&H);
+		setEncRefAll(&H);
+//		printf("ref = %i\n",H.joint[RAP].refEnc);
 		hSetEncRef(RAP, &H, &frame);
 		t.tv_nsec+=interval;
                 tsnorm(&t);
