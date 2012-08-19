@@ -58,12 +58,14 @@ typedef struct {
 } COMMAND;
 
 
+struct console C;
+
 COMMAND commands[] = {
   { "cd", com_cd, "Change to directory DIR" },
   { (char *)NULL, (Function *)NULL, (char *)NULL }
 };
 
-int com_cd() {
+int com_cd(char* aa) {
 	printf("dan\n");
 	return 1;
 }
@@ -152,7 +154,7 @@ stripwhite (string)
   return s;
 }
 
-void consoleLoop(struct hubo *H) {
+void consoleLoop(struct console *C) {
 /* gui for controling basic features of the hubo  */
         printf("hubo-ach - interface 2012-08-18\n");
 //	ach_put(&chan_num, &H, sizeof(H));
@@ -175,21 +177,20 @@ void consoleLoop(struct hubo *H) {
 	while(fconsole) {
 	 line = readline ("hubo-ach: ");
 
-      if (!line)
-        break;
+      	if (!line)
+       	 	break;
 
       /* Remove leading and trailing whitespace from the line.
          Then, if there is anything left, add it to the history list
          and execute it. */
-      s = stripwhite (line);
+      	s = stripwhite (line);
 
-      if (*s)
-        {
+      	if (*s){
           add_history (s);
           execute_line (s);
         }
 
-      free (line);
+      	free (line);
 
 	}
 }
@@ -199,16 +200,16 @@ void consoleLoop(struct hubo *H) {
 int main(int argc, char **argv){
 	(void) argc; (void)argv;
 
-	struct hubo H;
+	//struct hubo C;
 	size_t fs;
 	// open ach channel
-        int r = ach_open(&chan_num, "hubo", NULL);
+        int r = ach_open(&chan_num, "hubo-ach-console", NULL);
         assert( ACH_OK == r );
 
-	r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(H) == fs );
+	r = ach_get( &chan_num, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(C) == fs );
 	
-	consoleLoop(&H);
+	consoleLoop(&C);
 	printf("*** Exiting Hubo-Ach-Console ***\n");
 	return 0;
 
