@@ -14,6 +14,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <math.h>
+#include <fcntl.h>
+
 
 #include <string.h>
 #include <inttypes.h>
@@ -31,6 +33,7 @@
 
 // ach channels
 ach_channel_t chan_num;
+ach_channel_t chan_num_console;
 
 void setPosZeros() {
 	// open ach channel
@@ -49,6 +52,20 @@ void setPosZeros() {
 	}
 	ach_put(&chan_num, &H, sizeof(H));
 }
+
+void setConsoleFlags() {
+	struct console C;
+	size_t fs =0;
+	int r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+	//printf("fs = %i, H = %i\n",fs, sizeof(H));
+	assert( sizeof(C) == fs );
+	int i = 0;
+	for( i = 0; i < numOfJoints; i++ ) {
+		C.refSet[i] = 0;
+	}
+	ach_put(&chan_num_console, &C, sizeof(C));
+}
+
 
 void setActive() {
 
@@ -111,6 +128,11 @@ void setActive() {
 	ach_put(&chan_num, &H, sizeof(H));
 }
 
+void setName( struct hubo *h, int mot, char* name ) {
+	sprintf(h->joint[mot].name , "%s" , name ); 
+//	h->joint[mot].name = name; 
+}
+
 void setDefaults() {
 	// open ach channel
 //        int r = ach_open(&chan_num, "hubo", NULL);
@@ -120,6 +142,161 @@ void setDefaults() {
 	size_t fs;
 	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H) == fs );
+
+	/* Names */
+//	int i = 0;
+//	for(i = 0; i < numOfJoints; i++) {	
+//       	strncpy(H.joint[i].name , "xxx" , 3);
+//	}
+        
+
+        setName(&H , RHY , "RHY"  );
+        setName(&H , RHR , "RHR"  );
+        setName(&H , RHP , "RHP"  );
+        setName(&H , RKN , "RKN"  );
+        setName(&H , RAP , "RAP"  );
+        setName(&H , RAR , "RAR"  );
+
+        setName(&H , LHY , "LHY"  );
+        setName(&H , LHR , "LHR"  );
+        setName(&H , LHP , "LHP"  );
+        setName(&H , LKN , "LKN"  );
+        setName(&H , LAP , "LAP"  );
+        setName(&H , LAR , "LAR"  );
+
+        setName(&H , RSP , "RSP"  );
+        setName(&H , RSR , "RSR"  );
+        setName(&H , RSY , "RSY"  );
+        setName(&H , REB , "REB"  );
+        setName(&H , RWY , "RWY"  );
+        setName(&H , RWP , "RWP"  );
+
+        setName(&H , LSP , "LSP"  );
+        setName(&H , LSR , "LSR"  );
+        setName(&H , LSY , "LSY"  );
+        setName(&H , LEB , "LEB"  );
+        setName(&H , LWY , "LWY"  );
+        setName(&H , LWP , "LWP"  );
+
+        setName(&H , NKY , "NKY"  );
+        setName(&H , NK1 , "NK1"  );
+        setName(&H , NK2 , "NK2"  );
+        setName(&H , WST , "WST"  );
+
+        setName(&H , RF1 , "RF1"  );
+        setName(&H , RF2 , "RF2"  );
+        setName(&H , RF3 , "RF3"  );
+        setName(&H , RF4 , "RF4"  );
+        setName(&H , RF5 , "RF5"  );
+
+        setName(&H , LF1 , "LF1"  );
+        setName(&H , LF2 , "LF2"  );
+        setName(&H , LF3 , "LF3"  );
+        setName(&H , LF4 , "LF4"  );
+        setName(&H , LF5 , "LF5"  );
+
+
+
+
+/* 
+	strncpy(H.joint[RHY].name , "RHY" , 3);
+	strncpy(H.joint[RHR].name , "RHR" , 3);
+        strncpy(H.joint[RHP].name , "RHP" , 3);
+        strncpy(H.joint[RKN].name , "RKN" , 3);
+        strncpy(H.joint[RAP].name , "RAP" , 3);
+        strncpy(H.joint[RAR].name , "RAR" , 3);
+
+        strncpy(H.joint[LHY].name , "LHY" , 3);
+        strncpy(H.joint[LHR].name , "LHR" , 3);
+        strncpy(H.joint[LHP].name , "LHP" , 3);
+        strncpy(H.joint[LKN].name , "LKN" , 3);
+        strncpy(H.joint[LAP].name , "LAP" , 3);
+        strncpy(H.joint[LAR].name , "LAR" , 3);
+
+        strncpy(H.joint[RSP].name , "RSP" , 3);
+        strncpy(H.joint[RSR].name , "RSR" , 3);
+        strncpy(H.joint[RSY].name , "RSY" , 3);
+        strncpy(H.joint[REB].name , "REB" , 3);
+        strncpy(H.joint[RWY].name , "RWY" , 3);
+        strncpy(H.joint[RWP].name , "RWP" , 3);
+
+        strncpy(H.joint[LSP].name , "LSP" , 3);
+        strncpy(H.joint[LSR].name , "LSR" , 3);
+        strncpy(H.joint[LSY].name , "LSY" , 3);
+        strncpy(H.joint[LEB].name , "LEB" , 3);
+        strncpy(H.joint[LWY].name , "LWY" , 3);
+        strncpy(H.joint[LWP].name , "LWP" , 3);
+
+        strncpy(H.joint[NKY].name , "NKY" , 3);
+        strncpy(H.joint[NK1].name , "NK1" , 3);
+        strncpy(H.joint[NK2].name , "NK2" , 3);
+        strncpy(H.joint[WST].name , "WST" , 3);
+
+        strncpy(H.joint[RF1].name , "RF1" , 3);
+        strncpy(H.joint[RF2].name , "RF2" , 3);
+        strncpy(H.joint[RF3].name , "RF3" , 3);
+        strncpy(H.joint[RF4].name , "RF4" , 3);
+        strncpy(H.joint[RF5].name , "RF5" , 3);
+
+        strncpy(H.joint[LF1].name , "LF1" , 3);
+        strncpy(H.joint[LF2].name , "LF2" , 3);
+        strncpy(H.joint[LF3].name , "LF3" , 3);
+        strncpy(H.joint[LF4].name , "LF4" , 3);
+        strncpy(H.joint[LF5].name , "LF5" , 3);
+
+*/
+/*
+        H.joint[RHY].name = "RHY";
+        H.joint[RHR].name = "RHR";
+        H.joint[RHP].name = "RHP";
+        H.joint[RKN].name = "RKN";
+        H.joint[RAP].name = "RAP";
+        H.joint[RAR].name = "RAR";
+
+        H.joint[LHY].name = "LHY";
+        H.joint[LHR].name = "LHR";
+        H.joint[LHP].name = "LHP";
+        H.joint[LKN].name = "LKN";
+        H.joint[LAP].name = "LAP";
+        H.joint[LAR].name = "LAR";
+
+        H.joint[RSP].name = "RSP";
+        H.joint[RSR].name = "RSR";
+        H.joint[RSY].name = "RSY";
+        H.joint[REB].name = "REB";
+        H.joint[RWY].name = "RWY";
+        H.joint[RWP].name = "RWP";
+
+        H.joint[LSP].name = "LSP";
+        H.joint[LSR].name = "LSR";
+        H.joint[LSY].name = "LSY";
+        H.joint[LEB].name = "LEB";
+        H.joint[LWY].name = "LWY";
+        H.joint[LWP].name = "LWP";
+
+        H.joint[NKY].name = "NKY";
+        H.joint[NK1].name = "NK1";
+        H.joint[NK2].name = "NK2";
+        H.joint[WST].name = "WST";
+
+        H.joint[RF1].name = "RF1";
+        H.joint[RF2].name = "RF2";
+        H.joint[RF3].name = "RF3";
+        H.joint[RF4].name = "RF4";
+        H.joint[RF5].name = "RF5";
+
+        H.joint[LF1].name = "LF1";
+        H.joint[LF2].name = "LF2";
+        H.joint[LF3].name = "LF3";
+        H.joint[LF4].name = "LF4";
+        H.joint[LF5].name = "LF5";
+
+	int i = 0;
+	for( i = 0; i < numOfJoints; i++) {
+		printf(H.joint[i].name);
+		printf(" ");
+	}
+*/
 
 	/* Drive wheels */
 	H.joint[RHY].drive = 10;
@@ -603,16 +780,24 @@ pause();
 }
 
 
+
+
 int main(int argc, char **argv){
 	(void) argc; (void)argv;
 
 	struct hubo H;
+	struct console C;
 	size_t fs;
 	// open ach channel
         int r = ach_open(&chan_num, "hubo", NULL);
         assert( ACH_OK == r );
 
+        r = ach_open(&chan_num_console, "hubo-ach-console", NULL);
+        assert( ACH_OK == r );
+	
 	ach_put(&chan_num, &H, sizeof(H));
+	ach_put(&chan_num_console, &C, sizeof(C));
+
 	setDefaults();
 	setPosZeros();
 	setActive();

@@ -99,6 +99,7 @@
 
 #define		numOfJoints	50		// 	the size of the array
 						//	for the joints
+#define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
 
@@ -118,7 +119,7 @@ struct jnt {
 	uint16_t harmonic;// gear ratio of harmonic drive
 	uint16_t enc;	// encoder size
 	uint8_t dir;	// direction
-	char *name;	// name
+	char name[4];	// name
 	uint16_t jmc;	// motor controller number
 	uint8_t can;	// can channel
 	uint8_t active; 	// checks if the joint is active or not
@@ -151,5 +152,13 @@ struct hubo {
 	struct 	jmcDriver driver[0x40];	// motor driver conneciton info
 }__attribute__((packed));
 
+struct console {
+	uint8_t refSet[50];
+}__attribute__((packed));
 
-
+/*
+struct hubo-feedforward {
+	// feed forward struct for ach
+	struct
+}__attribute__((packed));
+*/

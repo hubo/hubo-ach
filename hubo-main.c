@@ -422,6 +422,22 @@ void hSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
+void hSetEncRefAll(struct hubo *h, struct can_frame *f) {
+	uint8_t done[numOfJmc] = {0};
+	int i = 0; //numOfJoints;
+	for( i = 0; i < numOfJoints; i++ ) {
+		//if(h->joint[i].active & h->joint[i].can == 0 & done[h->joint[i].jmc] != 1) {
+		if(h->joint[i].active & h->joint[i].can == 0 ) {
+			if( done[h->joint[i].jmc] != 1 ) {
+				hSetEncRef(i, h, f);	
+				done[h->joint[i].jmc] = 1;
+			}
+		}
+	}
+}
+
+
+
 void hIniAll(struct hubo *H, struct can_frame *f) {
 // --std=c99
 		printf("2\n");
@@ -469,6 +485,8 @@ void huboLoop(int vCan) {
 	struct timespec t;
 	int interval = 500000000; // 2hz (0.5 sec)
 	//int interval = 10000000; // 100 hz (0.01 sec)
+	//int interval = 5000000; // 200 hz (0.005 sec)
+	//int interval = 2000000; // 500 hz (0.002 sec)
 	
 	// get current time
         //clock_gettime( CLOCK_MONOTONIC,&t);
@@ -496,9 +514,15 @@ void huboLoop(int vCan) {
 		H.joint[RAR].ref = 0.001;
 		//setEncRef(RAP,&H);
 		//setEncRef(RAR,&H);
-		setEncRefAll(&H);
 //		printf("ref = %i\n",H.joint[RAP].refEnc);
-		hSetEncRef(RAP, &H, &frame);
+
+
+
+		/* Set all references to encoder then send to CAN bus*/
+		setEncRefAll(&H);
+		hSetEncRefAll(&H, &frame);
+		//hSetEncRef(RAP, &H, &frame);
+	ach_put( &chan_num, &H, sizeof(H));
 		t.tv_nsec+=interval;
                 tsnorm(&t);
 	}
@@ -506,6 +530,10 @@ void huboLoop(int vCan) {
 
 }
 
+void huboConsole() {
+	/* gui for controling basic features of the hubo  */
+	printf("hubo-ach - interface 2012-08-18\n");
+}
 
 int main(int argc, char **argv) {
 
@@ -570,6 +598,12 @@ int main(int argc, char **argv) {
 	printf("hubo main loop started\n");
 */
 
+/*
+	int pid_hubo_gui = fork();
+	assert(pid_hubo_gui >= 0);
+	if(!pid_hubo_gui) huboConsole();
+*/
+	
 	huboLoop(vflag);
 	pause();
 	return 0;
