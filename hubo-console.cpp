@@ -51,8 +51,17 @@ void hubo_update(struct hubo *h);
 int name2mot(char*s, struct hubo *h);
 double hubo_get(char*s, struct hubo *h);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
-char* cmd [] ={ "initialize","zero","fet","ctrl","enczero", "goto","get","test","update", "quit", " " };
- 
+char* cmd [] ={ "initialize","zero","fet",
+		"ctrl","enczero", "goto","get","test","update", "quit", " "}; //,
+/*
+		"get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR", 
+		"get LHY", "get LHR", "get LHP", "get LKN", "get LAP", "get LAR", 	
+		"get RSP", "get RSR", "get RSY", "get REB", "get RWY", "get RWP", 
+		"get LSP", "get LSR", "get LSY", "get LEB", "get LWY", "get LWP", 
+		"get NKY", "get NK1", "get NK2", "get WST", "get RF1", "get RF2", 
+		"get RF3", "get RF4", "get RF5", "get LF1", "get LF2", "get LF3", 
+		"get LF4", "get LF5"};
+ */
 
 int main() {
 	printf("\n");
