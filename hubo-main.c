@@ -95,7 +95,7 @@ void hMotorDriverOnOff(int jnt, struct hubo *h, struct can_frame *f, int onOff);
 void hFeedbackControllerOnOff(int jnt, struct hubo *h, struct can_frame *f, int onOff);
 void hResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f);
 void huboConsole(struct hubo *h, struct console *c, struct can_frame *f);
-
+void hGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f);
 
 
 
@@ -378,7 +378,7 @@ void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[2];
 	f->data[0] 	= h->joint[jnt].jmc;
-	printf("jmc = %i\n",data[0]);
+//	printf("jmc = %i\n",data[0]);
 	//data[0] 	= (uint8_t)88;
 	f->data[1] 	= 0xFA;
 	//sprintf(f->data, "%s", data);
@@ -438,13 +438,13 @@ void fSetPositionController(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_dlc = 3;
 }
 
-// 16
+// 16  home
 void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[8];
 	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
 	f->data[1] 	= 0x11;
-	f->data[2] 	= ((uint8_t)h->joint[jnt].motNo << 4)|2; // set /DT high
+	f->data[2] 	= (((uint8_t)h->joint[jnt].motNo+1) << 4)|2; // set /DT high
 	f->data[3]  	= 0x00;
 	f->data[4]  	= 0x00;
 	f->data[5]  	= 0x00;
@@ -452,6 +452,12 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
 	f->data[7]  	= 0x00;
 	//sprintf(f->data, "%s", data);
 	f->can_dlc = 8;
+//	printf("go home %i\n", ((uint8_t)h->joint[jnt].motNo << 4)|2);
+}
+
+void hGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
+	fGotoLimitAndGoOffset(jnt, h, f);
+	sendCan(h->socket[h->joint[jnt].can], f);
 }
 
 
@@ -613,7 +619,7 @@ void hFeedbackControllerOnOff(int jnt, struct hubo *h, struct can_frame *f, int 
 		fEnableFeedbackController(jnt, h, f);
 		sendCan(h->socket[h->joint[jnt].can], f); }
 	else if(onOff == 0) { // turn off FET
-		fEnableFeedbackController(jnt, h, f);
+		fDisableFeedbackController(jnt, h, f);
 		sendCan(h->socket[h->joint[jnt].can], f); }
 }
 
@@ -628,35 +634,47 @@ void huboConsole(struct hubo *h, struct console *c, struct can_frame *f) {
 	int r = 0;
 	size_t fs;
 	int status = 0;
-	printf("here\n");
 	while ( status == 0 | status == ACH_OK | status == ACH_MISSED_FRAME ) {
 		/* get oldest ach message */
-	printf("here1\n");
 		//status = ach_get( &chan_num, &c, sizeof(c), &fs, NULL, 0 );
-		status = ach_get( &chan_num, &c, sizeof(c), &fs, NULL, ACH_O_LAST );
-	printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
+		//status = ach_get( &chan_num_console, c, sizeof(*c), &fs, NULL, ACH_O_LAST );
+		status = ach_get( &chan_num_console, c, sizeof(*c), &fs, NULL, 0 );
+	//printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
+//	printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
+		if( status == ACH_STALE_FRAMES) {
+			break; }
+		else {
 		//assert( sizeof(c) == fs );
 		
 //		if ( status != 0 & status != ACH_OK & status != ACH_MISSED_FRAME ) {
 //			break; }
 
-		switch (c->cmd[0]) {
-			case HUBO_JMC_INI:
-				hInitializeBoard(c->cmd[1],h,f);
-			case HUBO_FET_ON_OFF:
-				hMotorDriverOnOff(c->cmd[1],h,f,c->cmd[2]);
-			case HUBO_CTRL_ON_OFF:
-				hFeedbackControllerOnOff(c->cmd[1],h,f,c->cmd[2]);
-			case HUBO_ZERO_ENC:
-				hResetEncoderToZero(c->cmd[1],h,f);
-			case HUBO_JMC_BEEP:
-				printf("test\n");
-				hSetBeep(c->cmd[1],h,f,c->val[0]);
-			case HUBO_GOTO_REF:
-			default:
-				break;
+			switch (c->cmd[0]) {
+				case HUBO_JMC_INI:
+					hInitializeBoard(c->cmd[1],h,f);
+					break;
+				case HUBO_FET_ON_OFF:
+//					printf("fet on\n");
+					hMotorDriverOnOff(c->cmd[1],h,f,c->cmd[2]);
+					break;
+				case HUBO_CTRL_ON_OFF:
+					hFeedbackControllerOnOff(c->cmd[1],h,f,c->cmd[2]);
+					break;
+				case HUBO_ZERO_ENC:
+					hResetEncoderToZero(c->cmd[1],h,f);
+					break;
+				case HUBO_JMC_BEEP:
+					hSetBeep(c->cmd[1],h,f,c->val[0]);
+					break;
+				case HUBO_GOTO_HOME:
+					hGotoLimitAndGoOffset(c->cmd[1],h,f);
+					break;
+		//		case HUBO_GOTO_REF:
+				default:
+					break;
+			}
 		}
-	printf("here 3\n");
+//		printf("c = %i\n",c->cmd[0]);
 	}
 }
 
