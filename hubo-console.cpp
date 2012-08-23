@@ -33,10 +33,11 @@ using namespace std;
 
 
 // ach message type
-typedef struct hubo h[1];
+//typedef struct hubo h[1];
 
 // ach channels
 ach_channel_t chan_num;
+ach_channel_t chan_num_console;
 
 
  
@@ -50,9 +51,10 @@ char* getArg(string s, int argNum);
 void hubo_update(struct hubo *h);
 int name2mot(char*s, struct hubo *h);
 double hubo_get(char*s, struct hubo *h);
+void hubo_jmc_beep(struct hubo *h, struct console *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 char* cmd [] ={ "initialize","zero","fet",
-		"ctrl","enczero", "goto","get","test","update", "quit", " "}; //,
+		"ctrl","enczero", "goto","get","test","update", "quit","beep", " "}; //,
 /*
 		"get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR", 
 		"get LHY", "get LHR", "get LHP", "get LKN", "get LAP", "get LAR", 	
@@ -74,11 +76,16 @@ int main() {
         int r = ach_open(&chan_num, "hubo", NULL);
         assert( ACH_OK == r );
 
-        struct hubo H;
+        r = ach_open(&chan_num_console, "hubo-console", NULL);
+        assert( ACH_OK == r );
+        
+	struct hubo H;
+        struct console C;
         size_t fs;
         r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-	//      printf("fs = %i, H = %i\n",fs, sizeof(H));
         assert( sizeof(H) == fs );
+        r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+        //if(r == ACH_OK){assert( sizeof(C) == fs );}
 
 
 
@@ -102,16 +109,25 @@ int main() {
 		hubo_update(&H);
 		printf("--->Hubo Information Updated\n");
 	}
-
-	if (strcmp(buf0,"get")==0) {
+	else if (strcmp(buf0,"get")==0) {
 		double jRef = hubo_get(buf,&H);
 		char* tmp = getArg(buf,1);
 		printf(">> %s = %f rad \n",tmp,jRef);
 	}
-	if (strcmp(buf0,"test")==0)
+	else if (strcmp(buf0,"beep")==0) {
+		hubo_jmc_beep(&H, &C, buf);
+	}
+	else if (strcmp(buf0,"initialize")==0) {
+		C.cmd[0] = HUBO_JMC_INI;
+		C.cmd[1] = name2mot(getArg(buf,1),&H);	// set motor num
+		//C.val[0] = atof(getArg(buf,2));
+		r =	ach_put( &chan_num_console, &C, sizeof(C));
+		printf("initilize r = %i C = %i\n",r, C.cmd[0]);
+	}
+	else if (strcmp(buf0,"test")==0)
 		test(buf, &H);
 	/* Quit */
-	if (strcmp(buf0,"quit")==0)
+	else if (strcmp(buf0,"quit")==0)
 		break;
 	if (buf[0]!=0)
 	add_history(buf);
@@ -129,7 +145,17 @@ double hubo_get(char*s, struct hubo *h) {
 	return h->joint[jointNo].ref;
 }
 
+void hubo_jmc_beep(struct hubo *h, struct console *c, char* buff) {
+	/* make beiep */
+	c->cmd[0] = HUBO_JMC_BEEP;
+	c->cmd[1] = name2mot(getArg(buff, 1), h);
+	c->val[0] = 0.1234;
+       	int r = ach_put( &chan_num_console, c, sizeof(*c) );
+	h->joint[0].ref = 0.1234*2;
+       	r = ach_put( &chan_num, h, sizeof(*h) );
+	printf("send beep r = %i C = %i v = %f\n",r, c->cmd[0], c->val[0]);
 
+}
 void hubo_update(struct hubo *h) {
        	size_t fs;
        	int r = ach_get( &chan_num, h, sizeof(*h), &fs, NULL, ACH_O_LAST );
