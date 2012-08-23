@@ -12,7 +12,7 @@ sudo ifconfig can2 up
 sudo ifconfig can3 up
 sudo ach -U hubo
 sudo ach -C hubo -m 10 -n 3000
-sudo ach -U hubo-ach-console
-sudo ach -C hubo-ach-console -m 10 -n 3000
+sudo ach -U hubo-console
+sudo ach -C hubo-console -m 30 -n 3000
 sudo ./hubo-default
 sudo ./hubo-main

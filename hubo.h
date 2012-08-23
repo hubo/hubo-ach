@@ -99,8 +99,23 @@
 
 #define		numOfJoints	50		// 	the size of the array
 						//	for the joints
+#define		numOfCmd	10		//  	number of commands	
 #define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
+
+
+
+/* def for console do flags */
+/* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
+typedef enum {
+	HUBO_JMC_INI 		= 1,	// Initilize jmc
+	HUBO_FET_ON_OFF 	= 2,	// turn fet on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_CTRL_ON_OFF 	= 3,	// turn control on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_ZERO_ENC		= 4,	// zero encoder for given motor
+	HUBO_GOTO_REF		= 5,	// go to ref val[0] = ref (rad)
+	HUBO_JMC_BEEP		= 6	// make beep val[0] = beep time in sec
+} hubo_console_t;
+
 
 
 
@@ -153,7 +168,10 @@ struct hubo {
 }__attribute__((packed));
 
 struct console {
-	uint8_t refSet[50];
+	/* values for console commands */
+	uint16_t cmd[10];
+	double val[10];
+//	uint8_t refSet[50];
 }__attribute__((packed));
 
 /*

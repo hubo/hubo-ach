@@ -60,10 +60,11 @@ void setConsoleFlags() {
 	//printf("fs = %i, H = %i\n",fs, sizeof(H));
 	assert( sizeof(C) == fs );
 	int i = 0;
-	for( i = 0; i < numOfJoints; i++ ) {
-		C.refSet[i] = 0;
+	for( i = 0; i < numOfCmd; i++ ) {
+		C.cmd[i] = 0;
+		C.val[i] = 0;
 	}
-	ach_put(&chan_num_console, &C, sizeof(C));
+	r = ach_put(&chan_num_console, &C, sizeof(C));
 }
 
 
@@ -792,7 +793,7 @@ int main(int argc, char **argv){
         int r = ach_open(&chan_num, "hubo", NULL);
         assert( ACH_OK == r );
 
-        r = ach_open(&chan_num_console, "hubo-ach-console", NULL);
+        r = ach_open(&chan_num_console, "hubo-console", NULL);
         assert( ACH_OK == r );
 	
 	ach_put(&chan_num, &H, sizeof(H));

@@ -60,13 +60,157 @@
 // Timing info
 #define NSEC_PER_SEC    1000000000
 
+
+
+/* functions */
+void stack_prefault(void);
+static inline void tsnorm(struct timespec *ts);
+void getMotorPosFrame(int motor, struct can_frame *frame);
+int openCAN(char* name);
+void setEncRef(int jnt, struct hubo *h);
+void setEncRefAll( struct hubo *h);
+void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f);
+void fResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f);
+void fGetCurrentValue(int jnt, struct hubo *h, struct can_frame *f);
+void fSetBeep(int jnt, struct hubo *h, struct can_frame *f, double beepTime);
+void hSetBeep(int jnt, struct hubo *h, struct can_frame *f, double beepTime);
+void fGetBoardStatusAndErrorFlags(int jnt, struct hubo *h, struct can_frame *f);
+void fGetEncoderPos(int jnt, struct hubo *h, struct can_frame *f);
+void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f);
+void fEnableMotorDriver(int jnt, struct hubo *h, struct can_frame *f);
+void fDisableMotorDriver(int jnt, struct hubo *h, struct can_frame *f);
+void fEnableFeedbackController(int jnt, struct hubo *h, struct can_frame *f);
+void fDisableFeedbackController(int jnt, struct hubo *h, struct can_frame *f);
+void fSetPositionController(int jnt, struct hubo *h, struct can_frame *f);
+void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f);
+int sendCan(int skt, struct can_frame *f);
+int readn (int sockfd, void *buff, size_t n, int timeo);
+int readCan(int skt, struct can_frame *f, double timeoD);
+void hInitilizeBoard(int jnt, struct hubo *h, struct can_frame *f);
+void hSetEncRef(int jnt, struct hubo *h, struct can_frame *f);
+void hSetEncRefAll(struct hubo *h, struct can_frame *f);
+void hIniAll(struct hubo *H, struct can_frame *f);
+void huboLoop(int vCan);
+void hMotorDriverOnOff(int jnt, struct hubo *h, struct can_frame *f, int onOff);
+void hFeedbackControllerOnOff(int jnt, struct hubo *h, struct can_frame *f, int onOff);
+void hResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f);
+void huboConsole(struct hubo *h, struct console *c, struct can_frame *f);
+
+
+
+
+
+
+
+
+
+
+
+
 // ach message type
-typedef struct hubo h[1];
+//typedef struct hubo h[1];
 
 // ach channels
-ach_channel_t chan_num;
+ach_channel_t chan_num;		// hubo-ach
+ach_channel_t chan_num_console; // hubo-ach-console
 
 int debug = 0;
+
+
+
+
+void huboLoop(int vCan) {
+	// get initial values for hubo
+	struct hubo H;
+	struct console C;
+	size_t fs;
+	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+ 	assert( sizeof(H) == fs );
+	r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+ 	printf("r = %d fs = %d, C = %d\n",r,fs, sizeof(C));
+	//if (r == ACH_OK) {assert( sizeof(C) == fs );}
+//	assert( ACH_OK == r );
+	
+	// make can channels
+
+	int skt1;
+	int skt0;
+	if(vCan == 1){
+		skt1 	= 	openCAN("vcan1");
+		skt0	=	openCAN("vcan0");
+	}
+	else {
+		skt1 	= 	openCAN("can1");
+		skt0	=	openCAN("can0");
+	}
+	H.socket[0] 	=	skt0;
+	H.socket[1]	=	skt1;
+	
+	ach_put( &chan_num, &H, sizeof(H));
+
+
+   	
+	/* Send a message to the CAN bus */
+   	struct can_frame frame;
+
+	// time info
+	struct timespec t;
+	int interval = 500000000; // 2hz (0.5 sec)
+	//int interval = 10000000; // 100 hz (0.01 sec)
+	//int interval = 5000000; // 200 hz (0.005 sec)
+	//int interval = 2000000; // 500 hz (0.002 sec)
+	
+	// get current time
+        //clock_gettime( CLOCK_MONOTONIC,&t);
+        clock_gettime( 0,&t);
+
+	sprintf( frame.data, "1234578" );
+	frame.can_dlc = strlen( frame.data );
+
+	int a = 0;
+	while(1) {
+		// wait until next shot
+		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+		
+		/* Get latest ACH message */
+		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+		assert( sizeof(H) == fs );
+
+//		r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+//		if(r == ACH_OK){assert( sizeof(C) == fs );}
+
+
+		if(a == 0) {
+//			hIniAll(&H, &frame);
+			a = 1;
+		}
+		H.joint[RAP].ref = -0.001;
+		H.joint[RAR].ref = 0.001;
+		//setEncRef(RAP,&H);
+		//setEncRef(RAR,&H);
+//		printf("ref = %i\n",H.joint[RAP].refEnc);
+
+
+		/* read hubo console */
+		huboConsole(&H, &C, &frame);
+
+
+		/* Set all references to encoder then send to CAN bus*/
+//		setEncRefAll(&H);
+//		hSetEncRefAll(&H, &frame);
+		//hSetEncRef(RAP, &H, &frame);
+		ach_put( &chan_num, &H, sizeof(H));
+		t.tv_nsec+=interval;
+                tsnorm(&t);
+	}
+
+
+}
+
+
+
+
+
 
 void stack_prefault(void) {
 	unsigned char dummy[MAX_SAFE_STACK];
@@ -158,18 +302,6 @@ void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
 }
 
 
-// 9.1
-void fEnableFet(int jnt, struct hubo *h, struct can_frame *f) {
-	// turn on FETS
-	f->can_id 	= CMD_TXDF;	// Set ID
-	__u8 data[3];
-	f->data[0] 	= h->joint[jnt].jmc;
-	f->data[1]		= HipEnable;
-	f->data[2]		= 1;
-	//sprintf(f->data, "%s", data);	
-	f->can_dlc = 3; //= strlen( data );	// Set DLC
-}
-
 // 5
 void fResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f) {
 	/* Reset Encoder to Zero (REZ: 0x06)
@@ -197,9 +329,25 @@ void fGetCurrentValue(int jnt, struct hubo *h, struct can_frame *f) {
 	__u8 data[2];
 	f->data[0] 	= h->joint[jnt].jmc;
 	f->data[1]		= SendCurrent;
-	//sprintf(f->data, "%s", data);	
 	f->can_dlc = 2; //= strlen( data );	// Set DLC
 }
+
+// 4
+void fSetBeep(int jnt, struct hubo *h, struct can_frame *f, double beepTime) {
+	// get the value of the current in 10mA units A = V/100
+	f->can_id 	= CMD_TXDF;	// Set ID
+	__u8 data[3];
+	f->data[0] 	= h->joint[jnt].jmc;	// BNO
+	f->data[1]	= 0x82;			// alarm
+	f->data[2]	= (uint8_t)floor(beepTime/0.1);
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
+}
+
+void hSetBeep(int jnt, struct hubo *h, struct can_frame *f, double beepTime) {
+	fSetBeep(jnt, h, f, beepTime);
+	sendCan(h->socket[h->joint[jnt].can], f);
+}
+
 
 // 2
 void fGetBoardStatusAndErrorFlags(int jnt, struct hubo *h, struct can_frame *f) {
@@ -224,17 +372,6 @@ void fGetEncoderPos(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 
-// 9.2
-void fDisableFet(int jnt, struct hubo *h, struct can_frame *f) {
-	// turn off FETS
-	f->can_id 	= CMD_TXDF;	// Set ID
-	__u8 data[3];
-	f->data[0] 	= h->joint[jnt].jmc;
-	f->data[1]		= HipEnable;
-	f->data[2]		= 0;
-	//sprintf(f->data, "%s", data);	
-	f->can_dlc = 3; //= strlen( data );	// Set DLC
-}
 
 // 28
 void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
@@ -248,8 +385,19 @@ void fInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_dlc = 2;
 }
 
-// 10
+// 10.1
 void fEnableMotorDriver(int jnt, struct hubo *h, struct can_frame *f) {
+	f->can_id 	= CMD_TXDF;
+	__u8 data[3];
+	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
+	f->data[1] 	= 0x0B;
+	f->data[2] 	= 0x01;
+	//sprintf(f->data, "%s", data);
+	f->can_dlc = 3;
+}
+
+// 10.2
+void fDisableMotorDriver(int jnt, struct hubo *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;
 	__u8 data[3];
 	f->data[0] 	= (uint8_t)h->joint[jnt].jmc;
@@ -382,6 +530,7 @@ int readCan(int skt, struct can_frame *f, double timeoD) {
 //	struct	can_frame F;
 /*
 	F.data[0] = 3;
+torDriverOnOff
 	F.data[1] = 3;
 	F.data[2] = 3;
 	F.data[3] = 3;
@@ -410,7 +559,7 @@ int readCan(int skt, struct can_frame *f, double timeoD) {
 	return bytes_read;
 }
 
-void hInitilizeBoard(int jnt, struct hubo *h, struct can_frame *f) {
+void hInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 	fInitializeBoard(jnt, h, f);
 	sendCan(h->socket[h->joint[jnt].can], f);
 	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
@@ -444,95 +593,71 @@ void hIniAll(struct hubo *H, struct can_frame *f) {
 	int i = 0;	
 	for( i = 0; i < numOfJoints; i++ ) {
 		if(H->joint[i].active) {
-			hInitilizeBoard(i, H, f);
+			hInitializeBoard(i, H, f);
 			printf("%i\n",i);
 		}
 	}
 }
 
-void huboLoop(int vCan) {
-	// get initial values for hubo
-	struct hubo H;
-	size_t fs;
-	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-//	printf("fs = %i, H = %i\n",fs, sizeof(H));
- 	assert( sizeof(H) == fs );
-//	assert( ACH_OK == r );
-	
-	// make can channels
-
-	int skt1;
-	int skt0;
-	if(vCan == 1){
-		skt1 	= 	openCAN("vcan1");
-		skt0	=	openCAN("vcan0");
-	}
-	else {
-		skt1 	= 	openCAN("can1");
-		skt0	=	openCAN("can0");
-	}
-	H.socket[0] 	=	skt0;
-	H.socket[1]	=	skt1;
-	
-	ach_put( &chan_num, &H, sizeof(H));
-
-
-   	
-	/* Send a message to the CAN bus */
-   	struct can_frame frame;
-
-	// time info
-	struct timespec t;
-	int interval = 500000000; // 2hz (0.5 sec)
-	//int interval = 10000000; // 100 hz (0.01 sec)
-	//int interval = 5000000; // 200 hz (0.005 sec)
-	//int interval = 2000000; // 500 hz (0.002 sec)
-	
-	// get current time
-        //clock_gettime( CLOCK_MONOTONIC,&t);
-        clock_gettime( 0,&t);
-
-	sprintf( frame.data, "1234578" );
-	frame.can_dlc = strlen( frame.data );
-
-	int a = 0;
-	while(1) {
-		// wait until next shot
-		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
-		
-		/* Get latest ACH message */
-		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-		assert( sizeof(H) == fs );
-
-
-
-		if(a == 0) {
-//			hIniAll(&H, &frame);
-			a = 1;
-		}
-		H.joint[RAP].ref = -0.001;
-		H.joint[RAR].ref = 0.001;
-		//setEncRef(RAP,&H);
-		//setEncRef(RAR,&H);
-//		printf("ref = %i\n",H.joint[RAP].refEnc);
-
-
-
-		/* Set all references to encoder then send to CAN bus*/
-		setEncRefAll(&H);
-		hSetEncRefAll(&H, &frame);
-		//hSetEncRef(RAP, &H, &frame);
-	ach_put( &chan_num, &H, sizeof(H));
-		t.tv_nsec+=interval;
-                tsnorm(&t);
-	}
-
-
+void hMotorDriverOnOff(int jnt, struct hubo *h, struct can_frame *f, int onOff) {
+	if(onOff == 1) { // turn on FET
+		fEnableMotorDriver(jnt, h, f);
+		sendCan(h->socket[h->joint[jnt].can], f); }
+	else if(onOff == 0) { // turn off FET
+		fDisableMotorDriver(jnt, h, f);
+		sendCan(h->socket[h->joint[jnt].can], f); }
 }
 
-void huboConsole() {
+void hFeedbackControllerOnOff(int jnt, struct hubo *h, struct can_frame *f, int onOff) {
+	if(onOff == 1) { // turn on FET
+		fEnableFeedbackController(jnt, h, f);
+		sendCan(h->socket[h->joint[jnt].can], f); }
+	else if(onOff == 0) { // turn off FET
+		fEnableFeedbackController(jnt, h, f);
+		sendCan(h->socket[h->joint[jnt].can], f); }
+}
+
+void hResetEncoderToZero(int jnt, struct hubo *h, struct can_frame *f) {
+	fResetEncoderToZero(jnt, h, f);
+	sendCan(h->socket[h->joint[jnt].can], f); 
+}
+void huboConsole(struct hubo *h, struct console *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
-	printf("hubo-ach - interface 2012-08-18\n");
+//	printf("hubo-ach - interface 2012-08-18\n");
+
+	int r = 0;
+	size_t fs;
+	int status = 0;
+	printf("here\n");
+	while ( status == 0 | status == ACH_OK | status == ACH_MISSED_FRAME ) {
+		/* get oldest ach message */
+	printf("here1\n");
+		//status = ach_get( &chan_num, &c, sizeof(c), &fs, NULL, 0 );
+		status = ach_get( &chan_num, &c, sizeof(c), &fs, NULL, ACH_O_LAST );
+	printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
+		//assert( sizeof(c) == fs );
+		
+//		if ( status != 0 & status != ACH_OK & status != ACH_MISSED_FRAME ) {
+//			break; }
+
+		switch (c->cmd[0]) {
+			case HUBO_JMC_INI:
+				hInitializeBoard(c->cmd[1],h,f);
+			case HUBO_FET_ON_OFF:
+				hMotorDriverOnOff(c->cmd[1],h,f,c->cmd[2]);
+			case HUBO_CTRL_ON_OFF:
+				hFeedbackControllerOnOff(c->cmd[1],h,f,c->cmd[2]);
+			case HUBO_ZERO_ENC:
+				hResetEncoderToZero(c->cmd[1],h,f);
+			case HUBO_JMC_BEEP:
+				printf("test\n");
+				hSetBeep(c->cmd[1],h,f,c->val[0]);
+			case HUBO_GOTO_REF:
+			default:
+				break;
+		}
+	printf("here 3\n");
+	}
 }
 
 int main(int argc, char **argv) {
@@ -587,6 +712,9 @@ int main(int argc, char **argv) {
 	int r = ach_open(&chan_num, "hubo", NULL);
 	assert( ACH_OK == r );
 
+	// open hubo console channel
+	r = ach_open(&chan_num_console, "hubo-console", NULL);
+	assert( ACH_OK == r );
    	
 	// run hubo main loop
 
