@@ -52,9 +52,10 @@ void hubo_update(struct hubo *h);
 int name2mot(char*s, struct hubo *h);
 double hubo_get(char*s, struct hubo *h);
 void hubo_jmc_beep(struct hubo *h, struct console *c, char* buff);
+void hubo_jmc_home(struct hubo *h, struct console *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
-char* cmd [] ={ "initialize","zero","fet",
-		"ctrl","enczero", "goto","get","test","update", "quit","beep", " "}; //,
+char* cmd [] ={ "initialize","fet",
+		"ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
 		"get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR", 
 		"get LHY", "get LHR", "get LHP", "get LKN", "get LAP", "get LAR", 	
@@ -91,12 +92,14 @@ int main() {
 
 	char *buf;
 	rl_attempted_completion_function = my_completion;
-
-	while((buf = readline("\n hubo-ach: "))!=NULL) {
+	printf("\n");
+	while((buf = readline(">> hubo-ach: "))!=NULL) {
 	//enable auto-complete
 	rl_bind_key('\t',rl_complete);
  
-	printf("cmd [%s]\n",buf);
+//	printf("cmd [%s]\n",buf);
+//	printf(">> ");
+	printf("   ");
 
 	/* get update after every command */
 	hubo_update(&H);
@@ -117,12 +120,43 @@ int main() {
 	else if (strcmp(buf0,"beep")==0) {
 		hubo_jmc_beep(&H, &C, buf);
 	}
+	else if (strcmp(buf0,"home")==0) {
+		hubo_jmc_home(&H, &C, buf);
+		printf("%s - Initilize \n",getArg(buf,1));
+	}
+	else if (strcmp(buf0,"ctrl")==0) {
+		int onOrOff = atof(getArg(buf,2));
+                if(onOrOff == 0 | onOrOff == 1) {
+                        C.cmd[0] = HUBO_CTRL_ON_OFF;
+                        C.cmd[1] = name2mot(getArg(buf,1),&H);  // set motor num
+                        C.cmd[2] = atof(getArg(buf,2));         // 1 = on, 0 = 0ff
+                        int r = ach_put( &chan_num_console, &C, sizeof(C) );
+                        if(onOrOff == 0) {
+                                printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+                        else {
+                                printf("%s - Turning On CTRL\n",getArg(buf,1));}
+                }
+
+	}
+	else if (strcmp(buf0,"fet")==0) {
+		int onOrOff = atof(getArg(buf,2));
+		if(onOrOff == 0 | onOrOff == 1) {
+			C.cmd[0] = HUBO_FET_ON_OFF;
+			C.cmd[1] = name2mot(getArg(buf,1),&H);  // set motor num
+			C.cmd[2] = atof(getArg(buf,2));		// 1 = on, 0 = 0ff
+       			int r = ach_put( &chan_num_console, &C, sizeof(C) );
+			if(onOrOff == 0) {
+				printf("%s - Turning Off FET\n",getArg(buf,1));}
+			else {
+				printf("%s - Turning On FET\n",getArg(buf,1));}
+		}
+	}
 	else if (strcmp(buf0,"initialize")==0) {
 		C.cmd[0] = HUBO_JMC_INI;
 		C.cmd[1] = name2mot(getArg(buf,1),&H);	// set motor num
 		//C.val[0] = atof(getArg(buf,2));
 		r =	ach_put( &chan_num_console, &C, sizeof(C));
-		printf("initilize r = %i C = %i\n",r, C.cmd[0]);
+		printf("%s - Initilize \n",getArg(buf,1));
 	}
 	else if (strcmp(buf0,"test")==0)
 		test(buf, &H);
@@ -149,13 +183,20 @@ void hubo_jmc_beep(struct hubo *h, struct console *c, char* buff) {
 	/* make beiep */
 	c->cmd[0] = HUBO_JMC_BEEP;
 	c->cmd[1] = name2mot(getArg(buff, 1), h);
-	c->val[0] = 0.1234;
+	c->val[2] = atof(getArg(buff,2));
        	int r = ach_put( &chan_num_console, c, sizeof(*c) );
-	h->joint[0].ref = 0.1234*2;
-       	r = ach_put( &chan_num, h, sizeof(*h) );
 	printf("send beep r = %i C = %i v = %f\n",r, c->cmd[0], c->val[0]);
 
 }
+
+void hubo_jmc_home(struct hubo *h, struct console *c, char* buff) {
+	/* make beiep */
+	c->cmd[0] = HUBO_GOTO_HOME;
+	c->cmd[1] = name2mot(getArg(buff, 1), h);
+       	int r = ach_put( &chan_num_console, c, sizeof(*c) );
+//	printf(">> Home %s \n",getArg(buff,1));
+}
+
 void hubo_update(struct hubo *h) {
        	size_t fs;
        	int r = ach_get( &chan_num, h, sizeof(*h), &fs, NULL, ACH_O_LAST );
