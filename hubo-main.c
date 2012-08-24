@@ -157,8 +157,8 @@ void huboLoop(int vCan) {
 	struct timespec t;
 	//int interval = 500000000; // 2hz (0.5 sec)
 	//int interval = 10000000; // 100 hz (0.01 sec)
-	int interval = 5000000; // 200 hz (0.005 sec)
-	//int interval = 2000000; // 500 hz (0.002 sec)
+	//int interval = 5000000; // 200 hz (0.005 sec)
+	int interval = 2000000; // 500 hz (0.002 sec)
 	
 	// get current time
         //clock_gettime( CLOCK_MONOTONIC,&t);
@@ -283,6 +283,11 @@ void setEncRefAll( struct hubo *h) {
 	}
 }
 // Set Ref
+
+unsigned long signConvention(long _input) {
+	if (_input < 0) return (unsigned long)( ((-_input)&0x007FFFFF) | (1<<23) );
+	else return (unsigned long)_input;
+}
 void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
@@ -292,17 +297,33 @@ void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
 		__u8 m0 = h->driver[jmc].jmc[0];
 		__u8 m1 = h->driver[jmc].jmc[1];
 //		printf("m0 = %i, m1= %i \n",m0, m1);
+	
+
+		unsigned long pos0 = signConvention((int)h->joint[m0].refEnc);
+		unsigned long pos1 = signConvention((int)h->joint[m1].refEnc);
+		f->data[0] =    (uint8_t)(pos0		& 0x000000FF);
+		f->data[1] = 	(uint8_t)((pos0>>8) 	& 0x000000FF);
+		f->data[2] = 	(uint8_t)((pos0>>16)	& 0x000000FF);
+		f->data[3] =    (uint8_t)(pos1 		& 0x000000FF);
+		f->data[4] = 	(uint8_t)((pos1>>8) 	& 0x000000FF);
+		f->data[5] = 	(uint8_t)((pos1>>16)	& 0x000000FF);
+
+
+/*
 		f->data[0] =    (uint8_t)h->joint[m0].refEnc;
 		f->data[1] = 	(uint8_t)((h->joint[m0].refEnc & 0x0000ff00) >> 8);
 		f->data[2] = 	(uint8_t)((h->joint[m0].refEnc & 0x007f0000) >> 16);
 		f->data[3] =    (uint8_t)h->joint[m1].refEnc;
 		f->data[4] = 	(uint8_t)((h->joint[m1].refEnc & 0x0000ff00) >> 8);
 		f->data[5] = 	(uint8_t)((h->joint[m1].refEnc & 0x007f0000) >> 16);
+*/
 
-		if(h->driver[jmc].jmc[0] < 0) {
+		//if(h->driver[jmc].jmc[0] < 0) {
+		if(h->joint[m0].refEnc < 0) {
 			f->data[2] = f->data[2] | 0x80;
 		}
-		if(h->driver[jmc].jmc[1] < 0) {
+		//if(h->driver[jmc].jmc[1] < 0) {
+		if(h->joint[m1].refEnc < 0) {
 			f->data[5] = f->data[5] | 0x80;
 		}
 	}
