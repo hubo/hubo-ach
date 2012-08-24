@@ -124,9 +124,11 @@ void huboLoop() {
 	/* get initial tme*/
 	ftime(&tp_0);
 	double tt = 0.0;
-	double f = 0.5;		// frequency
+	double f = 0.3;		// frequency
 	double T = (double)interval/1000000000.0;
-	double A = 1.0;
+	double A = 0.1;
+	double t0 = 0.0;
+	double t1 = 0.0;
 	while(1) {
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -139,10 +141,21 @@ void huboLoop() {
 		ftime(&tp);
 		tp_f.time = tp.time-tp_0.time;
 		tp_f.millitm = tp.millitm-tp_0.millitm;
-		tt = (double)tp_f.time+(tp_f.millitm)*0.001;
-		H.joint[RHY].ref = A*sin(f*2*pi*tt); 
+		
+		tt = (double)tp_f.time+((int16_t)tp_f.millitm)*0.001;
+		
+
+		t1 = t0;
+		t0 = tt;
+		H.joint[RHY].ref = A*sin(f*2*pi*tt);
+
+		if(H.joint[RHY].ref < 0) {
+			H.joint[RHY].ref = -H.joint[RHY].ref;
+		}
+
 	//	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
 		printf("A = %f\n",H.joint[RHY].ref);	
+		//printf("Diff(t) = %f\n",(t0-t1));
 		
 		ach_put( &chan_num, &H, sizeof(H));
 		t.tv_nsec+=interval;
