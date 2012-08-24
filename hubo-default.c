@@ -79,6 +79,9 @@ void setActive() {
 	int i = 0;
 	for( i = 0; i < numOfJoints; i++ ) {
 		H.joint[i].active = false;
+		H.joint[i].zeroed = false;
+		H.joint[i].refEnc = 0;
+		H.joint[i].ref = 0.0;
 	}
 
         H.joint[RHY].active = true;
@@ -196,7 +199,50 @@ void setDefaults() {
         setName(&H , LF4 , "LF4"  );
         setName(&H , LF5 , "LF5"  );
 
+        H.joint[RHY].jntNo = RHY;
+        H.joint[RHR].jntNo = RHR;
+        H.joint[RHP].jntNo = RHP;
+        H.joint[RKN].jntNo = RKN;
+        H.joint[RAP].jntNo = RAP;
+        H.joint[RAR].jntNo = RAR;
 
+        H.joint[LHY].jntNo = LHY;
+        H.joint[LHR].jntNo = LHR;
+        H.joint[LHP].jntNo = LHP;
+        H.joint[LKN].jntNo = LKN;
+        H.joint[LAP].jntNo = LAP;
+        H.joint[LAR].jntNo = LAR;
+
+        H.joint[RSP].jntNo = RSP;
+        H.joint[RSR].jntNo = RSR;
+        H.joint[RSY].jntNo = RSY;
+        H.joint[REB].jntNo = REB;
+        H.joint[RWY].jntNo = RWY;
+        H.joint[RWP].jntNo = RWP;
+
+        H.joint[LSP].jntNo = LSP;
+        H.joint[LSR].jntNo = LSR;
+        H.joint[LSY].jntNo = LSY;
+        H.joint[LEB].jntNo = LEB;
+        H.joint[LWY].jntNo = LWY;
+        H.joint[LWP].jntNo = LWP;
+
+        H.joint[NKY].jntNo = NKY;
+        H.joint[NK1].jntNo = NK1;
+        H.joint[NK2].jntNo = NK2;
+        H.joint[WST].jntNo = WST;
+
+        H.joint[RF1].jntNo = RF1;
+        H.joint[RF2].jntNo = RF2;
+        H.joint[RF3].jntNo = RF3;
+        H.joint[RF4].jntNo = RF4;
+        H.joint[RF5].jntNo = RF5;
+
+        H.joint[LF1].jntNo = LF1;
+        H.joint[LF2].jntNo = LF2;
+        H.joint[LF3].jntNo = LF3;
+        H.joint[LF4].jntNo = LF4;
+        H.joint[LF5].jntNo = LF5;
 
 
 /* 

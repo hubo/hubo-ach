@@ -103,6 +103,8 @@
 #define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
+#define		ch_hubo		"hubo"		// hubo ach channel
+#define		ch_hubo_console	"hubo-console"	// hubo console channel for ach
 
 
 /* def for console do flags */
@@ -140,6 +142,7 @@ struct jnt {
 	uint8_t can;	// can channel
 	uint8_t active; 	// checks if the joint is active or not
 	uint8_t numMot;		// number of motors 
+	uint8_t zeroed;		// checks to see if the motor is zeroed
 }__attribute__((packed));
 
 struct sensFt {

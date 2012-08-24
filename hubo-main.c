@@ -120,6 +120,7 @@ int debug = 0;
 
 
 void huboLoop(int vCan) {
+	int i = 0;  // iterator
 	// get initial values for hubo
 	struct hubo H;
 	struct console C;
@@ -132,7 +133,6 @@ void huboLoop(int vCan) {
 //	assert( ACH_OK == r );
 	
 	// make can channels
-
 	int skt1;
 	int skt0;
 	if(vCan == 1){
@@ -155,9 +155,9 @@ void huboLoop(int vCan) {
 
 	// time info
 	struct timespec t;
-	int interval = 500000000; // 2hz (0.5 sec)
+	//int interval = 500000000; // 2hz (0.5 sec)
 	//int interval = 10000000; // 100 hz (0.01 sec)
-	//int interval = 5000000; // 200 hz (0.005 sec)
+	int interval = 5000000; // 200 hz (0.005 sec)
 	//int interval = 2000000; // 500 hz (0.002 sec)
 	
 	// get current time
@@ -198,7 +198,17 @@ void huboLoop(int vCan) {
 		/* Set all references to encoder then send to CAN bus*/
 //		setEncRefAll(&H);
 //		hSetEncRefAll(&H, &frame);
-		//hSetEncRef(RAP, &H, &frame);
+			
+		
+		for(i = 0; i < numOfJoints; i++) {
+			if(H.joint[i].zeroed == true) {
+				hSetEncRef(H.joint[i].jntNo, &H, &frame);
+				printf("Mot = %i \n", H.joint[i].refEnc);
+			}
+		}
+
+//		hSetEncRef(RHY, &H, &frame);
+//		printf("RHY = %f\n",H.joint[RHY].ref);
 		ach_put( &chan_num, &H, sizeof(H));
 		t.tv_nsec+=interval;
                 tsnorm(&t);
@@ -277,7 +287,7 @@ void fSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
 	__u8 data[6];
-	uint8_t jmc = h->joint[jnt].jmc;
+	uint16_t jmc = h->joint[jnt].jmc;
 	if(h->joint[jnt].numMot == 2) {
 		__u8 m0 = h->driver[jmc].jmc[0];
 		__u8 m1 = h->driver[jmc].jmc[1];
@@ -458,6 +468,7 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
 void hGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f) {
 	fGotoLimitAndGoOffset(jnt, h, f);
 	sendCan(h->socket[h->joint[jnt].can], f);
+	h->joint[jnt].zeroed = true;
 }
 
 
@@ -572,6 +583,7 @@ void hInitializeBoard(int jnt, struct hubo *h, struct can_frame *f) {
 }
 
 void hSetEncRef(int jnt, struct hubo *h, struct can_frame *f) {
+	setEncRef(jnt,h);
 	fSetEncRef(jnt, h, f);
 	sendCan(h->socket[h->joint[jnt].can], f);
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
@@ -727,11 +739,13 @@ int main(int argc, char **argv) {
 
 	
 	// open ach channel
-	int r = ach_open(&chan_num, "hubo", NULL);
+	//int r = ach_open(&chan_num, "hubo", NULL);
+	int r = ach_open(&chan_num, ch_hubo, NULL);
 	assert( ACH_OK == r );
 
 	// open hubo console channel
-	r = ach_open(&chan_num_console, "hubo-console", NULL);
+	//r = ach_open(&chan_num_console, "hubo-console", NULL);
+	r = ach_open(&chan_num_console, ch_hubo_console, NULL);
 	assert( ACH_OK == r );
    	
 	// run hubo main loop
