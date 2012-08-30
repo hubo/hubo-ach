@@ -141,15 +141,24 @@ void huboLoop(void) {
 
 	size_t fs;
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
- 	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
- 	assert( sizeof(H_init) == fs );
-	r = ach_get( &chan_hubo_init_cmd, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
- 	assert( sizeof(H_state) == fs );
-	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
- 	assert( sizeof(H_param) == fs );
+	if(ACH_OK != r) {printf("Ref r = %s\n",ach_result_to_string(r));}
+	assert( sizeof(H_ref) == fs );
 
+	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
+	if(ACH_OK != r) {printf("CMD r = %s\n",ach_result_to_string(r));}
+	assert( sizeof(H_init) == fs );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	if(ACH_OK != r) {printf("State r = %s\n",ach_result_to_string(r));}
+	assert( sizeof(H_state) == fs );
+	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
+	if(ACH_OK != r) {printf("Param r = %s\n",ach_result_to_string(r));}
+ 	assert( sizeof(H_param) == fs );
 	// make can channels
+	// put back on channels
+	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+	ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));
+	ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
+	ach_put(&chan_hubo_param, &H_param, sizeof(H_param));
 
 //	ach_put( &chan_hubo_ref, &H, sizeof(H));
 
