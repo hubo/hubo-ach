@@ -1,4 +1,5 @@
 sudo ifconfig can0 down
+
 sudo ifconfig can1 down
 sudo ifconfig can2 down
 sudo ifconfig can3 down
@@ -10,9 +11,11 @@ sudo ifconfig can0 up
 sudo ifconfig can1 up
 sudo ifconfig can2 up
 sudo ifconfig can3 up
-sudo ach -U hubo
-sudo ach -C hubo -m 10 -n 3000
-sudo ach -U hubo-console
-sudo ach -C hubo-console -m 30 -n 3000
+sudo ach -U hubo-ref
+sudo ach -C hubo-ref -m 10 -n 3000
+sudo ach -U hubo-state
+sudo ach -C hubo-state -m 10 -n 3000
+sudo ach -U hubo-init-cmd
+sudo ach -C hubo-init-cmd -m 30 -n 3000
 sudo ./hubo-default
 sudo ./hubo-main

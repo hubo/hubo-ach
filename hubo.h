@@ -105,6 +105,9 @@
 
 #define		ch_hubo		"hubo"		// hubo ach channel
 #define		ch_hubo_console	"hubo-console"	// hubo console channel for ach
+#define		ch_hubo		"hubo-ref"	// hubo ach channel
+#define		ch_hubo_console	"hubo-init-cmd"	// hubo console channel for ach
+#define		ch_hubo_state	"hubo-state"	// hubo state ach channel
 
 
 /* def for console do flags */
