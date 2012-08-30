@@ -240,8 +240,6 @@ static inline void tsnorm(struct timespec *ts){
         }
 }
 
-void getMotorPosFrame(int motor, struct can_frame *frame) {
-}
 
 int openCAN(char* name) {
 
