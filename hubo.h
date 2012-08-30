@@ -103,87 +103,88 @@
 #define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
-#define		ch_hubo		"hubo"		// hubo ach channel
-#define		ch_hubo_console	"hubo-console"	// hubo console channel for ach
-#define		ch_hubo		"hubo-ref"	// hubo ach channel
-#define		ch_hubo_console	"hubo-init-cmd"	// hubo console channel for ach
-#define		ch_hubo_state	"hubo-state"	// hubo state ach channel
+#define	        HUBO_CHAN_REF_NAME       "hubo-ref"        // hubo ach channel
+#define	        HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   // hubo console channel for ach
+#define	        HUBO_CHAN_STATE_NAME     "hubo-state"      // hubo state ach channel
+#define	        HUBO_CHAN_PARAM_NAME     "hubo-param"      // hubo param ach channel
 
 
 /* def for console do flags */
 /* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
 typedef enum {
-	HUBO_JMC_INI 		= 1,	// Initilize jmc
-	HUBO_FET_ON_OFF 	= 2,	// turn fet on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_CTRL_ON_OFF 	= 3,	// turn control on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_ZERO_ENC		= 4,	// zero encoder for given motor
-	HUBO_GOTO_REF		= 5,	// go to ref val[0] = ref (rad)
-	HUBO_JMC_BEEP		= 6,	// make beep val[0] = beep time in sec
-	HUBO_GOTO_HOME		= 7	// go home position
+	HUBO_JMC_INI 		= 1,	///< Initilize jmc
+	HUBO_FET_ON_OFF 	= 2,	///< turn fet on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_CTRL_ON_OFF 	= 3,	///< turn control on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_ZERO_ENC		= 4,	///< zero encoder for given motor
+	HUBO_GOTO_REF		= 5,	///< go to ref val[0] = ref (rad)
+	HUBO_JMC_BEEP		= 6,	///< make beep val[0] = beep time in sec
+	HUBO_GOTO_HOME		= 7	///< go home position
 } hubo_console_t;
 
+typedef enum {
+	HUBO_FT_R_HAND    = 0, ///< Index of right hand FT
+	HUBO_FT_L_HAND    = 1, ///< Index of left hand FT
+	HUBO_FT_R_FOOT    = 2, ///< Index of right foot FT
+	HUBO_FT_L_FOOT    = 3  ///< Index of left foot FT
+} hubo_ft_index_t;
+	
 
 
+struct hubo_joint_param {
+	uint16_t motNo;		///< joint number (on board i.e. 0, 1, 2)
+	uint16_t jntNo;		///< what overall number joint is it i.e. what RSP=23
+	uint32_t refEnc; 	///< encoder reference
+	uint16_t drive;		///< size of drive wheel
+	uint16_t driven;	///< size of driven wheel
+	uint16_t harmonic;	///< gear ratio of harmonic drive
+	uint16_t enc;		///< encoder size
+	uint8_t dir;		///< direction
+	char name[4];		///< name
+	uint16_t jmc;		///< motor controller number
+	uint8_t can;		///< can channel
+	uint8_t active; 	///< checks if the joint is active or not
+	uint8_t numMot;		///< number of motors 
+	uint8_t zeroed;		///< checks to see if the motor is zeroed
+};
+//}__attribute__((packed));
 
-struct jmcDriver{
-	uint8_t jmc[5]; // other motors on the same drive
-}__attribute__((packed));
+struct hubo_joint_state {
+	double pos;     ///< actual position (rad)
+	double cur;     ///< actual current (amps)
+	double vel;     ///< actual velocity (rad/sec)
+};
 
+struct hubo_ft {
+	double m_x;	///< Moment in X (Mx)
+	double m_y;       ///< Moment in Y (My)
+	double f_z;       ///< Force in Z (Fz)
+};
 
-struct jnt {
-	uint16_t motNo;	// joint number (on board i.e. 0, 1, 2)
-	uint16_t jntNo;	// what overall number joint is it i.e. what RSP=23
-	double ref;	// reference (rad)
-	uint32_t refEnc; // encoder reference
-	uint16_t drive;	// size of drive wheel
-	uint16_t driven;	// size of driven wheel
-	uint16_t harmonic;// gear ratio of harmonic drive
-	uint16_t enc;	// encoder size
-	uint8_t dir;	// direction
-	char name[4];	// name
-	uint16_t jmc;	// motor controller number
-	uint8_t can;	// can channel
-	uint8_t active; 	// checks if the joint is active or not
-	uint8_t numMot;		// number of motors 
-	uint8_t zeroed;		// checks to see if the motor is zeroed
-}__attribute__((packed));
+struct hubo_imu {
+	double w_x;    ///< rotational velocity in x (rad/s)
+	double w_y;    ///< rotational velocity in y (rad/s)
+	double w_z;    ///< rotational velocity in z (rad/s)
+	double a_x;    ///< linear acceleration in x (m/s/s)
+	double a_y;    ///< linear acceleration in y (m/s/s)
+	double a_z;    ///< linear acceleration in z (m/s/s)
+};
 
-struct sensFt {
-	uint8_t bno;
-	double x;
-	double y;
-	double z;
-}__attribute__((packed));
+struct hubo_ref {
+	double ref[numOfJoints];	///< joint reference
+	struct timespec time;           ///< time message sent
+};
 
-struct sensImu {
-	uint8_t bno;
-	double wx;
-	double wy;
-	double wz;
-	double ax;
-	double ay;
-	double az;
-}__attribute__((packed));
+struct hubo_state {
+	struct hubo_imu imu;	///< IMU	
+	struct hubo_ft ft[4];   ///< ft sensors
+};
 
-struct hubo {
-// packed struct gcc
-	struct 	jnt joint[50];	// joints
-	struct 	sensImu imu;	// imu
-	struct 	sensFt ft[4];	// ft
-	uint8_t	socket[4];	// can channel
-	struct 	jmcDriver driver[0x40];	// motor driver conneciton info
-}__attribute__((packed));
-
-struct console {
+struct hubo_init_cmd {
 	/* values for console commands */
-	uint16_t cmd[3];
 	double val[3];
-//	uint8_t refSet[50];
-}__attribute__((packed));
+	uint16_t cmd[3];
+};
 
-/*
-struct hubo-feedforward {
-	// feed forward struct for ach
-	struct
-}__attribute__((packed));
-*/
+struct hubo_param {
+	struct hubo_joint_param joint[numOfJoints];
+};

@@ -111,9 +111,14 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo *h, struct can_frame *f);
 //typedef struct hubo h[1];
 
 // ach channels
-ach_channel_t chan_num;		// hubo-ach
-ach_channel_t chan_num_console; // hubo-ach-console
+ach_channel_t chan_hubo_ref;	  // hubo-ach
+ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_state;    // hubo-ach-state
+ach_channel_t chan_hubo_param;    // hubo-ach-param
 
+
+
+int double hubo_socket[4];
 int debug = 0;
 
 
@@ -122,15 +127,24 @@ int debug = 0;
 void huboLoop(int vCan) {
 	int i = 0;  // iterator
 	// get initial values for hubo
-	struct hubo H;
-	struct console C;
+	struct hubo_ref H_ref;
+	struct hubo_init_cmd H_init;
+	struct hubo_state H_state;
+	struct hubo_param H_param;
+	memset( &H_ref,   0, sizeof(H_ref));
+	memset( &H_init,  0, sizeof(H_init));
+	memset( &H_state, 0, sizeof(H_state));
+	memset( &H_param, 0, sizeof(H_param));
+
 	size_t fs;
-	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
- 	assert( sizeof(H) == fs );
-	r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
- 	printf("r = %d fs = %d, C = %d\n",r,fs, sizeof(C));
-	//if (r == ACH_OK) {assert( sizeof(C) == fs );}
-//	assert( ACH_OK == r );
+	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+ 	assert( sizeof(H_ref) == fs );
+	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
+ 	assert( sizeof(H_init) == fs );
+	r = ach_get( &chan_hubo_init_cmd, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+ 	assert( sizeof(H_state) == fs );
+	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
+ 	assert( sizeof(H_param) == fs );
 	
 	// make can channels
 	int skt1;
@@ -143,10 +157,12 @@ void huboLoop(int vCan) {
 		skt1 	= 	openCAN("can1");
 		skt0	=	openCAN("can0");
 	}
-	H.socket[0] 	=	skt0;
-	H.socket[1]	=	skt1;
+	//H.socket[0] 	=	skt0;
+	hubo_socket[0] 	=	skt0;
+	//H.socket[1]	=	skt1;
+	hubo_socket[1]	=	skt1;
 	
-	ach_put( &chan_num, &H, sizeof(H));
+//	ach_put( &chan_hubo_ref, &H, sizeof(H));
 
 
    	
@@ -173,33 +189,13 @@ void huboLoop(int vCan) {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 		
 		/* Get latest ACH message */
-		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-		assert( sizeof(H) == fs );
-
-//		r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
-//		if(r == ACH_OK){assert( sizeof(C) == fs );}
-
-
-		if(a == 0) {
-//			hIniAll(&H, &frame);
-			a = 1;
-		}
-		H.joint[RAP].ref = -0.001;
-		H.joint[RAR].ref = 0.001;
-		//setEncRef(RAP,&H);
-		//setEncRef(RAR,&H);
-//		printf("ref = %i\n",H.joint[RAP].refEnc);
-
+		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+		assert( sizeof(H_ref) == fs );
 
 		/* read hubo console */
-		huboConsole(&H, &C, &frame);
+		huboConsole(&H_ref, &H_init, &frame);
 
-
-		/* Set all references to encoder then send to CAN bus*/
-//		setEncRefAll(&H);
-//		hSetEncRefAll(&H, &frame);
-			
-		
+		// set reference for zeroed joints only	
 		for(i = 0; i < numOfJoints; i++) {
 			if(H.joint[i].zeroed == true) {
 				hSetEncRef(H.joint[i].jntNo, &H, &frame);
@@ -209,7 +205,7 @@ void huboLoop(int vCan) {
 
 //		hSetEncRef(RHY, &H, &frame);
 //		printf("RHY = %f\n",H.joint[RHY].ref);
-		ach_put( &chan_num, &H, sizeof(H));
+		ach_put( &chan_hubo_ref, &H, sizeof(H));
 		t.tv_nsec+=interval;
                 tsnorm(&t);
 	}
@@ -667,9 +663,9 @@ void huboConsole(struct hubo *h, struct console *c, struct can_frame *f) {
 	int status = 0;
 	while ( status == 0 | status == ACH_OK | status == ACH_MISSED_FRAME ) {
 		/* get oldest ach message */
-		//status = ach_get( &chan_num, &c, sizeof(c), &fs, NULL, 0 );
-		//status = ach_get( &chan_num_console, c, sizeof(*c), &fs, NULL, ACH_O_LAST );
-		status = ach_get( &chan_num_console, c, sizeof(*c), &fs, NULL, 0 );
+		//status = ach_get( &chan_hubo_ref, &c, sizeof(c), &fs, NULL, 0 );
+		//status = ach_get( &chan_hubo_init_cmd, c, sizeof(*c), &fs, NULL, ACH_O_LAST );
+		status = ach_get( &chan_hubo_init_cmd, c, sizeof(*c), &fs, NULL, 0 );
 	//printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
 //	printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
 		if( status == ACH_STALE_FRAMES) {
@@ -713,20 +709,6 @@ int main(int argc, char **argv) {
 
 	int vflag = 0;
 	int c;
-/* arguements from command line */
-/*
-	while ((c = getopt (argc, argv, "v")) != -1) {
-		switch(c) {
-			case 'v':
-				vflag = 1;
-				break;
-			case 'd':
-				break;
-			default:
-				abort();
-		}
-	}
-*/
 
 	int i = 1;
 	while(argc > i) {
@@ -757,31 +739,23 @@ int main(int argc, char **argv) {
         stack_prefault();
 
 	
-	// open ach channel
-	//int r = ach_open(&chan_num, "hubo", NULL);
-	int r = ach_open(&chan_num, ch_hubo, NULL);
+	// open hubo reference 
+	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
 	assert( ACH_OK == r );
 
-	// open hubo console channel
-	//r = ach_open(&chan_num_console, "hubo-console", NULL);
-	r = ach_open(&chan_num_console, ch_hubo_console, NULL);
+	// open hubo state
+	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
    	
+	// initilize control channel
+	r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
+	assert( ACH_OK == r );
+	
+	// paramater
+	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME, NULL);
+	assert( ACH_OK == r );
 	// run hubo main loop
 
-/*
-	int pid_hubo = fork();
-	assert(pid_hubo >= 0);
-	if(!pid_hubo) huboLoop(vflag);
-
-	printf("hubo main loop started\n");
-*/
-
-/*
-	int pid_hubo_gui = fork();
-	assert(pid_hubo_gui >= 0);
-	if(!pid_hubo_gui) huboConsole();
-*/
 	
 	huboLoop(vflag);
 	pause();
