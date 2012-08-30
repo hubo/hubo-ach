@@ -33,31 +33,36 @@
 //typedef struct hubo HUBO[1];
 
 // ach channels
-ach_channel_t chan_num;
-ach_channel_t chan_num_console;
+// ach channels
+ach_channel_t chan_hubo_ref;      // hubo-ach
+ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_state;    // hubo-ach-state
+ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 void setPosZeros() {
 	// open ach channel
 //        int r = ach_open(&chan_num, "hubo", NULL);
 //        assert( ACH_OK == r );
 
-	struct hubo H;
+	struct hubo_ref H;
+	memset( &H,   0, sizeof(H));
 	size_t fs = 0;
-	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 	//printf("fs = %i, H = %i\n",fs, sizeof(H));
 	assert( sizeof(H) == fs );
 
 	int i = 0;
 	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-		H.joint[i].ref = 0.0;
+		H.ref[i] = 0.0;
 	}
-	ach_put(&chan_num, &H, sizeof(H));
+	ach_put(&chan_hubo_ref, &H, sizeof(H));
 }
 
 void setConsoleFlags() {
-	struct console C;
+	struct hubo_init_cmd C;
+	memset( &C,   0, sizeof(C));
 	size_t fs =0;
-	int r = ach_get( &chan_num_console, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
 	//printf("fs = %i, H = %i\n",fs, sizeof(H));
 	assert( sizeof(C) == fs );
 	int i = 0;
@@ -65,15 +70,16 @@ void setConsoleFlags() {
 		C.cmd[i] = 0;
 		C.val[i] = 0;
 	}
-	r = ach_put(&chan_num_console, &C, sizeof(C));
+	r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
 }
 
 
 void setActive() {
 
-	struct hubo H;
+	struct hubo_param H;
+	memset( &H,   0, sizeof(H));
 	size_t fs = 0;
-	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_param, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 	//printf("fs = %i, H = %i\n",fs, sizeof(H));
 	assert( sizeof(H) == fs );
 
@@ -82,7 +88,6 @@ void setActive() {
 		H.joint[i].active = false;
 		H.joint[i].zeroed = false;
 		H.joint[i].refEnc = 0;
-		H.joint[i].ref = 0.0;
 	}
 
 	H.joint[RHY].active = true;
@@ -130,10 +135,10 @@ void setActive() {
 	H.joint[LF4].active = true;
 	H.joint[LF5].active = true;
 
-	ach_put(&chan_num, &H, sizeof(H));
+	ach_put(&chan_hubo_param, &H, sizeof(H));
 }
 
-void setName( struct hubo *h, int mot, char* name ) {
+void setName( struct hubo_param *h, int mot, char* name ) {
 	sprintf(h->joint[mot].name , "%s" , name );
 //	h->joint[mot].name = name;
 }
@@ -143,9 +148,10 @@ void setDefaults() {
 //        int r = ach_open(&chan_num, "hubo", NULL);
 //        assert( ACH_OK == r );
 
-	struct hubo H;
+	struct hubo_param H;
+	memset( &H,   0, sizeof(H));
 	size_t fs;
-	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_param, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H) == fs );
 
 	/* Names */
@@ -814,7 +820,7 @@ void setDefaults() {
 	H.driver[EJMC5].jmc[H.joint[LF4].motNo] = LF4;
 	H.driver[EJMC5].jmc[H.joint[LF5].motNo] = LF5;
 //	hubo H = {h};
-	ach_put(&chan_num, &H, sizeof(H));
+	ach_put(&chan_hubo_param, &H, sizeof(H));
 
 /*
 		int i = 0;
@@ -833,24 +839,40 @@ pause();
 int main(int argc, char **argv){
 	(void) argc; (void)argv;
 
-	struct hubo H;
-	struct console C;
+	struct hubo_ref H_ref;
+	struct hubo_init_cmd H_init;
+	struct hubo_state H_state;
+	struct hubo_param H_param;
+	memset( &H_ref,   0, sizeof(H_ref));
+	memset( &H_init,  0, sizeof(H_init));
+	memset( &H_state, 0, sizeof(H_state));
+        memset( &H_param, 0, sizeof(H_param));
+
 	size_t fs;
 	// open ach channel
-	int r = ach_open(&chan_num, "hubo", NULL);
+	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
 	assert( ACH_OK == r );
 
-	r = ach_open(&chan_num_console, "hubo-console", NULL);
+	r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
 	assert( ACH_OK == r );
 
-	ach_put(&chan_num, &H, sizeof(H));
-	ach_put(&chan_num_console, &C, sizeof(C));
+	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
+	assert( ACH_OK == r );
+	
+	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME, NULL);
+	assert( ACH_OK == r );
+	
+
+	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+	ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));
+	ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
+	ach_put(&chan_hubo_param, &H_param, sizeof(H_param));
 
 	setDefaults();
 	setPosZeros();
 	setActive();
-	r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(H) == fs );
+//	r = ach_get( &chan_num, i&H, sizeof(H), &fs, NULL, ACH_O_LAST );
+//	assert( sizeof(H) == fs );
 /*
 	int i = 0;
 	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
