@@ -9,11 +9,37 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
 #include "hubo.h"
 #include "hubo-socketcan.h"
 
 
 hubo_can_t hubo_socket[4];
+
+
+
+static int openCAN(char* name) {
+
+   	/* Create the socket */
+   	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
+
+   	/* Locate the interface you wish to use */
+   	struct ifreq ifr;
+   	//strcpy(ifr.ifr_name, "vcan0");
+
+	// FIXME: buffer overflow here!!!
+   	strcpy(ifr.ifr_name, name);
+   	ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
+				  * with that device's index */
+   	/* Select that CAN interface, and bind the socket to it. */
+   	struct sockaddr_can addr;
+   	addr.can_family = AF_CAN;
+   	addr.can_ifindex = ifr.ifr_ifindex;
+   	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+	return skt;
+}
 
 
 void openAllCAN(int vCan) {
@@ -60,6 +86,49 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 
 	return bytes_sent;
 }
+
+
+
+static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
+	int n_left;
+	int n_read;
+	char *ptr;
+	ptr = buff;
+	n_left = n;
+	struct timeval timeout;
+	fd_set fds;
+
+	timeout.tv_sec = 0;
+  	timeout.tv_usec = timeo;
+  	FD_ZERO(&fds);
+  	FD_SET(sockfd, &fds);
+
+	while(n_left>0){
+
+		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){
+			if((n_read=read(sockfd,ptr,n_left))<0){
+				if(errno == EINTR)
+					n_read=0;
+				else{
+					return -1;
+				}
+			}
+			else if(n_read==0){
+				printf("n_read=0\n");
+				break;
+			}
+			n_left-=n_read;
+			//printf("%s\n", ptr);
+			ptr+=n_read;
+
+		}
+		else{
+			return -1;
+		}
+	}
+	return (n-n_left);
+}
+
 
 
 int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {

@@ -1,12 +1,27 @@
-default: hubo-main hubo-default
+default: all
+
+all: hubo-main hubo-default
+
+CFLAGS := -g --std=gnu99
 
 
-CFLAGS := -g
+# SOCKETCAN #
+CAN_LIBS :=
+CAN_OBJS := hubo-socketcan.o
+CAN_DEFS :=
 
-hubo_main_objs := hubo-main.o hubo-socketcan.o
+# esd CAN #
+# CAN_LIBS := -lntcan
+# CAN_OBJS := hubo-esdcan.o
+# CAN_DEFS := -DHUBO_CONFIG_ESD
+
+
+LIBS := -lach -lrt $(CAN_LIBS)
+
+hubo_main_objs := hubo-main.o $(CAN_OBJS)
 
 hubo-main: $(hubo_main_objs)
-	gcc -o $@  $(hubo_main_objs) -lach -lrt
+	gcc -o $@  $(hubo_main_objs) $(LIBS)
 
 hubo-default: hubo-default.c
 	gcc -o $@ $< -lach -lrt

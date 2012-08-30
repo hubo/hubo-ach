@@ -24,7 +24,12 @@
 #include "hubo.h"
 
 
+// Check out which CAN API to use
+#ifdef HUBO_CONFIG_ESD
+#include "hubo-esdcan.h"
+#else
 #include "hubo-socketcan.h"
+#endif
 
 // for ach
 #include <errno.h>
@@ -71,7 +76,6 @@
 void stack_prefault(void);
 static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
-int openCAN(char* name);
 void setEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h);
 void setEncRefAll( struct hubo_ref *r, struct hubo_param *h);
 void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
@@ -88,7 +92,6 @@ void fEnableFeedbackController(int jnt, struct hubo_ref *r, struct hubo_param *h
 void fDisableFeedbackController(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void fSetPositionController(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void fGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-int readn (int sockfd, void *buff, size_t n, int timeo);
 void hInitilizeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
@@ -221,25 +224,6 @@ static inline void tsnorm(struct timespec *ts){
 	}
 }
 
-
-int openCAN(char* name) {
-
-   	/* Create the socket */
-   	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
-
-   	/* Locate the interface you wish to use */
-   	struct ifreq ifr;
-   	//strcpy(ifr.ifr_name, "vcan0");
-   	strcpy(ifr.ifr_name, name);
-   	ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
-				  * with that device's index */
-   	/* Select that CAN interface, and bind the socket to it. */
-   	struct sockaddr_can addr;
-   	addr.can_family = AF_CAN;
-   	addr.can_ifindex = ifr.ifr_ifindex;
-   	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
-	return skt;
-}
 
 /*
 uint32_t getEncRef(int jnt, struct hubo *h)
@@ -439,47 +423,6 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 	fGotoLimitAndGoOffset(jnt, r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 	h->joint[jnt].zeroed = true;
-}
-
-
-int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
-	int n_left;
-	int n_read;
-	char *ptr;
-	ptr = buff;
-	n_left = n;
-	struct timeval timeout;
-	fd_set fds;
-
-	timeout.tv_sec = 0;
-  	timeout.tv_usec = timeo;
-  	FD_ZERO(&fds);
-  	FD_SET(sockfd, &fds);
-
-	while(n_left>0){
-
-		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){
-			if((n_read=read(sockfd,ptr,n_left))<0){
-				if(errno == EINTR)
-					n_read=0;
-				else{
-					return -1;
-				}
-			}
-			else if(n_read==0){
-				printf("n_read=0\n");
-				break;
-			}
-			n_left-=n_read;
-			//printf("%s\n", ptr);
-			ptr+=n_read;
-
-		}
-		else{
-			return -1;
-		}
-	}
-	return (n-n_left);
 }
 
 
