@@ -106,7 +106,7 @@ int main() {
 	assert( sizeof(H_ref) == fs );
 	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_init) == fs );
-	r = ach_get( &chan_hubo_init_cmd, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_state) == fs );
 	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_param) == fs );
