@@ -74,10 +74,12 @@ int main() {
 	
         // get initial values for hubo
         // open ach channel
-        int r = ach_open(&chan_num, "hubo", NULL);
+        //int r = ach_open(&chan_num, "hubo", NULL);
+        int r = ach_open(&chan_num, ch_hubo, NULL);
         assert( ACH_OK == r );
 
-        r = ach_open(&chan_num_console, "hubo-console", NULL);
+        //r = ach_open(&chan_num_console, "hubo-console", NULL);
+        r = ach_open(&chan_num_console, ch_hubo_console, NULL);
         assert( ACH_OK == r );
         
 	struct hubo H;
