@@ -1,3 +1,4 @@
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 #ifndef CAN_ID_H
 #define CAN_ID_H
 

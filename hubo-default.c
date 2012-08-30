@@ -1,3 +1,4 @@
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

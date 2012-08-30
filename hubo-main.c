@@ -1,3 +1,5 @@
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
