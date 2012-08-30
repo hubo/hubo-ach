@@ -83,8 +83,10 @@ int ftime(struct timeb *tp);
 //typedef struct hubo h[1];
 
 // ach channels
-ach_channel_t chan_num;		// hubo-ach
-ach_channel_t chan_num_console; // hubo-ach-console
+ach_channel_t chan_hubo_ref;      // hubo-ach
+ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_state;    // hubo-ach-state
+ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
 
@@ -98,9 +100,9 @@ struct timeb {
 
 void huboLoop() {
 	// get initial values for hubo
-	struct hubo H;
+	struct hubo_ref H;
 	size_t fs;
-	int r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
  	assert( sizeof(H) == fs );
    	
 	/* Send a message to the CAN bus */
@@ -129,12 +131,13 @@ void huboLoop() {
 	double A = 0.3;
 	double t0 = 0.0;
 	double t1 = 0.0;
+	int jnt = RHY;
 	while(1) {
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 		
 		/* Get latest ACH message */
-		r = ach_get( &chan_num, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+		r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
 		assert( sizeof(H) == fs );
 
 		
@@ -147,17 +150,14 @@ void huboLoop() {
 
 		t1 = t0;
 		t0 = tt;
-		H.joint[RHY].ref = A*sin(f*2*pi*tt);
+		H.ref[jnt] = A*sin(f*2*pi*tt);
 
-		if(H.joint[RHY].ref < 0) {
-			H.joint[RHY].ref = H.joint[RHY].ref;
-		}
 
 	//	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
-		printf("A = %f\n",H.joint[RHY].ref);	
+		printf("A = %f\n",H.ref[jnt]);	
 		//printf("Diff(t) = %f\n",(t0-t1));
 		
-		ach_put( &chan_num, &H, sizeof(H));
+		ach_put( &chan_hubo_ref, &H, sizeof(H));
 		t.tv_nsec+=interval;
                 tsnorm(&t);
 	}
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 
 	
 	/* open ach channel */
-	int r = ach_open(&chan_num, ch_hubo, NULL);
+	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
 	assert( ACH_OK == r );
 
 	huboLoop();
