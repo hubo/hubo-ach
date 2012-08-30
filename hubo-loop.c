@@ -124,9 +124,9 @@ void huboLoop() {
 	/* get initial tme*/
 	ftime(&tp_0);
 	double tt = 0.0;
-	double f = 0.3;		// frequency
+	double f = 0.2;		// frequency
 	double T = (double)interval/1000000000.0;
-	double A = 0.1;
+	double A = 0.3;
 	double t0 = 0.0;
 	double t1 = 0.0;
 	while(1) {
@@ -150,7 +150,7 @@ void huboLoop() {
 		H.joint[RHY].ref = A*sin(f*2*pi*tt);
 
 		if(H.joint[RHY].ref < 0) {
-			H.joint[RHY].ref = -H.joint[RHY].ref;
+			H.joint[RHY].ref = H.joint[RHY].ref;
 		}
 
 	//	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
