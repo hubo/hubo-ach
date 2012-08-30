@@ -7,5 +7,4 @@ hubo-default: hubo-default.c
 	gcc -o $@ $< -lach -lrt
 
 clean: 
-	rm hubo-main
-	rm hubo-default
+	rm -f hubo-main hubo-default

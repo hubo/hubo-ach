@@ -97,10 +97,11 @@
 #define		LF5		41		//	Left Finger
 
 
-#define		numOfJoints	50		// 	the size of the array
+#define		HUBO_JOINT_COUNT	50		// 	the size of the array
 						//	for the joints
-#define		numOfCmd	3		//  	number of commands	
-#define 	numOfJmc	0x40		//	number of JMCs
+#define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
+//#define		numOfCmd	3		//  	number of commiands	
+//#define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
 #define	        HUBO_CHAN_REF_NAME       "hubo-ref"        // hubo ach channel
@@ -170,7 +171,7 @@ struct hubo_imu {
 };
 
 struct hubo_ref {
-	double ref[numOfJoints];	///< joint reference
+	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	struct timespec time;           ///< time message sent
 };
 
@@ -185,6 +186,11 @@ struct hubo_init_cmd {
 	uint16_t cmd[3];
 };
 
+struct jmcDriver{
+	uint8_t jmc[5]; // other motors on the same drive
+};
+
 struct hubo_param {
-	struct hubo_joint_param joint[numOfJoints];
+	struct hubo_joint_param joint[HUBO_JOINT_COUNT];
+	struct jmcDriver driver[HUBO_JMC_COUNT];	// motor driver conneciton info
 };

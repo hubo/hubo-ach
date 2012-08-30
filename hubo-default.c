@@ -47,7 +47,7 @@ void setPosZeros() {
 	assert( sizeof(H) == fs );
 
 	int i = 0;
-	for( i = 0; i < numOfJoints; i++) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 		H.joint[i].ref = 0.0;
 	}
 	ach_put(&chan_num, &H, sizeof(H));
@@ -60,7 +60,7 @@ void setConsoleFlags() {
 	//printf("fs = %i, H = %i\n",fs, sizeof(H));
 	assert( sizeof(C) == fs );
 	int i = 0;
-	for( i = 0; i < numOfCmd; i++ ) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		C.cmd[i] = 0;
 		C.val[i] = 0;
 	}
@@ -77,7 +77,7 @@ void setActive() {
 	assert( sizeof(H) == fs );
 
 	int i = 0;
-	for( i = 0; i < numOfJoints; i++ ) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		H.joint[i].active = false;
 		H.joint[i].zeroed = false;
 		H.joint[i].refEnc = 0;
@@ -149,7 +149,7 @@ void setDefaults() {
 
 	/* Names */
 //	int i = 0;
-//	for(i = 0; i < numOfJoints; i++) {	
+//	for(i = 0; i < HUBO_JOINT_COUNT; i++) {	
 //       	strncpy(H.joint[i].name , "xxx" , 3);
 //	}
         
@@ -339,7 +339,7 @@ void setDefaults() {
         H.joint[LF5].name = "LF5";
 
 	int i = 0;
-	for( i = 0; i < numOfJoints; i++) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf(H.joint[i].name);
 		printf(" ");
 	}
@@ -818,7 +818,7 @@ void setDefaults() {
 /*
                 int i = 0;
 		printf("---- first print ----\n");
-                for( i = 0; i < numOfJoints; i++) {
+                for( i = 0; i < HUBO_JOINT_COUNT; i++) {
                         printf("i = %i, jnt = %i\n", i, H.joint[i].can);
                 }
 		printf("---- last print ---\n");
@@ -852,7 +852,7 @@ int main(int argc, char **argv){
 	assert( sizeof(H) == fs );
 /*
 	int i = 0;
-	for( i = 0; i < numOfJoints; i++) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf("jmc-%i = %i\n", i, H.joint[i].jmc);
 	}
 */
