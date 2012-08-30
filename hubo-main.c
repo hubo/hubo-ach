@@ -51,12 +51,12 @@
 
 // Priority
 #define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
-                            as the priority of kernel tasklets
-                            and interrupt handler by default */
+			    as the priority of kernel tasklets
+			    and interrupt handler by default */
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
-                                   guaranteed safe to access without
-                                   faulting */
+				   guaranteed safe to access without
+				   faulting */
 
 
 // Timing info
@@ -147,7 +147,7 @@ void huboLoop(int vCan) {
  	assert( sizeof(H_state) == fs );
 	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
  	assert( sizeof(H_param) == fs );
-	
+
 	// make can channels
 	int skt1;
 	int skt0;
@@ -163,11 +163,11 @@ void huboLoop(int vCan) {
 	hubo_socket[0] 	=	skt0;
 	//H.socket[1]	=	skt1;
 	hubo_socket[1]	=	skt1;
-	
+
 //	ach_put( &chan_hubo_ref, &H, sizeof(H));
 
 
-   	
+
 	/* Send a message to the CAN bus */
    	struct can_frame frame;
 
@@ -177,10 +177,10 @@ void huboLoop(int vCan) {
 	//int interval = 10000000; // 100 hz (0.01 sec)
 	//int interval = 5000000; // 200 hz (0.005 sec)
 	int interval = 2000000; // 500 hz (0.002 sec)
-	
+
 	// get current time
-        //clock_gettime( CLOCK_MONOTONIC,&t);
-        clock_gettime( 0,&t);
+	//clock_gettime( CLOCK_MONOTONIC,&t);
+	clock_gettime( 0,&t);
 
 	sprintf( frame.data, "1234578" );
 	frame.can_dlc = strlen( frame.data );
@@ -189,15 +189,15 @@ void huboLoop(int vCan) {
 	while(1) {
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
-		
+
 		/* Get latest ACH message */
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		assert( sizeof(H_ref) == fs );
 
 		/* read hubo console */
 		huboConsole(&H_ref, &H_param, &H_init, &frame);
-		
-		// set reference for zeroed joints only	
+
+		// set reference for zeroed joints only
 		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 			if(H_param.joint[i].zeroed == true) {
 				hSetEncRef(H_param.joint[i].jntNo, &H_ref, &H_param, &frame);
@@ -208,7 +208,7 @@ void huboLoop(int vCan) {
 //		printf("RHY = %f\n",H.joint[RHY].ref);
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
 		t.tv_nsec+=interval;
-                tsnorm(&t);
+		tsnorm(&t);
 	}
 
 
@@ -230,11 +230,11 @@ static inline void tsnorm(struct timespec *ts){
 
 //	clock_nanosleep( NSEC_PER_SEC, TIMER_ABSTIME, ts, NULL);
 	// calculates the next shot
-        while (ts->tv_nsec >= NSEC_PER_SEC) {
-                //usleep(100);	// sleep for 100us (1us = 1/1,000,000 sec)
+	while (ts->tv_nsec >= NSEC_PER_SEC) {
+		//usleep(100);	// sleep for 100us (1us = 1/1,000,000 sec)
 		ts->tv_nsec -= NSEC_PER_SEC;
-                ts->tv_sec++;
-        }
+		ts->tv_sec++;
+	}
 }
 
 
@@ -242,13 +242,13 @@ int openCAN(char* name) {
 
    	/* Create the socket */
    	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
-	
+
    	/* Locate the interface you wish to use */
    	struct ifreq ifr;
    	//strcpy(ifr.ifr_name, "vcan0");
    	strcpy(ifr.ifr_name, name);
    	ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
-                                  * with that device's index */
+				  * with that device's index */
    	/* Select that CAN interface, and bind the socket to it. */
    	struct sockaddr_can addr;
    	addr.can_family = AF_CAN;
@@ -285,7 +285,7 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		__u8 m0 = h->driver[jmc].jmc[0];
 		__u8 m1 = h->driver[jmc].jmc[1];
 //		printf("m0 = %i, m1= %i \n",m0, m1);
-	
+
 
 		unsigned long pos0 = signConvention((int)getEncRef(m0, r, h));
 		unsigned long pos1 = signConvention((int)getEncRef(m1, r, h));
@@ -338,7 +338,7 @@ void fResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, stru
 	f->data[0] 	= h->joint[jnt].jmc;
 	f->data[1]		= EncZero;
 	f->data[2] 	= h->joint[jnt].motNo;
-	//sprintf(f->data, "%s", data);	
+	//sprintf(f->data, "%s", data);
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 // 4
@@ -460,7 +460,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 
 /**
 * Sends CAN packet to desired channel
-* 
+*
 * @param $first
 *	"@param" is the socket you want to send to
 * @param $second
@@ -493,29 +493,29 @@ int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
 	struct timeval timeout;
 	fd_set fds;
 
-	timeout.tv_sec = 0;    
-  	timeout.tv_usec = timeo; 
+	timeout.tv_sec = 0;
+  	timeout.tv_usec = timeo;
   	FD_ZERO(&fds);
   	FD_SET(sockfd, &fds);
 
 	while(n_left>0){
-		
-		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){ 
-			if((n_read=read(sockfd,ptr,n_left))<0){	
+
+		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){
+			if((n_read=read(sockfd,ptr,n_left))<0){
 				if(errno == EINTR)
 					n_read=0;
 				else{
-					return -1;	
+					return -1;
 				}
 			}
-			else if(n_read==0){			
+			else if(n_read==0){
 				printf("n_read=0\n");
 				break;
 			}
-			n_left-=n_read;	
+			n_left-=n_read;
 			//printf("%s\n", ptr);
-			ptr+=n_read;			
-			
+			ptr+=n_read;
+
 		}
 		else{
 			return -1;
@@ -549,7 +549,7 @@ torDriverOnOff
 //	int bytes_read = read( skt, f, sizeof(*f));
 	if( bytes_read < 0 ) {
 		perror("bad read");
-	} else if( debug == 1 ) { 
+	} else if( debug == 1 ) {
 		printf("%d bytes read -- ", bytes_read);
 		int i = 0;
 		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
@@ -578,7 +578,7 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 // --std=c99
 		printf("2\n");
-	int i = 0;	
+	int i = 0;
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		if(h->joint[i].active) {
 			hInitializeBoard(i, r, h, f);
@@ -607,7 +607,7 @@ void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h,
 
 void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	fResetEncoderToZero(jnt,r, h, f);
-	sendCan(hubo_socket[h->joint[jnt].can], f); 
+	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
@@ -626,7 +626,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 			break; }
 		else {
 		//assert( sizeof(c) == fs );
-		
+
 //		if ( status != 0 & status != ACH_OK & status != ACH_MISSED_FRAME ) {
 //			break; }
 
@@ -672,45 +672,45 @@ int main(int argc, char **argv) {
 		i++;
 	}
 
-	// RT 
+	// RT
 	struct sched_param param;
 	/* Declare ourself as a real time task */
 
-        param.sched_priority = MY_PRIORITY;
-        if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-                perror("sched_setscheduler failed");
-                exit(-1);
-        }
+	param.sched_priority = MY_PRIORITY;
+	if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+		perror("sched_setscheduler failed");
+		exit(-1);
+	}
 
-        /* Lock memory */
+	/* Lock memory */
 
-        if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1) {
-                perror("mlockall failed");
-                exit(-2);
-        }
+	if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1) {
+		perror("mlockall failed");
+		exit(-2);
+	}
 
-        /* Pre-fault our stack */
-        stack_prefault();
+	/* Pre-fault our stack */
+	stack_prefault();
 
-	
-	// open hubo reference 
+
+	// open hubo reference
 	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
 	assert( ACH_OK == r );
 
 	// open hubo state
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
-   	
+
 	// initilize control channel
 	r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
 	assert( ACH_OK == r );
-	
+
 	// paramater
 	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME, NULL);
 	assert( ACH_OK == r );
 	// run hubo main loop
 
-	
+
 	huboLoop(vflag);
 	pause();
 	return 0;

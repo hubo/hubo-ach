@@ -101,14 +101,14 @@
 #define		HUBO_JOINT_COUNT	50		// 	the size of the array
 						//	for the joints
 #define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
-//#define		numOfCmd	3		//  	number of commiands	
+//#define		numOfCmd	3		//  	number of commiands
 //#define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
-#define	        HUBO_CHAN_REF_NAME       "hubo-ref"        // hubo ach channel
-#define	        HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   // hubo console channel for ach
-#define	        HUBO_CHAN_STATE_NAME     "hubo-state"      // hubo state ach channel
-#define	        HUBO_CHAN_PARAM_NAME     "hubo-param"      // hubo param ach channel
+#define		HUBO_CHAN_REF_NAME       "hubo-ref"        // hubo ach channel
+#define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   // hubo console channel for ach
+#define		HUBO_CHAN_STATE_NAME     "hubo-state"      // hubo state ach channel
+#define		HUBO_CHAN_PARAM_NAME     "hubo-param"      // hubo param ach channel
 
 
 /* def for console do flags */
@@ -129,7 +129,7 @@ typedef enum {
 	HUBO_FT_R_FOOT    = 2, ///< Index of right foot FT
 	HUBO_FT_L_FOOT    = 3  ///< Index of left foot FT
 } hubo_ft_index_t;
-	
+
 
 
 struct hubo_joint_param {
@@ -145,7 +145,7 @@ struct hubo_joint_param {
 	uint16_t jmc;		///< motor controller number
 	uint8_t can;		///< can channel
 	uint8_t active; 	///< checks if the joint is active or not
-	uint8_t numMot;		///< number of motors 
+	uint8_t numMot;		///< number of motors
 	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 //}__attribute__((packed));
@@ -177,7 +177,7 @@ struct hubo_ref {
 };
 
 struct hubo_state {
-	struct hubo_imu imu;	///< IMU	
+	struct hubo_imu imu;	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 };
 

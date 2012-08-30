@@ -4,7 +4,7 @@
 
 
 
-					
+
 // This file contains 'CAN-ID' for HUBO2
 
 #define CMD_TXDF				0x01
@@ -314,36 +314,35 @@
 
 
 // Command(Not CAN ID)
-#define AllController				0x20	
+#define AllController				0x20
 #define NameInfo				0x01
-#define BoardStatus				0x02	
-#define SendEncoder				0x03	
-#define SendCurrent				0x04	
+#define BoardStatus				0x02
+#define SendEncoder				0x03
+#define SendCurrent				0x04
 #define SendPM					0x05
-#define EncZero					0x06	
-#define SetPosGainA				0x07	
-#define SetPosGainB				0x08	
-#define SetTorqueGainA				0x09	
-#define SetTorqueGainB				0x0A	
+#define EncZero					0x06
+#define SetPosGainA				0x07
+#define SetPosGainB				0x08
+#define SetTorqueGainA				0x09
+#define SetTorqueGainB				0x0A
 #define HipEnable				0x0B
-#define GoHome					0x0C	
+#define GoHome					0x0C
 #define PwmCMD					0x0D
-#define RunCMD					0x0E	
+#define RunCMD					0x0E
 #define StopCMD					0x0F
-#define ControlMode				0x10	
+#define ControlMode				0x10
 #define GoLimitPos				0x11
-#define TorqueLimit				0x12		
+#define TorqueLimit				0x12
 #define RequestPara				0x24
 
-#define NullCMD					0x81	
-#define SetPeriod				0x82		 
-#define SetSample				0x83		
+#define NullCMD					0x81
+#define SetPeriod				0x82
+#define SetSample				0x83
 #define ADRead					0x84
-#define DAOut					0x85	
-#define DataTypeCMD				0x86		
-#define DAOffsetCMD				0x87		
-#define ADOffsetCMD				0x88		
-#define OffsetCMD				0x89		
+#define DAOut					0x85
+#define DataTypeCMD				0x86
+#define DAOffsetCMD				0x87
+#define ADOffsetCMD				0x88
+#define OffsetCMD				0x89
 
 #endif
-					
