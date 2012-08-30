@@ -195,3 +195,5 @@ struct hubo_param {
 	struct hubo_joint_param joint[HUBO_JOINT_COUNT];
 	struct jmcDriver driver[HUBO_JMC_COUNT];	// motor driver conneciton info
 };
+
+extern int hubo_debug;
