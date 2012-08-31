@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "hubo.h"
-#include "hubo-esdcan.h"
+#include "hubo/hubo-esdcan.h"
 
 
 hubo_can_t hubo_socket[4];

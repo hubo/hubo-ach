@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include "hubo.h"
-#include "hubo-socketcan.h"
+#include "hubo/hubo-socketcan.h"
 
 
 hubo_can_t hubo_socket[4];

@@ -26,9 +26,9 @@
 
 // Check out which CAN API to use
 #ifdef HUBO_CONFIG_ESD
-#include "hubo-esdcan.h"
+#include "hubo/hubo-esdcan.h"
 #else
-#include "hubo-socketcan.h"
+#include "hubo/hubo-socketcan.h"
 #endif
 
 // for ach
