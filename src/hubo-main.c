@@ -183,12 +183,19 @@ void huboLoop(void) {
 
 	int a = 0;
 	while(1) {
+		fs = 0;
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-		assert( sizeof(H_ref) == fs );
+		assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
+		assert( ACH_STALE_FRAMES == r || sizeof(H_ref) == fs );
+		r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
+		assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
+		assert( ACH_STALE_FRAMES == r || sizeof(H_param) == fs );
+		// assert( sizeof(H_param) == fs );
+
 
 		/* read hubo console */
 		huboConsole(&H_ref, &H_param, &H_init, &frame);
@@ -199,7 +206,7 @@ void huboLoop(void) {
 				hSetEncRef(H_param.joint[i].jntNo, &H_ref, &H_param, &frame);
 			}
 		}
-
+//		hSetEncRef(H_param.joint[RHY].jntNo, &H_ref, &H_param, &frame);
 //		hSetEncRef(RHY, &H, &frame);
 //		printf("RHY = %f\n",H.joint[RHY].ref);
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
