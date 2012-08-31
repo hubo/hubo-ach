@@ -20,7 +20,7 @@
 #include <sys/mman.h>
 
 // for hubo
-#include "../hubo-ach/hubo.h"
+#include "../hubo-ach/include/hubo.h"
 
 // for ach
 #include <errno.h>
@@ -128,10 +128,10 @@ void huboLoop() {
 	double tt = 0.0;
 	double f = 0.2;		// frequency
 	double T = (double)interval/1000000000.0;
-	double A = 0.3;
+	double A = 0.1;
 	double t0 = 0.0;
 	double t1 = 0.0;
-	int jnt = RHY;
+	int jnt = RSP;
 	while(1) {
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
