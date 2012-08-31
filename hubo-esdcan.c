@@ -65,7 +65,13 @@ void openAllCAN(int vCan) {
 				 &hubo_socket[i] //handle
 			);
 		if( NTCAN_SUCCESS != r ) {
-			fprintf(stderr, "Error opening CAN %d: %s\n", i, canResultString(r));
+			fprintf(stderr, "Unable to open CAN %d: %s\n", i, canResultString(r));
+			exit( EXIT_FAILURE );
+		}
+
+		r = canSetBaudrate( hubo_socket[i], NTCAN_BAUD_1000 );
+		if( NTCAN_SUCCESS != r ) {
+			fprintf(stderr, "Unable to set CAN %d baud: %s\n", i, canResultString(r));
 			exit( EXIT_FAILURE );
 		}
 	}
@@ -96,6 +102,9 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	int32_t num = 1;
 	int r = canWrite( skt, &esd_frame, &num, NULL );
 	// FIXME: check error and handle failure reasonably
+	if (NTCAN_SUCCESS != r) {
+		fprintf(stderr, "canWrite error: %s\n", canResultString(r));
+	}
 
 }
 
@@ -108,6 +117,10 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
 	int32_t num  = 1;
 	int r = canRead( skt, &esd_frame, &num, NULL );
 	// FIXME: check error and handle failure reasonably
+	if (NTCAN_SUCCESS != r) {
+		fprintf(stderr, "canRead error: %s\n", canResultString(r));
+		return 0;
+	}
 
 	/*** Convert to socketcan struct ***/
 	// id
