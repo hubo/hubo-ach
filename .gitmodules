@@ -1,0 +1,6 @@
+[submodule "loop"]
+	path = loop
+	url = https://github.com/thedancomplex/hubo-ach-loop.git
+[submodule "console"]
+	path = console
+	url = https://github.com/thedancomplex/hubo-ach-console
