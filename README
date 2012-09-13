@@ -1,28 +1,36 @@
-How to install and run hubo-ach
+HUBO-ACH
 
-* Install ACH
+Install ACH
+===========
 
 (1) Add this line to /etc/apt/sources.list:
 
-  deb http://code.golems.org/debian squeeze golems.org
+    deb http://code.golems.org/debian squeeze golems.org
 
   (Replace squeeze with the codename for your distribution, ie lucid,
   precise, etc.)
 
-(2) sudo apt-get update
-(3) sudo apt-get install libach0 libach-dev
+(2) `sudo apt-get update`
+(3) `sudo apt-get install libach0 libach-dev`
 
-
-* To run
+Run Hubo-Ach
+============
 
 (1) build the system
 	$ make
 
 (2) run run.sh, this will open all 4 can devices, initilize them to 1mbps and run hubo-main
-	For Hardware CAN run
-		$ ./run.sh
-	For Virturl CAN run
-		$ ./vrun.sh
+	For Hardware CAN run: `./run.sh`
+	For Virturl CAN run: `./vrun.sh`
 
 hubo-main options
 	-d : debug mode, will print out all sending and receiving CAN data
+
+hubo-ach-console
+================
+
+console input for hubo ach
+
+Required for installation:
+    sudo apt-get install libreadline-dev
+
