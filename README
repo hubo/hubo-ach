@@ -28,9 +28,11 @@ hubo-main options
 
 hubo-ach-console
 ================
-
 console input for hubo ach
 
 Required for installation:
     sudo apt-get install libreadline-dev
 
+hubo-ach-loop
+=============
+demo loop that communicates with hubo ach

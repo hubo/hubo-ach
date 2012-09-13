@@ -1,13 +1,12 @@
 default: all
 
-all: hubo-main hubo-default hubo-console
+
 
 CFLAGS := -I./include -g --std=gnu99
 CXXFLAGS := -I./include -g
 
 CC := gcc
 CXX := g++
-
 
 # SOCKETCAN #
 CAN_LIBS :=
@@ -19,6 +18,8 @@ CAN_DEFS :=
 # CAN_OBJS := src/hubo-esdcan.o
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
+BINARIES := hubo-main hubo-default hubo-console hubo-loop
+all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS)
 
@@ -33,6 +34,9 @@ hubo-default: src/hubo-default.c
 hubo-console: src/hubo-console.o
 	$(CXX)  -o $@ $< -lach -lreadline
 
+hubo-loop: src/hubo-loop.o
+	gcc -o $@ $< -lach -lrt
+
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
@@ -41,4 +45,5 @@ hubo-console: src/hubo-console.o
 
 
 clean:
-	rm -f hubo-main hubo-default hubo-console src/*.o
+	rm -f $(BINARIES) src/*.o
+
