@@ -4,8 +4,9 @@
 AC_PREREQ([2.67])
 AC_INIT([hubo-ach], [0.0.0], [dml46@drexel.edu])
 AM_INIT_AUTOMAKE([-Wall])
-AC_CONFIG_SRCDIR([hubo.h])
+AC_CONFIG_SRCDIR([include/hubo.h])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_USE_SYSTEM_EXTENSIONS
