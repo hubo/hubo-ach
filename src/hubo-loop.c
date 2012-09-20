@@ -157,7 +157,7 @@ void huboLoop() {
         double A = 0.1;
         double t0 = 0.0;
         double t1 = 0.0;
-        int jnt = RSP;
+        int jnt = RHY;
         while(1) {
                 // wait until next shot
                 clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);

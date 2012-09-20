@@ -169,7 +169,6 @@ void huboLoop(void) {
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {printf("Ref r = %s\n",ach_result_to_string(r));}
 	assert( sizeof(H_ref) == fs );
-
 	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {printf("CMD r = %s\n",ach_result_to_string(r));}
 	assert( sizeof(H_init) == fs );
@@ -196,9 +195,9 @@ void huboLoop(void) {
 	// time info
 	struct timespec t;
 	//int interval = 500000000; // 2hz (0.5 sec)
-	//int interval = 10000000; // 100 hz (0.01 sec)
+	int interval = 10000000; // 100 hz (0.01 sec)
 	//int interval = 5000000; // 200 hz (0.005 sec)
-	int interval = 2000000; // 500 hz (0.002 sec)
+	//int interval = 2000000; // 500 hz (0.002 sec)
 
 	// get current time
 	//clock_gettime( CLOCK_MONOTONIC,&t);
@@ -208,20 +207,53 @@ void huboLoop(void) {
 	frame.can_dlc = strlen( frame.data );
 
 	int a = 0;
+
+	printf("Start Hubo Loop\n");
 	while(1) {
 		fs = 0;
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
+		/*
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
 		assert( ACH_STALE_FRAMES == r || sizeof(H_ref) == fs );
 		r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
 		assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
 		assert( ACH_STALE_FRAMES == r || sizeof(H_param) == fs );
+		*/
 		// assert( sizeof(H_param) == fs );
 
+		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+		if(ACH_OK != r) {
+				if(hubo_debug) {
+					printf("Ref r = %s\n",ach_result_to_string(r));}
+			}
+		else{	assert( sizeof(H_ref) == fs ); }
+
+/*
+		r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
+		if(ACH_OK != r) {
+				if(hubo_debug) {
+					printf("CMD r = %s\n",ach_result_to_string(r));}
+				}
+		else{ assert( sizeof(H_init) == fs ); }
+*/
+
+		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+		if(ACH_OK != r) {
+				if(hubo_debug) {
+					printf("State r = %s\n",ach_result_to_string(r));}
+				}
+		else{ assert( sizeof(H_state) == fs ); }
+
+		r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
+		if(ACH_OK != r) {
+				if(hubo_debug) {
+					printf("Param r = %s\n",ach_result_to_string(r));}
+				}
+	 	else{ assert( sizeof(H_param) == fs ); }
 
 		/* read hubo console */
 		huboConsole(&H_ref, &H_param, &H_init, &frame);
@@ -235,6 +267,7 @@ void huboLoop(void) {
 //		hSetEncRef(H_param.joint[RHY].jntNo, &H_ref, &H_param, &frame);
 //		hSetEncRef(RHY, &H, &frame);
 //		printf("RHY = %f\n",H.joint[RHY].ref);
+		ach_put( &chan_hubo_param, &H_param, sizeof(H_param));
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
 		t.tv_nsec+=interval;
 		tsnorm(&t);
@@ -514,6 +547,7 @@ void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h,
 void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	fResetEncoderToZero(jnt,r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
+	h->joint[jnt].zeroed == true;		// need to add a can read back to confirm it was zeroed
 }
 void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
