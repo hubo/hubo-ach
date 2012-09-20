@@ -266,10 +266,12 @@ void huboLoop(void) {
 //		hSetEncRef(RHY, &H, &frame);
 //		printf("RHY = %f\n",H.joint[RHY].ref);
 
-		hGetEncValue(RHY, &H_param, &frame);
-		readCan(hubo_socket[H_param.joint[RHY].can], &frame, 0.001);
+
+		int tmpJnt = WST;
+		hGetEncValue(tmpJnt, &H_param, &frame);
+		readCan(hubo_socket[H_param.joint[tmpJnt].can], &frame, 0.0001);
 		decodeFrame(&H_state, &H_param, &frame);
-		printf("RHY Pos = %f\n",H_state.joint[RHY].pos);
+		printf("Pos = %f\n",H_state.joint[tmpJnt].pos);
 
 		ach_put( &chan_hubo_param, &H_param, sizeof(H_param));
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
@@ -630,16 +632,49 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 		int jnt0 = h->driver[jmc].jmc[0];     // jmc number
 		int motNo = h->joint[jnt0].numMot;     // motor number   
 		int32_t enc = 0;
-		for( i = 0; i < motNo; i++ ) {
-			enc = 0;
-			enc = (enc << 8) + f->data[3 + i*4];
-			enc = (enc << 8) + f->data[2 + i*4];
-			enc = (enc << 8) + f->data[1 + i*4];
-			enc = (enc << 8) + f->data[0 + i*4];
-			int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
-			s->joint[jnt].pos =  enc2rad(jnt,enc, h);
+		int16_t enc16 = 0;			// encoder value for neck and fingers
+		if(motNo == 2 | motNo == 1){
+			for( i = 0; i < motNo; i++ ) {
+				enc = 0;
+				enc = (enc << 8) + f->data[3 + i*4];
+				enc = (enc << 8) + f->data[2 + i*4];
+				enc = (enc << 8) + f->data[1 + i*4];
+				enc = (enc << 8) + f->data[0 + i*4];
+				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				s->joint[jnt].pos =  enc2rad(jnt,enc, h);
+			}
 		}
-		
+
+		else if( motNo == 3 ) { 	// neck
+			for( i = 0; i < motNo; i++ ) {
+				enc16 = 0;
+				enc16 = (enc << 8) + f->data[1 + i*4];
+				enc16 = (enc << 8) + f->data[0 + i*4];
+				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+			}
+		}
+			
+		else if( motNo == 5 & f->can_dlc == 6 ) {
+			for( i = 0; i < 3 ; i++ ) {
+				enc16 = 0;
+				enc16 = (enc << 8) + f->data[1 + i*4];
+				enc16 = (enc << 8) + f->data[0 + i*4];
+				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+			}
+		}
+			
+		else if( motNo == 5 & f->can_dlc == 4 ) {
+			for( i = 0; i < 2; i++ ) {
+				enc16 = 0;
+				enc16 = (enc << 8) + f->data[1 + i*4];
+				enc16 = (enc << 8) + f->data[0 + i*4];
+				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+			}
+		}
+	
 	}
 	return 0;
 }
