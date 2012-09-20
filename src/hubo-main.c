@@ -110,7 +110,6 @@ void fGetCurrentValue(int jnt, struct hubo_ref *r, struct hubo_param *h, struct 
 void fSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime);
 void hSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime);
 void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void fGetEncoderPos(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void fInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void fEnableMotorDriver(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void fDisableMotorDriver(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
@@ -130,10 +129,9 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-
-
-
-
+int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+double enc2rad(int jnt, int enc, struct hubo_param *h);
+void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
 
 
 
@@ -267,6 +265,12 @@ void huboLoop(void) {
 //		hSetEncRef(H_param.joint[RHY].jntNo, &H_ref, &H_param, &frame);
 //		hSetEncRef(RHY, &H, &frame);
 //		printf("RHY = %f\n",H.joint[RHY].ref);
+
+		hGetEncValue(RHY, &H_param, &frame);
+		readCan(hubo_socket[H_param.joint[RHY].can], &frame, 0.001);
+		decodeFrame(&H_state, &H_param, &frame);
+		printf("RHY Pos = %f\n",H_state.joint[RHY].pos);
+
 		ach_put( &chan_hubo_param, &H_param, sizeof(H_param));
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
 		t.tv_nsec+=interval;
@@ -396,7 +400,6 @@ void fGetCurrentValue(int jnt, struct hubo_ref *r, struct hubo_param *h, struct 
 
 // 4
 void fSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime) {
-	// get the value of the current in 10mA units A = V/100
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
 	f->data[0] 	= h->joint[jnt].jmc;	// BNO
@@ -470,7 +473,19 @@ void fSetPositionController(int jnt, struct hubo_ref *r, struct hubo_param *h, s
 	f->can_dlc = 3;
 }
 
+void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
+	f->can_id       = CMD_TXDF;     // Set ID
+	 __u8 data[3];
+	f->data[0]      = h->joint[jnt].jmc;
+	f->data[1]              = SendEncoder;
+	f->data[2]              = 0x00;
+	f->can_dlc = 3; //= strlen( data );     // Set DLC
+}
 
+void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
+	fGetEncValue( jnt, h, f);
+	sendCan(hubo_socket[h->joint[jnt].can], f);
+}
 
 void hSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime) {
 	fSetBeep(jnt, r, h, f, beepTime);
@@ -598,6 +613,38 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 //		printf("c = %i\n",c->cmd[0]);
 	}
 }
+
+
+double enc2rad(int jnt, int enc, struct hubo_param *h) {
+	struct hubo_joint_param *p = &h->joint[jnt];
+        return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*pi);
+}
+
+
+int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+	int fs = (int)f->can_id;
+	// Return Motor Position
+	if( (fs >= ENC_BASE_RXDF) & (fs < CUR_BASE_RXDF) ) {
+		int jmc = fs-ENC_BASE_RXDF;
+		int i = 0;
+		int jnt0 = h->driver[jmc].jmc[0];     // jmc number
+		int motNo = h->joint[jnt0].numMot;     // motor number   
+		int32_t enc = 0;
+		for( i = 0; i < motNo; i++ ) {
+			enc = 0;
+			enc = (enc << 8) + f->data[3 + i*4];
+			enc = (enc << 8) + f->data[2 + i*4];
+			enc = (enc << 8) + f->data[1 + i*4];
+			enc = (enc << 8) + f->data[0 + i*4];
+			int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+			s->joint[jnt].pos =  enc2rad(jnt,enc, h);
+		}
+		
+	}
+	return 0;
+}
+
+
 
 int main(int argc, char **argv) {
 

@@ -179,6 +179,7 @@ struct hubo_ref {
 struct hubo_state {
 	struct hubo_imu imu;	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
+	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
 };
 
 struct hubo_init_cmd {
