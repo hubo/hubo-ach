@@ -1,8 +1,8 @@
 rm bsd.src
 rm tmp
 rm tmp1
-echo '*\' >> tmp
-echo '\*' | cat - License >> tmp1
+echo '*/' >> tmp
+echo '/*' | cat - License >> tmp1
 cat tmp1 | cat - tmp >> bsd.src
 rm tmp
 rm tmp1
