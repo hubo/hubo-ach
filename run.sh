@@ -1,5 +1,4 @@
 sudo ifconfig can0 down
-
 sudo ifconfig can1 down
 sudo ifconfig can2 down
 sudo ifconfig can3 down
