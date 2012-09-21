@@ -600,7 +600,7 @@ void setDefaults() {
 	H.joint[NKY].can = 1;
 	H.joint[NK1].can = 1;
 	H.joint[NK2].can = 1;
-	H.joint[WST].can = 1;
+	H.joint[WST].can = 0;
 
 	H.joint[RF1].can = 1;
 	H.joint[RF2].can = 1;
