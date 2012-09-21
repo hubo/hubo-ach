@@ -105,11 +105,11 @@
 //#define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
-#define		HUBO_CHAN_REF_NAME       "hubo-ref"        // hubo ach channel
-#define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   // hubo console channel for ach
-#define		HUBO_CHAN_STATE_NAME     "hubo-state"      // hubo state ach channel
-#define		HUBO_CHAN_PARAM_NAME     "hubo-param"      // hubo param ach channel
-
+#define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
+#define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
+#define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
+#define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
+#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0001		///> Defautl time for CAN to time out
 
 /* def for console do flags */
 /* unless otherwise noted cmd[0] = command, cmd[1] = motor# */

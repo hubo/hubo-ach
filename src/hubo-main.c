@@ -132,6 +132,7 @@ void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct 
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, struct hubo_param *h);
 void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
+void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 
 
 
@@ -192,8 +193,8 @@ void huboLoop(void) {
 
 	// time info
 	struct timespec t;
-	//int interval = 500000000; // 2hz (0.5 sec)
-	int interval = 10000000; // 100 hz (0.01 sec)
+	int interval = 500000000; // 2hz (0.5 sec)
+//	int interval = 10000000; // 100 hz (0.01 sec)
 	//int interval = 5000000; // 200 hz (0.005 sec)
 	//int interval = 2000000; // 500 hz (0.002 sec)
 
@@ -267,10 +268,8 @@ void huboLoop(void) {
 //		printf("RHY = %f\n",H.joint[RHY].ref);
 
 
-		int tmpJnt = WST;
-		hGetEncValue(tmpJnt, &H_param, &frame);
-		readCan(hubo_socket[H_param.joint[tmpJnt].can], &frame, 0.0001);
-		decodeFrame(&H_state, &H_param, &frame);
+		int tmpJnt = REB;
+		getEncAll(&H_state, &H_param, &frame); 
 		printf("Pos = %f\n",H_state.joint[tmpJnt].pos);
 
 		ach_put( &chan_hubo_param, &H_param, sizeof(H_param));
@@ -314,7 +313,24 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 }
 */
 
+void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+	///> Requests all encoder and records to hubo_state
+	char c[HUBO_JMC_COUNT];
+	memset( &c, 1, sizeof(c));
+	int jmc = 0;
+	int i = 0;
+	c[h->joint[REB].jmc] = 0;
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+		jmc = h->joint[i].jmc;
+		if(0 == c[jmc]){	// check to see if already asked that motor controller
+			hGetEncValue(i, h, f);
+			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+			decodeFrame(s, h, f);
+			c[jmc] = 1;
+		}
+	}	
 
+}
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
 	// set encoder from reference
 	struct hubo_joint_param *p = &h->joint[jnt];
