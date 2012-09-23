@@ -325,11 +325,20 @@ void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) 
 		jmc = h->joint[i].jmc;
 		if(0 == c[jmc]){	// check to see if already asked that motor controller
 			hGetEncValue(i, h, f);
+//			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+//			decodeFrame(s, h, f);
+			c[jmc] = 1;
+		}
+	}	
+	memset( &c, 0, sizeof(c));
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+		jmc = h->joint[i].jmc;
+		if(0 == c[jmc]){	// check to see if already asked that motor controller
 			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
 			decodeFrame(s, h, f);
 			c[jmc] = 1;
 		}
-	}	
+	}
 
 }
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
