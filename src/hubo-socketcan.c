@@ -44,7 +44,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 hubo_can_t hubo_socket[4];
 
-
+int hubo_ver_can = 0;
 
 static int openCAN(char* name) {
 
@@ -97,7 +97,7 @@ void openAllCAN(int vCan) {
 int sendCan(hubo_can_t skt, struct can_frame *f) {
 	//int bytes_sent = write( skt, f, sizeof(*f) );
 	int bytes_sent = write( skt, f, sizeof(*f) );
-	if( bytes_sent < 0 ) {
+	if( (bytes_sent < 0) & (1 == hubo_ver_can) ) {
 		perror("bad write");
 	} else if( hubo_debug == 1 ) {
 
@@ -140,7 +140,9 @@ static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond p
 				}
 			}
 			else if(n_read==0){
-				printf("n_read=0\n");
+				if( 1 == hubo_ver_can ){
+					printf("n_read=0\n");
+				}
 				break;
 			}
 			n_left-=n_read;
@@ -179,7 +181,7 @@ torDriverOnOff
 
 // this is the working one with no timeout
 //	int bytes_read = read( skt, f, sizeof(*f));
-	if( bytes_read < 0 ) {
+	if( (bytes_read < 0) & (1 == hubo_ver_can) ) {
 		perror("bad read");
 	} else if( hubo_debug == 1 ) {
 		printf("%d bytes read -- ", bytes_read);

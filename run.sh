@@ -19,4 +19,4 @@ sudo ach -C hubo-init-cmd -m 10 -n 3000
 sudo ach -U hubo-param
 sudo ach -C hubo-param -m 10 -n 3000
 sudo ./hubo-default
-sudo ./hubo-main
+sudo ./hubo-main 

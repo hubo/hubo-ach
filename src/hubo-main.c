@@ -147,8 +147,8 @@ ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 ach_channel_t chan_hubo_param;    // hubo-ach-param
 
+//int hubo_ver_can = 0;
 int hubo_debug = 0;
-
 
 
 
@@ -316,10 +316,11 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
 	char c[HUBO_JMC_COUNT];
-	memset( &c, 1, sizeof(c));
+	memset( &c, 0, sizeof(c));
+	//memset( &c, 1, sizeof(c));
 	int jmc = 0;
 	int i = 0;
-	c[h->joint[REB].jmc] = 0;
+//	c[h->joint[REB].jmc] = 0;
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		jmc = h->joint[i].jmc;
 		if(0 == c[jmc]){	// check to see if already asked that motor controller
