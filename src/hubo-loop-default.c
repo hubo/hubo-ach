@@ -123,33 +123,13 @@ ach_channel_t chan_hubo_state;    // hubo-ach-state
 ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
-int hubo_debug = 1;
 
 void huboLoop() {
         // get initial values for hubo
-        struct hubo_ref H_ref;
-	struct hubo_state H_state;
-	memset( &H_ref,   0, sizeof(H_ref));
-	memset( &H_state, 0, sizeof(H_state));
-
+        struct hubo_ref H;
         size_t fs;
-        //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-        //assert( sizeof(H) == fs );
-	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {
-		if(hubo_debug) {
-                       	printf("Ref ini r = %s\n",ach_result_to_string(r));}
-		}
-	else{   assert( sizeof(H_ref) == fs ); }
-
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {
-		if(hubo_debug) {
-                       	printf("State ini r = %s\n",ach_result_to_string(r));}
-		}
-	else{   
-		assert( sizeof(H_state) == fs );
-	 }
+        int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+        assert( sizeof(H) == fs );
 
         /* Send a message to the CAN bus */
         struct can_frame frame;
@@ -177,25 +157,14 @@ void huboLoop() {
         double A = 0.1;
         double t0 = 0.0;
         double t1 = 0.0;
-        int jnt = REB;
+        int jnt = RHY;
         while(1) {
                 // wait until next shot
                 clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
                 /* Get latest ACH message */
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-			if(hubo_debug) {
-                        	printf("Ref r = %s\n",ach_result_to_string(r));}
-			}
-		else{   assert( sizeof(H_ref) == fs ); }
-		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-			if(hubo_debug) {
-                        	printf("State r = %s\n",ach_result_to_string(r));}
-			}
-		else{   assert( sizeof(H_state) == fs ); }
-
+                r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+                assert( sizeof(H) == fs );
 
 
                 ftime(&tp);
@@ -207,15 +176,14 @@ void huboLoop() {
 
                 t1 = t0;
                 t0 = tt;
-                H_ref.ref[jnt] = A*sin(f*2*pi*tt);
-		
-		printf("REB = %f\n",H_state.joint[jnt].pos);	
+                H.ref[jnt] = A*sin(f*2*pi*tt);
+
 
         //	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
-//                printf("A = %f\n",H.ref[jnt]);
+                printf("A = %f\n",H.ref[jnt]);
                 //printf("Diff(t) = %f\n",(t0-t1));
 
-                ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
+                ach_put( &chan_hubo_ref, &H, sizeof(H));
                 t.tv_nsec+=interval;
                 tsnorm(&t);
         }
@@ -282,10 +250,7 @@ int main(int argc, char **argv) {
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
         assert( ACH_OK == r );
 
-        r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
-        assert( ACH_OK == r );
-        
-	huboLoop();
+        huboLoop();
         pause();
         return 0;
 
