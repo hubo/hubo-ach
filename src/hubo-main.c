@@ -193,8 +193,8 @@ void huboLoop(void) {
 
 	// time info
 	struct timespec t;
-	int interval = 500000000; // 2hz (0.5 sec)
-//	int interval = 10000000; // 100 hz (0.01 sec)
+//	int interval = 500000000; // 2hz (0.5 sec)
+	int interval = 10000000; // 100 hz (0.01 sec)
 	//int interval = 5000000; // 200 hz (0.005 sec)
 	//int interval = 2000000; // 500 hz (0.002 sec)
 
@@ -257,21 +257,18 @@ void huboLoop(void) {
 		/* read hubo console */
 		huboConsole(&H_ref, &H_param, &H_init, &frame);
 
-		// set reference for zeroed joints only
+		/* set reference for zeroed joints only */
 		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 			if(H_param.joint[i].zeroed == true) {
 				hSetEncRef(H_param.joint[i].jntNo, &H_ref, &H_param, &frame);
 			}
 		}
-//		hSetEncRef(H_param.joint[RHY].jntNo, &H_ref, &H_param, &frame);
-//		hSetEncRef(RHY, &H, &frame);
-//		printf("RHY = %f\n",H.joint[RHY].ref);
 
-
-		int tmpJnt = REB;
+		/* Get all Encoder data */
 		getEncAll(&H_state, &H_param, &frame); 
-		printf("Pos = %f\n",H_state.joint[tmpJnt].pos);
 
+
+		/* put data back in ACH channel */
 		ach_put( &chan_hubo_param, &H_param, sizeof(H_param));
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
 		t.tv_nsec+=interval;
