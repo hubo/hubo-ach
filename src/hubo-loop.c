@@ -174,7 +174,7 @@ void huboLoop() {
         double tt = 0.0;
         double f = 0.2;		// frequency
         double T = (double)interval/1000000000.0;
-        double A = 0.1;
+        double A = 1.0;
         double t0 = 0.0;
         double t1 = 0.0;
         int jnt = REB;
@@ -196,6 +196,8 @@ void huboLoop() {
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
+		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
+		printf("REB: Diff = %f \t State = %f \t Ref = %f\n",jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 
                 ftime(&tp);
@@ -207,9 +209,12 @@ void huboLoop() {
 
                 t1 = t0;
                 t0 = tt;
-                H_ref.ref[jnt] = A*sin(f*2*pi*tt);
+                double jntTmp = A*sin(f*2*pi*tt);
+		if(jntTmp > 0) {
+	                H_ref.ref[jnt] = -jntTmp; }
+		else { 
+	                H_ref.ref[jnt] = jntTmp; }
 		
-		printf("REB = %f\n",H_state.joint[jnt].pos);	
 
         //	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
 //                printf("A = %f\n",H.ref[jnt]);
