@@ -98,6 +98,8 @@
 #define		LF5		41		//	Left Finger
 
 
+#define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
+
 #define		HUBO_JOINT_COUNT	50		// 	the size of the array
 						//	for the joints
 #define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
@@ -109,7 +111,7 @@
 #define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
-#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0001		///> Defautl time for CAN to time out
+#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
 
 /* def for console do flags */
 /* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
@@ -154,6 +156,7 @@ struct hubo_joint_state {
 	double pos;     ///< actual position (rad)
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
+	double tmp;	///< temperature (dec C)
 };
 
 struct hubo_ft {
