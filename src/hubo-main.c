@@ -133,7 +133,9 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 double enc2rad(int jnt, int enc, struct hubo_param *h);
 void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 
@@ -194,8 +196,8 @@ void huboLoop(void) {
 	struct timespec t;
 //	int interval = 500000000; // 2hz (0.5 sec)
 //	int interval = 20000000; // 50 hz (0.02 sec)
-//	int interval = 10000000; // 100 hz (0.01 sec)
-	int interval = 5000000; // 200 hz (0.005 sec)
+	int interval = 10000000; // 100 hz (0.01 sec)
+//	int interval = 5000000; // 200 hz (0.005 sec)
 	//int interval = 2000000; // 500 hz (0.002 sec)
 
 	// get current time
@@ -268,10 +270,10 @@ void huboLoop(void) {
 		setRefAll(&H_ref, &H_param, &frame);
 
 		/* Get all Encoder data */
-		getEncAll(&H_state, &H_param, &frame); 
+		getEncAllSlow(&H_state, &H_param, &frame); 
 
 		/* Get all Current data */
-		getCurrentAll(&H_state, &H_param, &frame);
+		getCurrentAllSlow(&H_state, &H_param, &frame);
 		
 //		hGetCurrentValue(RSY, &H_param, &frame);
 //		readCan(hubo_socket[H_param.joint[RSY].can], &frame, HUBO_CAN_TIMEOUT_DEFAULT);
@@ -374,6 +376,27 @@ void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) 
 }
 
 
+void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+	///> Requests all encoder and records to hubo_state
+	char c[HUBO_JMC_COUNT];
+	memset( &c, 0, sizeof(c));
+	//memset( &c, 1, sizeof(c));
+	int jmc = 0;
+	int i = 0;
+//	c[h->joint[REB].jmc] = 0;
+	int canChan = 0;
+	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+		jmc = h->joint[i].jmc;
+		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+			hGetEncValue(i, h, f);
+			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+			decodeFrame(s, h, f);
+			c[jmc] = 1;
+		}
+	}}	
+}
+
 
 
 
@@ -409,6 +432,28 @@ void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 }
 
 
+
+void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+	///> Requests all motor currents and records to hubo_state
+	char c[HUBO_JMC_COUNT];
+	memset( &c, 0, sizeof(c));
+	//memset( &c, 1, sizeof(c));
+	int jmc = 0;
+	int i = 0;
+//	c[h->joint[REB].jmc] = 0;
+	int canChan = 0;
+	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+		jmc = h->joint[i].jmc;
+		if(0 == c[jmc]){	// check to see if already asked that motor controller
+			hGetCurrentValue(i, h, f);
+			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+			decodeFrame(s, h, f);
+			c[jmc] = 1;
+		}
+	}}	
+
+}
 
 
 
