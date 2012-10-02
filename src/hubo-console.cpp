@@ -82,7 +82,8 @@ double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p);
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
-char* cmd [] ={ "initialize","fet",
+void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
+char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
                 "get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR",
@@ -170,7 +171,11 @@ int main() {
         }
         else if (strcmp(buf0,"home")==0) {
                 hubo_jmc_home(&H_param, &H_init, buf);
-                printf("%s - Initilize \n",getArg(buf,1));
+                printf("%s - Home \n",getArg(buf,1));
+        }
+        else if (strcmp(buf0,"homeAll")==0) {
+                hubo_jmc_home_all(&H_param, &H_init, buf);
+                printf("%s - Home All \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"ctrl")==0) {
                 int onOrOff = atof(getArg(buf,2));
@@ -205,6 +210,11 @@ int main() {
                 //C.val[0] = atof(getArg(buf,2));
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
                 printf("%s - Initilize \n",getArg(buf,1));
+        }
+        else if (strcmp(buf0,"initializeAll")==0) {
+                H_init.cmd[0] = HUBO_JMC_INI_ALL;
+                int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+                printf("%s - Initilize All\n",getArg(buf,1));
         }
         /* Quit */
         else if (strcmp(buf0,"quit")==0)
@@ -243,6 +253,12 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
+void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
+        /* make beiep */
+        c->cmd[0] = HUBO_GOTO_HOME_ALL;
+        int r = ach_put( &chan_hubo_init_cmd, c, sizeof(*c) );
+//	printf(">> Home %s \n",getArg(buff,1));
+}
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_param *h_param) {
         size_t fs;
         int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );

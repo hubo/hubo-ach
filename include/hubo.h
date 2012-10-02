@@ -116,13 +116,15 @@
 /* def for console do flags */
 /* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
 typedef enum {
-	HUBO_JMC_INI 		= 1,	///< Initilize jmc
-	HUBO_FET_ON_OFF 	= 2,	///< turn fet on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_CTRL_ON_OFF 	= 3,	///< turn control on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_ZERO_ENC		= 4,	///< zero encoder for given motor
-	HUBO_GOTO_REF		= 5,	///< go to ref val[0] = ref (rad)
-	HUBO_JMC_BEEP		= 6,	///< make beep val[0] = beep time in sec
-	HUBO_GOTO_HOME		= 7	///< go home position
+	HUBO_JMC_INI 		= 1,	///> Initilize jmc
+	HUBO_FET_ON_OFF 	= 2,	///> turn fet on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_CTRL_ON_OFF 	= 3,	///> turn control on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_ZERO_ENC		= 4,	///> zero encoder for given motor
+	HUBO_GOTO_REF		= 5,	///> go to ref val[0] = ref (rad)
+	HUBO_JMC_BEEP		= 6,	///> make beep val[0] = beep time in sec
+	HUBO_GOTO_HOME		= 7,	///> go home position
+	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
+	HUBO_JMC_INI_ALL	= 9	///> Initilize all JMC boards
 } hubo_console_t;
 
 typedef enum {

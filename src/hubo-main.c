@@ -138,7 +138,8 @@ void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 // ach message type
 //typedef struct hubo h[1];
 
@@ -673,11 +674,31 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 	
 }
 
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+	int i = 0;
+	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+		if(h->joint[i].active == true) {
+			hGotoLimitAndGoOffset(i, r, h, f);
+		}
+	}
+}
 
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	fInitializeBoard(jnt, r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
-	readCan(hubo_socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
+	//readCan(hubo_socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
+	readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read and 4 sec timeout
+}
+
+
+void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+	///> Initilizes all boards
+	int i = 0;
+	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+		if(h->joint[i].active == true) {
+			hInitializeBoard(i, r, h, f);
+		}
+	}
 }
 
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
@@ -744,6 +765,9 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 //			break; }
 
 			switch (c->cmd[0]) {
+				case HUBO_JMC_INI_ALL:
+					hInitializeBoardAll(r,h,f);
+					break;
 				case HUBO_JMC_INI:
 					hInitializeBoard(c->cmd[1],r,h,f);
 					break;
@@ -759,6 +783,9 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 					break;
 				case HUBO_JMC_BEEP:
 					hSetBeep(c->cmd[1],r,h,f,c->val[0]);
+					break;
+				case HUBO_GOTO_HOME_ALL:
+					hGotoLimitAndGoOffsetAll(r,h,f);
 					break;
 				case HUBO_GOTO_HOME:
 					hGotoLimitAndGoOffset(c->cmd[1],r,h,f);
