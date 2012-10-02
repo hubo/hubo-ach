@@ -326,14 +326,16 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	int jmc = 0;
 	int i = 0;
 	int canChan = 0;
+
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-			jmc = h->joint[i].jmc;
-			if((0 == (int)c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+			jmc = h->joint[i].jmc+1;
+			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (h->joint[i].active == true)){	// check to see if already asked that motor controller
 				hSetEncRef(i, r, h, f);
-				c[jmc] = 1;
-				if(i == RHY){ printf(".%d %d %d",h->joint[RHY].can, canChan, c[jmc]); }
+				c[jmc+1] = 1;
+//				if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
 			}
+
 		}
 	}	
 }
