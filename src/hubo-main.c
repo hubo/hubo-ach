@@ -273,7 +273,7 @@ void huboLoop(void) {
 		getEncAllSlow(&H_state, &H_param, &frame); 
 
 		/* Get all Current data */
-		getCurrentAllSlow(&H_state, &H_param, &frame);
+//		getCurrentAllSlow(&H_state, &H_param, &frame);
 		
 //		hGetCurrentValue(RSY, &H_param, &frame);
 //		readCan(hubo_socket[H_param.joint[RSY].can], &frame, HUBO_CAN_TIMEOUT_DEFAULT);
