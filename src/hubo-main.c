@@ -258,7 +258,6 @@ void huboLoop(void) {
 
 		/* read hubo console */
 		huboConsole(&H_ref, &H_param, &H_init, &frame);
-
 		/* set reference for zeroed joints only */
 //		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 //			if(H_param.joint[i].zeroed == true) {
@@ -268,7 +267,7 @@ void huboLoop(void) {
 
 		/* Set all Ref */
 		setRefAll(&H_ref, &H_param, &frame);
-
+		
 		/* Get all Encoder data */
 		getEncAllSlow(&H_state, &H_param, &frame); 
 
@@ -322,23 +321,21 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 */
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
-	char c[HUBO_JMC_COUNT];
+	int c[HUBO_JMC_COUNT];
 	memset( &c, 0, sizeof(c));
-	//memset( &c, 1, sizeof(c));
 	int jmc = 0;
 	int i = 0;
 	int canChan = 0;
-//	c[h->joint[REB].jmc] = 0;
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
-	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-		jmc = h->joint[i].jmc;
-		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
-			hSetEncRef(i, r, h, f);
-//			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-//			decodeFrame(s, h, f);
-			c[jmc] = 1;
+		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+			jmc = h->joint[i].jmc;
+			if((0 == (int)c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+				hSetEncRef(i, r, h, f);
+				c[jmc] = 1;
+				if(i == RHY){ printf(".%d %d %d",h->joint[RHY].can, canChan, c[jmc]); }
+			}
 		}
-	}}	
+	}	
 }
 
 

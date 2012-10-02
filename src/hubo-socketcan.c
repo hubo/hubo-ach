@@ -80,7 +80,7 @@ void openAllCAN(int vCan) {
 		skt0	=	openCAN("can0");
 	}
 	//H.socket[0]   =	skt0;
-	hubo_socket[0]          =	skt0;
+	hubo_socket[0]  =	skt0;
 	//H.socket[1]	=	skt1;
 	hubo_socket[1]	=	skt1;
 
