@@ -26,19 +26,19 @@ LIBS := -lach -lrt $(CAN_LIBS)
 hubo_main_objs := src/hubo-main.o $(CAN_OBJS)
 
 hubo-main: $(hubo_main_objs)
-	$(CC) -o $@  $(hubo_main_objs) $(LIBS)
+	$(CC) -o $@  $(hubo_main_objs) $(LIBS) -lm -lc
 
 hubo-default: src/hubo-default.c
-	$(CC) $(CFLAGS) -o $@ $< -lach
+	$(CC) $(CFLAGS) -o $@ $< -lach -lm -lc
 
 hubo-read: src/hubo-read.c
 	$(CC) $(CFLAGS) -o $@ $< -lach
 
 hubo-console: src/hubo-console.o
-	$(CXX)  -o $@ $< -lach -lreadline
+	$(CXX)  -o $@ $< -lach -lreadline -lm -lc
 
 hubo-loop: src/hubo-loop.o
-	gcc -o $@ $< -lach -lrt
+	gcc -o $@ $< -lach -lrt -lm -lc
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
