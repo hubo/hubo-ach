@@ -187,10 +187,10 @@ void huboLoop() {
         double f = 0.2;		// frequency
         double T = (double)interval/1000000000.0;
         double A = 0.3;// 1.0;
-        double dir = 1.0;
+        double dir = -1.0;
 	double t0 = 0.0;
         double t1 = 0.0;
-        int jnt = RHY;
+        int jnt = WST;
         while(1) {
                 // wait until next shot
                 clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);

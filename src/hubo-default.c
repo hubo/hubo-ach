@@ -144,9 +144,9 @@ void setActive() {
 	H.joint[LWY].active = true;
 	H.joint[LWP].active = true;
 
-	H.joint[NKY].active = true;
-	H.joint[NK1].active = true;
-	H.joint[NK2].active = true;
+	H.joint[NKY].active = false;
+	H.joint[NK1].active = false;
+	H.joint[NK2].active = false;
 	H.joint[WST].active = true;
 
 	H.joint[RF1].active = true;

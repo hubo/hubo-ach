@@ -71,18 +71,17 @@
 #define		RWR		16		// right wrist roll
 #define		RWP		17		// right wrist Pitch
 
-#define		LSP		3		//	Left Shoulder Pitch
-#define		LSR		4		//	Left Shoulder Yaw
-#define		LSY		5		//	Left Shoulder Roll
-#define		LEB		6		//	Left Elbow Pitch
-#define		LWY		7		// left wrist yaw
-#define		LWR		8		// left wrist roll
-#define		LWP		9		// left wrist pitch
+#define		LSP		4		//	Left Shoulder Pitch
+#define		LSR		5		//	Left Shoulder Yaw
+#define		LSY		6		//	Left Shoulder Roll
+#define		LEB		7		//	Left Elbow Pitch
+#define		LWY		8		// left wrist yaw
+#define		LWR		9		// left wrist roll
+#define		LWP		10		// left wrist pitch
 
 #define		NKY		1		// neck yaw
-#define		NKP		2		// neck pitch
 #define		NK1		2		// neck 1
-#define		NK2		2		// neck 2
+#define		NK2		3		// neck 2
 
 #define		WST		0		//	Trunk Yaw
 

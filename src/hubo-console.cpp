@@ -153,7 +153,7 @@ int main() {
         /* get update after every command */
         hubo_update(&H_ref, &H_state, &H_param);
 
-
+	int tsleep = 0;
         char* buf0 = getArg(buf, 0);
         //printf(buf0);
 
@@ -176,6 +176,8 @@ int main() {
         else if (strcmp(buf0,"homeAll")==0) {
                 hubo_jmc_home_all(&H_param, &H_init, buf);
                 printf("%s - Home All \n",getArg(buf,1));
+		tsleep = 5;
+		
         }
         else if (strcmp(buf0,"ctrl")==0) {
                 int onOrOff = atof(getArg(buf,2));
@@ -215,14 +217,15 @@ int main() {
                 H_init.cmd[0] = HUBO_JMC_INI_ALL;
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
                 printf("%s - Initilize All\n",getArg(buf,1));
+		tsleep = 8;
         }
         /* Quit */
         else if (strcmp(buf0,"quit")==0)
                 break;
         if (buf[0]!=0)
         add_history(buf);
+	sleep(tsleep);	// sleep for tsleep sec
         }
-
         free(buf);
         return 0;
 }

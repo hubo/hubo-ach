@@ -96,6 +96,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Timing info
 #define NSEC_PER_SEC    1000000000
 
+#define hubo_home_noRef_delay 6.0	// delay before trajectories can be sent while homeing in sec
 
 
 /* functions */
@@ -152,7 +153,9 @@ ach_channel_t chan_hubo_param;    // hubo-ach-param
 //int hubo_ver_can = 0;
 int hubo_debug = 0;
 
-
+/* time for the ref not to be sent while a joint is being moved */
+//double hubo_noRefTime[HUBO_JOINT_NUM];
+double hubo_noRefTimeAll = 0.0;
 
 void huboLoop(void) {
 	int i = 0;  // iterator
@@ -165,6 +168,8 @@ void huboLoop(void) {
 	memset( &H_init,  0, sizeof(H_init));
 	memset( &H_state, 0, sizeof(H_state));
 	memset( &H_param, 0, sizeof(H_param));
+	
+	//memset(&hubo_noRef, 0, sizeof(hubo_noRef));
 
 	size_t fs;
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -188,18 +193,21 @@ void huboLoop(void) {
 
 //	ach_put( &chan_hubo_ref, &H, sizeof(H));
 
+/* period */
+//	int interval = 500000000; // 2hz (0.5 sec)
+//	int interval = 20000000; // 50 hz (0.02 sec)
+	int interval = 10000000; // 100 hz (0.01 sec)
+//	int interval = 5000000; // 200 hz (0.005 sec)
+//	int interval = 2000000; // 500 hz (0.002 sec)
 
+	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
+	printf("T = %1.3f sec\n",T);
 
 	/* Send a message to the CAN bus */
    	struct can_frame frame;
 
 	// time info
 	struct timespec t;
-//	int interval = 500000000; // 2hz (0.5 sec)
-//	int interval = 20000000; // 50 hz (0.02 sec)
-	int interval = 10000000; // 100 hz (0.01 sec)
-//	int interval = 5000000; // 200 hz (0.005 sec)
-	//int interval = 2000000; // 500 hz (0.002 sec)
 
 	// get current time
 	//clock_gettime( CLOCK_MONOTONIC,&t);
@@ -267,7 +275,12 @@ void huboLoop(void) {
 //		}
 
 		/* Set all Ref */
-		setRefAll(&H_ref, &H_param, &frame);
+		if(hubo_noRefTimeAll < T ) {
+			setRefAll(&H_ref, &H_param, &frame);
+		}
+		else{
+			hubo_noRefTimeAll = hubo_noRefTimeAll - T;
+		}
 		
 		/* Get all Encoder data */
 		getEncAllSlow(&H_state, &H_param, &frame); 
@@ -327,13 +340,13 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	int jmc = 0;
 	int i = 0;
 	int canChan = 0;
-
+	
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 			jmc = h->joint[i].jmc+1;
 			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (h->joint[i].active == true)){	// check to see if already asked that motor controller
 				hSetEncRef(i, r, h, f);
-				c[jmc+1] = 1;
+				c[jmc] = 1;
 //				if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
 			}
 
@@ -494,27 +507,35 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		f->data[4] = 	(uint8_t)((pos1>>8) 	& 0x000000FF);
 		f->data[5] = 	(uint8_t)((pos1>>16)	& 0x000000FF);
 
-
-/*
-		f->data[0] =    (uint8_t)h->joint[m0].refEnc;
-		f->data[1] = 	(uint8_t)((h->joint[m0].refEnc & 0x0000ff00) >> 8);
-		f->data[2] = 	(uint8_t)((h->joint[m0].refEnc & 0x007f0000) >> 16);
-		f->data[3] =    (uint8_t)h->joint[m1].refEnc;
-		f->data[4] = 	(uint8_t)((h->joint[m1].refEnc & 0x0000ff00) >> 8);
-		f->data[5] = 	(uint8_t)((h->joint[m1].refEnc & 0x007f0000) >> 16);
-*/
-
-		//if(h->driver[jmc].jmc[0] < 0) {
 		if(r->ref[m0] < 0.0) {
 			f->data[2] = f->data[2] | 0x80;
 		}
-		//if(h->driver[jmc].jmc[1] < 0) {
 		if(r->ref[m1] < 0.0) {
 			f->data[5] = f->data[5] | 0x80;
 		}
 	}
-	//sprintf(f->data, "%s", data);
+	else if(h->joint[jnt].numMot == 1) {
+		__u8 m0 = h->driver[jmc].jmc[0];
+		__u8 m1 = h->driver[jmc].jmc[0];
+//		printf("m0 = %i, m1= %i \n",m0, m1);
 
+
+		unsigned long pos0 = signConvention((int)getEncRef(m0, r, h));
+		unsigned long pos1 = signConvention((int)getEncRef(m1, r, h));
+		f->data[0] =    (uint8_t)(pos0		& 0x000000FF);
+		f->data[1] = 	(uint8_t)((pos0>>8) 	& 0x000000FF);
+		f->data[2] = 	(uint8_t)((pos0>>16)	& 0x000000FF);
+		f->data[3] =    (uint8_t)(pos1 		& 0x000000FF);
+		f->data[4] = 	(uint8_t)((pos1>>8) 	& 0x000000FF);
+		f->data[5] = 	(uint8_t)((pos1>>16)	& 0x000000FF);
+
+		if(r->ref[m0] < 0.0) {
+			f->data[2] = f->data[2] | 0x80;
+		}
+		if(r->ref[m1] < 0.0) {
+			f->data[5] = f->data[5] | 0x80;
+		}
+	}
 	f->can_dlc = 6; //= strlen( data );	// Set DLC
 }
 
@@ -672,6 +693,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 	r->ref[jnt] = 0;
 	h->joint[jnt].zeroed = true;
 	
+	hubo_noRefTimeAll = hubo_home_noRef_delay;
 }
 
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
