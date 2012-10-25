@@ -222,6 +222,33 @@ void huboLoop() {
 				H_state.joint[jnt].tmp);	
 		}}
 
+		i = HUBO_FT_R_FOOT;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+
+		i = HUBO_FT_L_FOOT;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+		
+		i = HUBO_FT_R_HAND;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+
+		i = HUBO_FT_L_HAND;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
 	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 

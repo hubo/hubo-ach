@@ -138,7 +138,7 @@ typedef enum {
 
 
 struct hubo_sensor_param {
-	char name[4];		///< Name of sensor
+	char name[5];		///< Name of sensor
 	uint16_t sensNo;	///< Sensor number
 	uint16_t can;		///< Can channel
 	uint8_t active;		///< Active sensor
