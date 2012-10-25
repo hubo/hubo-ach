@@ -7,7 +7,7 @@
 
 // This file contains 'CAN-ID' for HUBO2
 
-#define CMD_TXDF				0x01
+#define CMD_TXDF			0x01
 #define SEND_SENSOR_TXDF		0x02
 
 #define REF_BASE_TXDF			0x10
