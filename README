@@ -37,3 +37,11 @@ Required for installation:
 hubo-ach-loop
 =============
 demo loop that communicates with hubo ach
+
+install Drivers for PEAK
+========================
+sudo apt-get install libpopt-dev
+cd drivers
+tar -zxvf peak-linux-driver-7.7.tar.gz
+cd peak-linux-driver-7.7
+make
