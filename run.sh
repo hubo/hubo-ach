@@ -1,3 +1,8 @@
+kill -9 $(pidof achpipe.bin)
+sudo /etc/init.d/openbsd-inetd reload
+sudo /etc/init.d/openbsd-inetd stop
+sudo rm /dev/shm/achshm-hubo-*
+sudo /etc/init.d/openbsd-inetd start
 sudo ifconfig can0 down
 sudo ifconfig can1 down
 sudo ifconfig can2 down
