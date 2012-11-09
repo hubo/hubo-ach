@@ -424,7 +424,8 @@ int setDefaultValues(struct hubo_param *H) {
 
 	// read in each non-commented line of the config file corresponding to each joint
 	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
-        	sscanf(buff, "%hu%s%hu%u%hu%hu%hu%hu%hhu%hu%hhu%s%hhu%s\n", 
+       		if (buff[0] != '#' && buff[0] != '\n') {
+        		sscanf(buff, "%hu%s%hu%u%hu%hu%hu%hu%hhu%hu%hhu%hhu%hhu%hhu\n", 
 			&tp.jntNo,
 			tp.name,
 			&tp.motNo,  
@@ -436,27 +437,18 @@ int setDefaultValues(struct hubo_param *H) {
 			&tp.dir,  
 			&tp.jmc, 
 			&tp.can, 
-			active, 
+			&tp.active, 
 			&tp.numMot, 
-			zeroed);
+			&tp.zeroed);
 
-        	// define "true" and "false" strings as 1 and 0 for "active" struct member of tp
-        	if (0 == strcmp(active, "true")) tp.active = 1;
-        	else if (0 == strcmp(active, "false")) tp.active = 0;
-        	else ;// bail out
-        	
-		// define "true" and "false" strings as 1 and 0 for "zeroed" struct member of tp
-        	if (0 == strcmp(zeroed, "true")) tp.zeroed = 1;
-        	else if (0 == strcmp(zeroed, "false")) tp.zeroed = 0;
-        	else ;// bail out
-		
 		// define i to be the joint number
         	int i = (int)tp.jntNo;
+	
 		//copy contents (all member values) of tp into H.joint[] 
 		//substruct which will populate its member variables
 		memcpy(&(H->joint[i]), &tp, sizeof(tp));        
+		}
 	}
-
 	// close file stream
 	fclose(ptr_file);
 	
