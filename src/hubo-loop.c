@@ -129,10 +129,8 @@ void huboLoop() {
         // get initial values for hubo
         struct hubo_ref H_ref;
 	struct hubo_state H_state;
-	struct hubo_param H_param;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
-	memset( &H_param, 0, sizeof(H_param));
 
         size_t fs;
         //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
@@ -152,16 +150,6 @@ void huboLoop() {
 	else{   
 		assert( sizeof(H_state) == fs );
 	 }
-
-	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {
-		if(hubo_debug) {
-                       	printf("State ini r = %s\n",ach_result_to_string(r));}
-		}
-	else{   
-		assert( sizeof(H_state) == fs );
-  	}
-
 
       	/* Send a message to the CAN bus */
         struct can_frame frame;
@@ -211,7 +199,8 @@ void huboLoop() {
 
 		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
 		printf("\033[2J");
-		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param.joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n","JNT",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+//		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param.joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 
                 ftime(&tp);
@@ -299,9 +288,6 @@ int main(int argc, char **argv) {
 
         /* open ach channel */
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
-        assert( ACH_OK == r );
-
-        r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
         assert( ACH_OK == r );
         
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
