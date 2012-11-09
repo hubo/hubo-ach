@@ -18,7 +18,7 @@ CAN_DEFS :=
 # CAN_OBJS := src/hubo-esdcan.o
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
-BINARIES := hubo-main hubo-default hubo-console hubo-loop
+BINARIES := hubo-main hubo-console hubo-loop
 all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS)
@@ -27,9 +27,6 @@ hubo_main_objs := src/hubo-main.o $(CAN_OBJS)
 
 hubo-main: $(hubo_main_objs)
 	$(CC) -o $@  $(hubo_main_objs) $(LIBS)
-
-hubo-default: src/hubo-default.c
-	$(CC) $(CFLAGS) -o $@ $< -lach
 
 hubo-console: src/hubo-console.o
 	$(CXX)  -o $@ $< -lach -lreadline
