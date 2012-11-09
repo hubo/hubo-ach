@@ -44,6 +44,7 @@ Remote
 
 Install inetd
 sudo apt-get install inetutils-inetd
+sudo apt-get install openbsd-inetd
 
 (1) Remote Channels
 
