@@ -56,10 +56,7 @@ StartHubo()
 	sudo ach -1 -C hubo-ref -m 10 -n 3000
 	sudo ach -1 -C hubo-state -m 10 -n 3000
 	sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
-	sudo ach -1 -C hubo-param -m 10 -n 3000
-	# THIS IS COMMENTED OUT TO TEST THE INTEGRATION OF THE CONFIG FILE PARSER IN MAIN.C
-	# USING THE FUNCTION setDefaultValues()
-	sudo ./hubo-default
+	
 	sudo ./hubo-main & 
 	sudo ./hubo-console
 }
@@ -75,7 +72,6 @@ VirtualHubo()
 	sudo ach -1 -C hubo-ref -m 10 -n 3000
 	sudo ach -1 -C hubo-state -m 10 -n 3000
 	sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
-	sudo ach -1 -C hubo-param -m 10 -n 3000
 	
 	sudo ./hubo-main -v &
 	sudo ./hubo-console
