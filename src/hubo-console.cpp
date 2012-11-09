@@ -125,7 +125,7 @@ int main() {
         size_t fs;
         r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         assert( sizeof(H_ref) == fs );
-        r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
         assert( sizeof(H_init) == fs );
         r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
         assert( sizeof(H_state) == fs );
@@ -280,7 +280,7 @@ char* getArg(string s, int argNum) {
         {
                 string sub;
                 iss >> sub;
- //             cout << "Substring: " << sub << endl;
+//              cout << "Substring: " << sub << endl;
                 if( i == argNum ) {
                         return (char*)sub.c_str(); }
                 i++;
@@ -309,7 +309,7 @@ int name2mot(char* name, struct hubo_param *h) {
 //				printf("i = %i\n", i);
                                 iout = i;}
         }
-        return iout;
+	return iout;
 }
 
 
@@ -365,3 +365,86 @@ void * xmalloc (int size) {
         }
         return buf;
 }
+
+int setDefaultValues(struct hubo_param *h) {
+
+        FILE *ptr_file;
+
+        // open file and if fails, return 1
+        if (!(ptr_file=fopen("config.txt", "r")))
+                return 1;
+
+        struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
+        memset(&tp,      0, sizeof(tp));
+        char active[6];
+        char zeroed[6];
+        int j;
+
+        // read in first line
+        char c;
+        do   
+                c = fgetc(ptr_file);
+        while (c != '\n') ; 
+
+        // read in each line of the config file corresponding to each joint
+        for (j = 0; j < HUBO_JOINT_COUNT; j++) {
+                fscanf( ptr_file, "%s%hu%hu%u%hu%hu%hu%hu%hhu%hu%hhu%s%hhu%s\n", 
+                        tp.name,
+                        &tp.motNo, 
+                        &tp.jntNo, 
+                        &tp.refEnc, 
+                        &tp.drive, 
+                        &tp.driven, 
+                        &tp.harmonic, 
+                        &tp.enc, 
+                        &tp.dir,  
+                        &tp.jmc, 
+                        &tp.can, 
+                        active, 
+                        &tp.numMot, 
+                        zeroed);
+
+                // define "true" and "false" strings as 1 and 0 for "active" struct member of tp
+                if (0 == strcmp(active, "true")) tp.active = 1; 
+                else if (0 == strcmp(active, "false")) tp.active = 0; 
+                else ;// bail out
+     
+                // define "true" and "false" strings as 1 and 0 for "zeroed" struct member of tp
+                if (0 == strcmp(zeroed, "true")) tp.zeroed = 1; 
+                else if (0 == strcmp(zeroed, "false")) tp.zeroed = 0; 
+                else ;// bail out
+     
+                // define i to be the joint number
+                int i = (int)tp.jntNo;
+
+                //copy contents (all member values) of tp into H.joint[] 
+                //substruct which will populate its member variables
+                memcpy(&(h->joint[i]), &tp, sizeof(tp));
+        }
+
+        // close file stream
+        fclose(ptr_file);
+
+        // print struct member's values to console to check if it worked
+/*      printf ("printout of setDefaultValues() function in hubo-main.c\n");
+        size_t i;
+        for (i = 0; i < HUBO_JOINT_COUNT; i++) {
+                printf ("%s\t%hu\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
+                        h->joint[i].name,
+                        h->joint[i].motNo, 
+                        h->joint[i].jntNo, 
+                        h->joint[i].refEnc, 
+                        h->joint[i].drive, 
+                        h->joint[i].driven, 
+                        h->joint[i].harmonic, 
+                        h->joint[i].enc, 
+                        h->joint[i].dir, 
+                        h->joint[i].jmc, 
+                        h->joint[i].can, 
+                        h->joint[i].active, 
+                        h->joint[i].numMot, 
+                        h->joint[i].zeroed);
+        }       
+*/        return 0;
+}
+
