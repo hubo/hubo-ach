@@ -141,9 +141,9 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-int setDefaultValues(struct hubo_param *H);
 void setPosZeros();
-void setConsoleFlags();
+//void setConsoleFlags();
+int setDefaultValues(struct hubo_param *H);
 
 // ach message type
 //typedef struct hubo h[1];
@@ -928,27 +928,23 @@ int setDefaultValues(struct hubo_param *H) {
 	FILE *ptr_file;
 
 	// open file and if fails, return 1
-        if (!(ptr_file=fopen("config.txt", "r")))
+        if (!(ptr_file=fopen("hubo-config.txt", "r")))
                 return 1;
 
 	struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
-	memset(&tp,	 0, sizeof(tp));
-        char active[6];
+	memset(&tp, 0, sizeof(tp));
+       
+	char active[6];
         char zeroed[6];
         int j;
+	char buff[100];
 
-	// read in first line
-	char c;
-	do
-      		c = fgetc(ptr_file);
-	while (c != '\n') ; 
-
-	// read in each line of the config file corresponding to each joint
-	for (j = 0; j < HUBO_JOINT_COUNT; j++) {
-        	fscanf( ptr_file, "%s%hu%hu%u%hu%hu%hu%hu%hhu%hu%hhu%s%hhu%s\n", 
+	// read in each non-commented line of the config file corresponding to each joint
+	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
+        	sscanf(buff, "%hu%s%hu%u%hu%hu%hu%hu%hhu%hu%hhu%s%hhu%s\n", 
+			&tp.jntNo,
 			tp.name,
-			&tp.motNo, 
-			&tp.jntNo, 
+			&tp.motNo,  
 			&tp.refEnc, 
 			&tp.drive, 
 			&tp.driven, 
@@ -976,8 +972,8 @@ int setDefaultValues(struct hubo_param *H) {
 		//copy contents (all member values) of tp into H.joint[] 
 		//substruct which will populate its member variables
 		memcpy(&(H->joint[i]), &tp, sizeof(tp));        
-        }
-	
+	}
+
 	// close file stream
 	fclose(ptr_file);
 	
@@ -985,10 +981,10 @@ int setDefaultValues(struct hubo_param *H) {
 /*	printf ("printout of setDefaultValues() function in hubo-main.c\n");
 	size_t i;
 	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
-		printf ("%s\t%hu\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
+		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
+			H->joint[i].jntNo, 
 			H->joint[i].name,
 			H->joint[i].motNo, 
-			H->joint[i].jntNo, 
 			H->joint[i].refEnc, 
 			H->joint[i].drive, 
 			H->joint[i].driven, 
@@ -1068,6 +1064,8 @@ int main(int argc, char **argv) {
 	setPosZeros();
 
 	// set default values for H_init in ach
+	// this is not working. Not sure if it's really needed
+	// since the structs get initialized with zeros when instantiated
 //	setConsoleFlags();	
 
 	// set default values for Hubo

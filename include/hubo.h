@@ -99,7 +99,7 @@
 
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 
-#define		HUBO_JOINT_COUNT	50		// 	the size of the array
+#define		HUBO_JOINT_COUNT	42		// 	the size of the array
 						//	for the joints
 #define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
 //#define		numOfCmd	3		//  	number of commiands

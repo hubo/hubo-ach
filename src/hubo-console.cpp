@@ -78,6 +78,8 @@ void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
+void setPosZeros();
+//void setConsoleFlags();
 int setDefaultValues(struct hubo_param *h);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
@@ -122,13 +124,17 @@ int main() {
 	
 	usleep(250000);
 
-        size_t fs;
-        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H_init) == fs );
-        r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H_state) == fs );
+	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+        ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));
+        ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
+
+	// set default values for H_ref in ach
+	setPosZeros();
+
+	// set default values for H_init in ach
+	// this is not working. Not sure if it's really needed
+	// since the structs get initialized with zeros when instantiated
+//	setConsoleFlags();	
 
 	// set default values for Hubo
 	setDefaultValues(&H_param);
@@ -366,85 +372,114 @@ void * xmalloc (int size) {
         return buf;
 }
 
-int setDefaultValues(struct hubo_param *h) {
+
+void setPosZeros() {
+        // open ach channel
+//        int r = ach_open(&chan_num, "hubo", NULL);
+//        assert( ACH_OK == r );
+
+        struct hubo_ref H;
+        memset( &H,   0, sizeof(H));
+        size_t fs = 0;
+        int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+        assert( sizeof(H) == fs );
+
+        int i = 0;
+        for( i = 0; i < HUBO_JOINT_COUNT; i++) {
+                H.ref[i] = 0.0;
+        }
+        ach_put(&chan_hubo_ref, &H, sizeof(H));
+}
+
+void setConsoleFlags() {
+        struct hubo_init_cmd C;
+        memset( &C,   0, sizeof(C));
+        size_t fs =0;
+        int r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(C) == fs );
+	int i = 0;
+        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+                C.cmd[i] = 0;
+                C.val[i] = 0;
+        }
+        r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
+	printf("finished setConsoleFlags\n");
+}
+
+int setDefaultValues(struct hubo_param *H) {
 
         FILE *ptr_file;
 
         // open file and if fails, return 1
-        if (!(ptr_file=fopen("config.txt", "r")))
+        if (!(ptr_file=fopen("hubo-config.txt", "r")))
                 return 1;
 
         struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
         memset(&tp,      0, sizeof(tp));
-        char active[6];
+      
+	char active[6];
         char zeroed[6];
         int j;
+	char buff[100];
 
-        // read in first line
-        char c;
-        do   
-                c = fgetc(ptr_file);
-        while (c != '\n') ; 
+	// read in each non-commented line of the config file corresponding to each joint
+	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
+        	sscanf(buff, "%hu%s%hu%u%hu%hu%hu%hu%hhu%hu%hhu%s%hhu%s\n", 
+			&tp.jntNo,
+			tp.name,
+			&tp.motNo,  
+			&tp.refEnc, 
+			&tp.drive, 
+			&tp.driven, 
+			&tp.harmonic, 
+			&tp.enc, 
+			&tp.dir,  
+			&tp.jmc, 
+			&tp.can, 
+			active, 
+			&tp.numMot, 
+			zeroed);
 
-        // read in each line of the config file corresponding to each joint
-        for (j = 0; j < HUBO_JOINT_COUNT; j++) {
-                fscanf( ptr_file, "%s%hu%hu%u%hu%hu%hu%hu%hhu%hu%hhu%s%hhu%s\n", 
-                        tp.name,
-                        &tp.motNo, 
-                        &tp.jntNo, 
-                        &tp.refEnc, 
-                        &tp.drive, 
-                        &tp.driven, 
-                        &tp.harmonic, 
-                        &tp.enc, 
-                        &tp.dir,  
-                        &tp.jmc, 
-                        &tp.can, 
-                        active, 
-                        &tp.numMot, 
-                        zeroed);
+        	// define "true" and "false" strings as 1 and 0 for "active" struct member of tp
+        	if (0 == strcmp(active, "true")) tp.active = 1;
+        	else if (0 == strcmp(active, "false")) tp.active = 0;
+        	else ;// bail out
+        	
+		// define "true" and "false" strings as 1 and 0 for "zeroed" struct member of tp
+        	if (0 == strcmp(zeroed, "true")) tp.zeroed = 1;
+        	else if (0 == strcmp(zeroed, "false")) tp.zeroed = 0;
+        	else ;// bail out
+		
+		// define i to be the joint number
+        	int i = (int)tp.jntNo;
+		//copy contents (all member values) of tp into H.joint[] 
+		//substruct which will populate its member variables
+		memcpy(&(H->joint[i]), &tp, sizeof(tp));        
+	}
 
-                // define "true" and "false" strings as 1 and 0 for "active" struct member of tp
-                if (0 == strcmp(active, "true")) tp.active = 1; 
-                else if (0 == strcmp(active, "false")) tp.active = 0; 
-                else ;// bail out
-     
-                // define "true" and "false" strings as 1 and 0 for "zeroed" struct member of tp
-                if (0 == strcmp(zeroed, "true")) tp.zeroed = 1; 
-                else if (0 == strcmp(zeroed, "false")) tp.zeroed = 0; 
-                else ;// bail out
-     
-                // define i to be the joint number
-                int i = (int)tp.jntNo;
-
-                //copy contents (all member values) of tp into H.joint[] 
-                //substruct which will populate its member variables
-                memcpy(&(h->joint[i]), &tp, sizeof(tp));
-        }
-
-        // close file stream
-        fclose(ptr_file);
-
-        // print struct member's values to console to check if it worked
-/*      printf ("printout of setDefaultValues() function in hubo-main.c\n");
-        size_t i;
-        for (i = 0; i < HUBO_JOINT_COUNT; i++) {
-                printf ("%s\t%hu\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
-                        h->joint[i].name,
-                        h->joint[i].motNo, 
-                        h->joint[i].jntNo, 
-                        h->joint[i].refEnc, 
-                        h->joint[i].drive, 
-                        h->joint[i].driven, 
-                        h->joint[i].harmonic, 
-                        h->joint[i].enc, 
-                        h->joint[i].dir, 
-                        h->joint[i].jmc, 
-                        h->joint[i].can, 
-                        h->joint[i].active, 
-                        h->joint[i].numMot, 
-                        h->joint[i].zeroed);
-        }       
-*/        return 0;
+	// close file stream
+	fclose(ptr_file);
+	
+	// print struct member's values to console to check if it worked
+/*	printf ("printout of setDefaultValues() function in hubo-console.c\n");
+	size_t i;
+	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
+		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
+			H->joint[i].jntNo, 
+			H->joint[i].name,
+			H->joint[i].motNo, 
+			H->joint[i].refEnc, 
+			H->joint[i].drive, 
+			H->joint[i].driven, 
+			H->joint[i].harmonic, 
+			H->joint[i].enc, 
+			H->joint[i].dir, 
+			H->joint[i].jmc, 
+			H->joint[i].can, 
+			H->joint[i].active, 
+			H->joint[i].numMot, 
+			H->joint[i].zeroed);
+	}	
+*/	return 0;
 }
 
