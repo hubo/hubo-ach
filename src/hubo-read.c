@@ -159,17 +159,17 @@ void huboLoop() {
                        	printf("State ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{   
-		assert( sizeof(H_state) == fs );
-  	}
+		assert( sizeof(H_param) == fs );
+	 }
 
-
-      	/* Send a message to the CAN bus */
+        /* Send a message to the CAN bus */
         struct can_frame frame;
 
         // time info
         struct timespec t;
         //int interval = 500000000; // 2hz (0.5 sec)
-        int interval = 10000000; // 100 hz (0.01 sec)
+        int interval = 100000000; // 10hz (0.1 sec)
+        //int interval = 10000000; // 100 hz (0.01 sec)
         //int interval = 5000000; // 200 hz (0.005 sec)
         //int interval = 2000000; // 500 hz (0.002 sec)
 
@@ -186,11 +186,10 @@ void huboLoop() {
         double tt = 0.0;
         double f = 0.2;		// frequency
         double T = (double)interval/1000000000.0;
-        double A = 0.3;// 1.0;
-        double dir = -1.0;
-	double t0 = 0.0;
+        double A = 1.0;
+        double t0 = 0.0;
         double t1 = 0.0;
-        int jnt = WST;
+        int jnt = RHY;
         while(1) {
                 // wait until next shot
                 clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -209,32 +208,26 @@ void huboLoop() {
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
-		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
 		printf("\033[2J");
-		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param.joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+		int i = 0;
+		int jnt = 0;
+		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
+			jnt = i;
+			if(H_param.joint[jnt].name[0] != 0){
+			printf("%s: Ref = %f \t \t Enc = %f \t Cur = %f \t Tmp = %f\n",
+				H_param.joint[jnt].name,
+				H_ref.ref[jnt], 
+				H_state.joint[jnt].pos, 
+				H_state.joint[jnt].cur,
+				H_state.joint[jnt].tmp);	
+		}}
+
+	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 
-                ftime(&tp);
-                tp_f.time = tp.time-tp_0.time;
-                tp_f.millitm = tp.millitm-tp_0.millitm;
-
-                tt = (double)tp_f.time+((int16_t)tp_f.millitm)*0.001;
 
 
-                t1 = t0;
-                t0 = tt;
-                double jntTmp = A*sin(f*2*pi*tt);
-		if(jntTmp > 0) {
-	                H_ref.ref[jnt] = -dir*jntTmp; }
-		else { 
-	                H_ref.ref[jnt] = dir*jntTmp; }
-		
 
-        //	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
-//                printf("A = %f\n",H.ref[jnt]);
-                //printf("Diff(t) = %f\n",(t0-t1));
-
-                ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
                 t.tv_nsec+=interval;
                 tsnorm(&t);
         }
@@ -253,7 +246,7 @@ void stack_prefault(void) {
 }
 
 
-		
+
 static inline void tsnorm(struct timespec *ts){
 
 //	clock_nanosleep( NSEC_PER_SEC, TIMER_ABSTIME, ts, NULL);
@@ -301,11 +294,11 @@ int main(int argc, char **argv) {
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
         assert( ACH_OK == r );
 
-        r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
+        r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
         assert( ACH_OK == r );
-        
-	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
-        assert( ACH_OK == r );
+	
+	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
+	assert( ACH_OK == r );
         
 	huboLoop();
         pause();

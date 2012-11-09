@@ -71,18 +71,17 @@
 #define		RWR		16		// right wrist roll
 #define		RWP		17		// right wrist Pitch
 
-#define		LSP		3		//	Left Shoulder Pitch
-#define		LSR		4		//	Left Shoulder Yaw
-#define		LSY		5		//	Left Shoulder Roll
-#define		LEB		6		//	Left Elbow Pitch
-#define		LWY		7		// left wrist yaw
-#define		LWR		8		// left wrist roll
-#define		LWP		9		// left wrist pitch
+#define		LSP		4		//	Left Shoulder Pitch
+#define		LSR		5		//	Left Shoulder Yaw
+#define		LSY		6		//	Left Shoulder Roll
+#define		LEB		7		//	Left Elbow Pitch
+#define		LWY		8		// left wrist yaw
+#define		LWR		9		// left wrist roll
+#define		LWP		10		// left wrist pitch
 
 #define		NKY		1		// neck yaw
-#define		NKP		2		// neck pitch
 #define		NK1		2		// neck 1
-#define		NK2		2		// neck 2
+#define		NK2		3		// neck 2
 
 #define		WST		0		//	Trunk Yaw
 
@@ -98,6 +97,8 @@
 #define		LF5		41		//	Left Finger
 
 
+#define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
+
 #define		HUBO_JOINT_COUNT	50		// 	the size of the array
 						//	for the joints
 #define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
@@ -105,22 +106,24 @@
 //#define 	numOfJmc	0x40		//	number of JMCs
 #define 	pi		3.141596
 
-#define		HUBO_CHAN_REF_NAME       "hubo-ref"        // hubo ach channel
-#define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   // hubo console channel for ach
-#define		HUBO_CHAN_STATE_NAME     "hubo-state"      // hubo state ach channel
-#define		HUBO_CHAN_PARAM_NAME     "hubo-param"      // hubo param ach channel
-
+#define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
+#define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
+#define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
+#define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
+#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
 
 /* def for console do flags */
 /* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
 typedef enum {
-	HUBO_JMC_INI 		= 1,	///< Initilize jmc
-	HUBO_FET_ON_OFF 	= 2,	///< turn fet on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_CTRL_ON_OFF 	= 3,	///< turn control on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_ZERO_ENC		= 4,	///< zero encoder for given motor
-	HUBO_GOTO_REF		= 5,	///< go to ref val[0] = ref (rad)
-	HUBO_JMC_BEEP		= 6,	///< make beep val[0] = beep time in sec
-	HUBO_GOTO_HOME		= 7	///< go home position
+	HUBO_JMC_INI 		= 1,	///> Initilize jmc
+	HUBO_FET_ON_OFF 	= 2,	///> turn fet on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_CTRL_ON_OFF 	= 3,	///> turn control on or off cmd[2] = 1 (on), 0 (off)
+	HUBO_ZERO_ENC		= 4,	///> zero encoder for given motor
+	HUBO_GOTO_REF		= 5,	///> go to ref val[0] = ref (rad)
+	HUBO_JMC_BEEP		= 6,	///> make beep val[0] = beep time in sec
+	HUBO_GOTO_HOME		= 7,	///> go home position
+	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
+	HUBO_JMC_INI_ALL	= 9	///> Initilize all JMC boards
 } hubo_console_t;
 
 typedef enum {
@@ -154,6 +157,7 @@ struct hubo_joint_state {
 	double pos;     ///< actual position (rad)
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
+	double tmp;	///< temperature (dec C)
 };
 
 struct hubo_ft {
@@ -179,6 +183,7 @@ struct hubo_ref {
 struct hubo_state {
 	struct hubo_imu imu;	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
+	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
 };
 
 struct hubo_init_cmd {
