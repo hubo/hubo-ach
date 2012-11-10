@@ -147,9 +147,7 @@ struct hubo_joint_param {
 	char name[4];		///< name
 	uint16_t jmc;		///< motor controller number
 	uint8_t can;		///< can channel
-	uint8_t active; 	///< checks if the joint is active or not
 	uint8_t numMot;		///< number of motors
-	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 //}__attribute__((packed));
 
@@ -158,6 +156,8 @@ struct hubo_joint_state {
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
 	double tmp;	///< temperature (dec C)
+	uint8_t active; 	///< checks if the joint is active or not
+	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 
 struct hubo_ft {

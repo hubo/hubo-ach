@@ -200,7 +200,12 @@ void huboLoop(struct hubo_param *H_param) {
 
 		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
 		printf("\033[2J");
-		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n", H_param->joint[jnt].name, H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+<<<<<<< HEAD
+		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param->joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+=======
+		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n","JNT",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+//		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param.joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+>>>>>>> thedancomplex/master
 
 
                 ftime(&tp);
@@ -374,7 +379,11 @@ int main(int argc, char **argv) {
         /* open ach channel */
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
         assert( ACH_OK == r );
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> thedancomplex/master
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
         assert( ACH_OK == r );
   	
