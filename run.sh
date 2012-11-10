@@ -18,7 +18,6 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-init-cmd'
-HUBO_PARAM='hubo-param'
 
 sudo echo "i 0x0014 e" > /dev/pcan0
 sudo echo "i 0x0014 e" > /dev/pcan1
@@ -33,7 +32,6 @@ StopHubo()
 	sudo ach -U hubo-ref
 	sudo ach -U hubo-state
 	sudo ach -U hubo-init-cmd
-	sudo ach -U hubo-param
 	
 	sudo ifconfig can0 down
 	sudo ifconfig can1 down
