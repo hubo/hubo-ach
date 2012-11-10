@@ -23,7 +23,7 @@ all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS)
 
-hubo_main_objs := src/hubo-main.o $(CAN_OBJS)
+hubo_main_objs := src/hubo-main.o src/hubo-jointparams.o $(CAN_OBJS)
 
 hubo-main: $(hubo_main_objs)
 	$(CC) -o $@  $(hubo_main_objs) $(LIBS) -lm -lc
@@ -31,8 +31,10 @@ hubo-main: $(hubo_main_objs)
 hubo-read: src/hubo-read.c
 	$(CC) $(CFLAGS) -o $@ $< -lach
 
-hubo-console: src/hubo-console.o
-	$(CXX)  -o $@ $< -lach -lreadline -lm -lc
+hubo_console_objs := src/hubo-jointparams.o src/hubo-console.o 
+
+hubo-console: $(hubo_console_objs)
+	$(CXX) $(CFLAGS) -o $@ $(hubo_console_objs) -lach -lreadline -lm -lc
 
 hubo-loop: src/hubo-loop.o
 	gcc -o $@ $< -lach -lrt -lm -lc
