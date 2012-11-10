@@ -60,6 +60,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include "ach.h"
 
+// for UDP
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+
 
 /* At time of writing, these constants are not defined in the headers */
 #ifndef PF_CAN
@@ -87,6 +92,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Timing info
 #define NSEC_PER_SEC    1000000000
 
+// UDP
+#define PORT 10100
+#define ADDRESS "192.168.0.10"
 
 struct timeb {
         time_t   time;
@@ -125,14 +133,52 @@ ach_channel_t chan_hubo_param;    // hubo-ach-param
 int debug = 0;
 int hubo_debug = 1;
 
+
+
+static int openUDP(char* name) {
+
+        /* Create the socket */
+	int skt = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	struct sockaddr_in addr;
+	addr.sin_port = PORT;
+	addr.sin_family = AF_INET;
+	addr.sin_addr = inet_addr(ADDRESS);
+
+	int bnd = bind(skt,&addr, sizeof(addr));
+
+//	struct sockaddr_in addr;
+//	addr.sin_addr.s_addr = inet_addr("192.168.0.191");
+//	inet_pton(AF_INET, ADDRESS, &addr.sin_addr);
+
+//	addr.sin_addr.s_addr = inet_addr("192.168.0.191");
+        /* Locate the interface you wish to use */
+        struct ifreq ifr;
+        //strcpy(ifr.ifr_name, "vcan0");
+
+        // FIXME: buffer overflow here!!!
+        strcpy(ifr.ifr_name, name);
+        ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
+                                  * with that device's index */
+        /* Select that udp interface, and bind the socket to it. */
+//        bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+        return skt;
+}
+
+
+
+
+
 void huboLoop() {
+
         // get initial values for hubo
         struct hubo_ref H_ref;
 	struct hubo_state H_state;
-	struct hubo_param H_param;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
-	memset( &H_param, 0, sizeof(H_param));
+	
+	// UDP
+	int skt = openUDP("eth0");
 
         size_t fs;
         //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
@@ -153,18 +199,6 @@ void huboLoop() {
 		assert( sizeof(H_state) == fs );
 	 }
 
-	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {
-		if(hubo_debug) {
-                       	printf("State ini r = %s\n",ach_result_to_string(r));}
-		}
-	else{   
-		assert( sizeof(H_state) == fs );
-  	}
-
-
-      	/* Send a message to the CAN bus */
-        struct can_frame frame;
 
         // time info
         struct timespec t;
@@ -173,24 +207,14 @@ void huboLoop() {
         //int interval = 5000000; // 200 hz (0.005 sec)
         //int interval = 2000000; // 500 hz (0.002 sec)
 
+
+	/* Sampling Period */
+	double T = (double)interval/(double)NSEC_PER_SEC; // (sec)
+
         // get current time
         //clock_gettime( CLOCK_MONOTONIC,&t);
         clock_gettime( 0,&t);
-        struct timeb tp;
-        struct timeb tp_0;
-        struct timeb tp_f;
-        int a = 0;
 
-        /* get initial tme*/
-        ftime(&tp_0);
-        double tt = 0.0;
-        double f = 0.2;		// frequency
-        double T = (double)interval/1000000000.0;
-        double A = 0.3;// 1.0;
-        double dir = -1.0;
-	double t0 = 0.0;
-        double t1 = 0.0;
-        int jnt = WST;
         while(1) {
                 // wait until next shot
                 clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -209,31 +233,24 @@ void huboLoop() {
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
-		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
-		printf("\033[2J");
-		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param.joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+// ------------------------------------------------------------------------------
+// ---------------[ DO NOT EDIT AVBOE THIS LINE]---------------------------------
+// ------------------------------------------------------------------------------
 
 
-                ftime(&tp);
-                tp_f.time = tp.time-tp_0.time;
-                tp_f.millitm = tp.millitm-tp_0.millitm;
+	                //H_ref.ref[RHY] = 1.23456;
+			int L = sizeof(H_ref);
+			char tmp[L];
+			char tm2[2];
+			tm2[0] = 1;
+			tm2[1] = 2;
+//			memcpy(&tmp, &H_ref, L);
+			write(skt, tm2, sizeof(tm2));
+//			printf("t");
 
-                tt = (double)tp_f.time+((int16_t)tp_f.millitm)*0.001;
-
-
-                t1 = t0;
-                t0 = tt;
-                double jntTmp = A*sin(f*2*pi*tt);
-		if(jntTmp > 0) {
-	                H_ref.ref[jnt] = -dir*jntTmp; }
-		else { 
-	                H_ref.ref[jnt] = dir*jntTmp; }
-		
-
-        //	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
-//                printf("A = %f\n",H.ref[jnt]);
-                //printf("Diff(t) = %f\n",(t0-t1));
-
+// ------------------------------------------------------------------------------
+// ---------------[ DO NOT EDIT BELOW THIS LINE]---------------------------------
+// ------------------------------------------------------------------------------
                 ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
                 t.tv_nsec+=interval;
                 tsnorm(&t);
@@ -301,9 +318,6 @@ int main(int argc, char **argv) {
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
         assert( ACH_OK == r );
 
-        r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
-        assert( ACH_OK == r );
-        
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
         assert( ACH_OK == r );
         
