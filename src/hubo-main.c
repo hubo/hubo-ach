@@ -177,7 +177,7 @@ void huboLoop(struct hubo_param *H_param) {
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {printf("State r = %s\n",ach_result_to_string(r));}
 	assert( sizeof(H_state) == fs );
-	
+
 	// put back on channels
 	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
 	ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));
@@ -262,13 +262,13 @@ void huboLoop(struct hubo_param *H_param) {
 		else{
 			hubo_noRefTimeAll = hubo_noRefTimeAll - T;
 		}
-		
+
 		/* Get all Encoder data */
 		getEncAllSlow(&H_state, H_param, &frame); 
 
 		/* Get all Current data */
 //		getCurrentAllSlow(&H_state, &H_param, &frame);
-		
+
 //		hGetCurrentValue(RSY, &H_param, &frame);
 //		readCan(hubo_socket[H_param.joint[RSY].can], &frame, HUBO_CAN_TIMEOUT_DEFAULT);
 //		decodeFrame(&H_state, &H_param, &frame);
@@ -320,7 +320,7 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 	int jmc = 0;
 	int i = 0;
 	int canChan = 0;
-	
+
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 			jmc = h->joint[i].jmc+1;
@@ -672,7 +672,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 	r->ref[jnt] = 0;
 	s->joint[jnt].zeroed = true;
-	
+
 	hubo_noRefTimeAll = hubo_home_noRef_delay;
 }
 
@@ -808,7 +808,7 @@ double enc2rad(int jnt, int enc, struct hubo_param *h) {
 
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	int fs = (int)f->can_id;
-	
+
 	/* Current and Temp */
 	if( (fs >= SETTING_BASE_RXDF) & (fs < (SETTING_BASE_RXDF+0x60))) {
 		int jmc = fs-SETTING_BASE_RXDF;		// find the jmc value
@@ -827,7 +827,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].cur = current;
 				s->joint[jnt].tmp = temp;
 
-				
+
 			}
 		}
 
@@ -862,7 +862,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
-			
+
 		else if( motNo == 5 & f->can_dlc == 6 ) {
 			for( i = 0; i < 3 ; i++ ) {
 				enc16 = 0;
@@ -872,7 +872,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
-			
+
 		else if( motNo == 5 & f->can_dlc == 4 ) {
 			for( i = 0; i < 2; i++ ) {
 				enc16 = 0;
@@ -882,7 +882,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
-	
+
 	}
 	return 0;
 }
@@ -955,7 +955,7 @@ int main(int argc, char **argv) {
 
 	// set joint parameters for Hubo
 	setJointParams(&H_param);
-	
+
 	// run hubo main loop
 	huboLoop(&H_param);
 
