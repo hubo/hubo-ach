@@ -22,8 +22,10 @@ HUBO_INIT_CMD='hubo-init-cmd'
 sudo echo "i 0x0014 e" > /dev/pcan0
 sudo echo "i 0x0014 e" > /dev/pcan1
 
-
-
+#check for HUBO_JOINT_TABLE environment variable where jointtab is stored
+if [ -z "$HUBO_JOINT_TABLE" ]; then
+	HUBO_JOINT_TABLE=/etc/hubo/jointtab
+fi
 
 StopHubo()
 {

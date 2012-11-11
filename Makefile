@@ -36,8 +36,10 @@ hubo_console_objs := src/hubo-jointparams.o src/hubo-console.o
 hubo-console: $(hubo_console_objs)
 	$(CXX) $(CFLAGS) -o $@ $(hubo_console_objs) -lach -lreadline -lm -lc
 
-hubo-loop: src/hubo-loop.o
-	gcc -o $@ $< -lach -lrt -lm -lc
+hubo_loop_objs := src/hubo-jointparams.o src/hubo-loop.o
+
+hubo-loop: $(hubo_loop_objs)
+	$(CC) $(CFLAGS) -o $@ $(hubo_loop_objs) -lach -lrt -lm -lc
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<

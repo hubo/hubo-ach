@@ -81,8 +81,6 @@ void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
-void setPosZeros();
-//void setConsoleFlags();
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
@@ -133,9 +131,6 @@ int main() {
 	// set default values for H_ref in ach
 //	setPosZeros();
 
-	// set default values for H_init in ach
-	// this is not working. Not sure if it's really needed
-	// since the structs get initialized with zeros when instantiated
 //	setConsoleFlags();	
 
 	// set default values for Hubo
@@ -373,38 +368,3 @@ void * xmalloc (int size) {
         }
         return buf;
 }
-
-
-void setPosZeros() {
-        // open ach channel
-//        int r = ach_open(&chan_num, "hubo", NULL);
-//        assert( ACH_OK == r );
-
-        struct hubo_ref H;
-        memset( &H,   0, sizeof(H));
-        size_t fs = 0;
-        int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H) == fs );
-
-        int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-                H.ref[i] = 0.0;
-        }
-        ach_put(&chan_hubo_ref, &H, sizeof(H));
-}
-
-void setConsoleFlags() {
-        struct hubo_init_cmd C;
-        memset( &C,   0, sizeof(C));
-        size_t fs =0;
-        int r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(C) == fs );
-	int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-                C.cmd[i] = 0;
-                C.val[i] = 0;
-        }
-        r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
-	printf("finished setConsoleFlags\n");
-}
-

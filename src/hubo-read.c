@@ -120,7 +120,6 @@ int ftime(struct timeb *tp);
 ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
-ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
 int hubo_debug = 1;

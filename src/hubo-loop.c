@@ -47,6 +47,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // for hubo
 #include "hubo.h"
+#include "hubo-jointparams.h"
 
 // for ach
 #include <errno.h>
@@ -103,14 +104,6 @@ static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
 void huboLoop(struct hubo_param *h);
 int ftime(struct timeb *tp);
-void setPosZeros();
-//void setConsoleFlags();
-int setDefaultValues(struct hubo_param *h);
-
-
-
-
-
 
 
 
@@ -232,95 +225,6 @@ void huboLoop(struct hubo_param *H_param) {
 }
 
 
-
-void setPosZeros() {
-        // open ach channel
-//        int r = ach_open(&chan_num, "hubo", NULL);
-//        assert( ACH_OK == r );
-
-        struct hubo_ref H;
-        memset( &H,   0, sizeof(H));
-        size_t fs = 0;
-        int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H) == fs );
-
-        int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-                H.ref[i] = 0.0;
-        }
-        ach_put(&chan_hubo_ref, &H, sizeof(H));
-}
-
-int setDefaultValues(struct hubo_param *H) {
-
-        FILE *ptr_file;
-
-        // open file and if fails, return 1
-        if (!(ptr_file=fopen("hubo-config.txt", "r")))
-                return 1;
-
-        struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
-        memset(&tp,      0, sizeof(tp));
-
-        char active[6];
-        char zeroed[6];
-        int j;
-        char buff[100];
-
-        // read in each non-commented line of the config file corresponding to each joint
-        while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
-                if (buff[0] != '#' && buff[0] != '\n') {
-                        sscanf(buff, "%hu%s%hu%u%hu%hu%hu%hu%hhu%hu%hhu%hhu%hhu%hhu\n",
-                        &tp.jntNo,
-                        tp.name,
-                        &tp.motNo,
-                        &tp.refEnc,
-                        &tp.drive,
-                        &tp.driven,
-                        &tp.harmonic,
-                        &tp.enc,
-                        &tp.dir,
-                        &tp.jmc,
-                        &tp.can,
-                        &tp.active,
-                        &tp.numMot,
-                        &tp.zeroed);
-
-                // define i to be the joint number
-                int i = (int)tp.jntNo;
-
-                //copy contents (all member values) of tp into H.joint[] 
-                //substruct which will populate its member variables
-                memcpy(&(H->joint[i]), &tp, sizeof(tp));
-                }
-        }
-        // close file stream
-        fclose(ptr_file);
-
-        // print struct member's values to console to check if it worked
-/*      printf ("printout of setDefaultValues() function in hubo-console.c\n");
-        size_t i;
-        for (i = 0; i < HUBO_JOINT_COUNT; i++) {
-                printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
-                        H->joint[i].jntNo, 
-                        H->joint[i].name,
-                        H->joint[i].motNo, 
-                        H->joint[i].refEnc, 
-                        H->joint[i].drive, 
-                        H->joint[i].driven, 
-                        H->joint[i].harmonic, 
-                        H->joint[i].enc, 
-                        H->joint[i].dir, 
-                        H->joint[i].jmc, 
-                        H->joint[i].can, 
-                        H->joint[i].active, 
-                        H->joint[i].numMot, 
-                        H->joint[i].zeroed);
-        }       
-*/      return 0;
-}
-
-
 void stack_prefault(void) {
         unsigned char dummy[MAX_SAFE_STACK];
         memset( dummy, 0, MAX_SAFE_STACK );
@@ -395,15 +299,10 @@ int main(int argc, char **argv) {
         ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
 
         // set default values for H_ref in ach
-        setPosZeros();
-
-        // set default values for H_init in ach
-        // this is not working. Not sure if it's really needed
-        // since the structs get initialized with zeros when instantiated
-//      setConsoleFlags();      
+//	setPosZeros();
 
         // set default values for Hubo
-        setDefaultValues(&H_param);
+        setJointParams(&H_param);
       
 	huboLoop(&H_param);
         pause();

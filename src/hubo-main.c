@@ -141,8 +141,6 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void setPosZeros();
-//void setConsoleFlags();
 
 // ach message type
 //typedef struct hubo h[1];
@@ -889,38 +887,6 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	return 0;
 }
 
-void setPosZeros() {
-        // open ach channel
-//        int r = ach_open(&chan_num, "hubo", NULL);
-//        assert( ACH_OK == r );
-
-        struct hubo_ref H;
-        memset( &H,   0, sizeof(H));
-        size_t fs = 0;
-        int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H) == fs );
-
-        int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-                H.ref[i] = 0.0;
-        }
-        ach_put(&chan_hubo_ref, &H, sizeof(H));
-}
-
-void setConsoleFlags() {
-        struct hubo_init_cmd C;
-        memset( &C,   0, sizeof(C));
-        size_t fs =0;
-        int r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(C) == fs );
-	int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-                C.cmd[i] = 0;
-                C.val[i] = 0;
-        }
-        r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
-	printf("finished setConsoleFlags\n");
-}
 
 int main(int argc, char **argv) {
 
@@ -985,42 +951,11 @@ int main(int argc, char **argv) {
 	// set default values for H_ref in ach	
 //	setPosZeros();
 
-	// set default values for H_init in ach
-	// this is not working. Not sure if it's really needed
-	// since the structs get initialized with zeros when instantiated
 //	setConsoleFlags();	
 
 	// set joint parameters for Hubo
 	setJointParams(&H_param);
-/*	size_t j;
-        for (j = 0; j < HUBO_JOINT_COUNT; j++) {
-                printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n",
-                        H_param.joint[j].jntNo,
-                        H_param.joint[j].name,
-                        H_param.joint[j].motNo,
-                        H_param.joint[j].refEnc,
-                        H_param.joint[j].drive,
-                        H_param.joint[j].driven,
-                        H_param.joint[j].harmonic,
-                        H_param.joint[j].enc,
-                        H_param.joint[j].dir,
-                        H_param.joint[j].jmc,
-                        H_param.joint[j].can,
-                        H_param.joint[j].active,
-                        H_param.joint[j].numMot,
-                        H_param.joint[j].zeroed);
-        }
-	size_t k;
-	for (k = 0; k < HUBO_JMC_COUNT; k++) {
-		printf("%lu\t%hhu\t%hhu\t%hhu\t%hhu\t%hhu\n",
-			k,
-			H_param.driver[k].jmc[0],
-			H_param.driver[k].jmc[1],
-			H_param.driver[k].jmc[2],
-			H_param.driver[k].jmc[3],
-			H_param.driver[k].jmc[4]);
-	}
-*/
+	
 	// run hubo main loop
 	huboLoop(&H_param);
 
