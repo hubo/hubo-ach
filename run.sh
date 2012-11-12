@@ -337,7 +337,7 @@ ConfigHubo()
 		sudo mkdir $DAEMON_DIR
 		sudo cp joint.table $DAEMON_DIR/joint.table
 		sudo cp joint.table $DAEMON_DIR/default-joint.table
-		sudo a-w $DAEMON_DIR/default-joint.table
+		sudo chmod a-w $DAEMON_DIR/default-joint.table
 	;;
 	esac
 }
