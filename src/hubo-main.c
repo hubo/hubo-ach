@@ -48,7 +48,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // for hubo
 #include "hubo.h"
-
+#include "hubo-jointparams.h"
 
 // Check out which CAN API to use
 #ifdef HUBO_CONFIG_ESD
@@ -121,13 +121,13 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 void hInitilizeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
 void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
-void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd *c, struct can_frame *f);
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f);
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
@@ -138,12 +138,9 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
-void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void setPosZeros();
-//void setConsoleFlags();
-int setDefaultValues(struct hubo_param *H);
+void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 
 // ach message type
 //typedef struct hubo h[1];
@@ -180,7 +177,7 @@ void huboLoop(struct hubo_param *H_param) {
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {printf("State r = %s\n",ach_result_to_string(r));}
 	assert( sizeof(H_state) == fs );
-	
+
 	// put back on channels
 	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
 	ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));
@@ -250,28 +247,28 @@ void huboLoop(struct hubo_param *H_param) {
 		else{ assert( sizeof(H_state) == fs ); }
 
 		/* read hubo console */
-		huboConsole(&H_ref, H_param, &H_init, &frame);
+		huboConsole(&H_ref, H_param, &H_state, &H_init, &frame);
 		/* set reference for zeroed joints only */
 //		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-//			if(H_param->joint[i].zeroed == true) {
-//				hSetEncRef(H_param->joint[i].jntNo, &H_ref, H_param, &frame);
+//			if(H_param.joint[i].zeroed == true) {
+//				hSetEncRef(H_param.joint[i].jntNo, &H_ref, H_param, &frame);
 //			}
 //		}
 
 		/* Set all Ref */
 		if(hubo_noRefTimeAll < T ) {
-			setRefAll(&H_ref, H_param, &frame);
+			setRefAll(&H_ref, H_param, &H_state, &frame);
 		}
 		else{
 			hubo_noRefTimeAll = hubo_noRefTimeAll - T;
 		}
-		
+
 		/* Get all Encoder data */
 		getEncAllSlow(&H_state, H_param, &frame); 
 
 		/* Get all Current data */
 //		getCurrentAllSlow(&H_state, &H_param, &frame);
-		
+
 //		hGetCurrentValue(RSY, &H_param, &frame);
 //		readCan(hubo_socket[H_param.joint[RSY].can], &frame, HUBO_CAN_TIMEOUT_DEFAULT);
 //		decodeFrame(&H_state, &H_param, &frame);
@@ -316,18 +313,18 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*pi);
 }
 */
-void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
 	int c[HUBO_JMC_COUNT];
 	memset( &c, 0, sizeof(c));
 	int jmc = 0;
 	int i = 0;
 	int canChan = 0;
-	
+
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 			jmc = h->joint[i].jmc+1;
-			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (h->joint[i].active == true)){	// check to see if already asked that motor controller
+			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
 				hSetEncRef(i, r, h, f);
 				c[jmc] = 1;
 //				if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
@@ -670,20 +667,20 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 //	printf("go home %i\n", ((uint8_t)h->joint[jnt].motNo << 4)|2);
 }
 
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	fGotoLimitAndGoOffset(jnt, r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 	r->ref[jnt] = 0;
-	h->joint[jnt].zeroed = true;
-	
+	s->joint[jnt].zeroed = true;
+
 	hubo_noRefTimeAll = hubo_home_noRef_delay;
 }
 
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-		if(h->joint[i].active == true) {
-			hGotoLimitAndGoOffset(i, r, h, f);
+		if(s->joint[i].active == true) {
+			hGotoLimitAndGoOffset(i, r, h, s, f);
 		}
 	}
 }
@@ -696,11 +693,11 @@ void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct 
 }
 
 
-void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Initilizes all boards
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-		if(h->joint[i].active == true) {
+		if(s->joint[i].active == true) {
 			hInitializeBoard(i, r, h, f);
 		}
 	}
@@ -713,12 +710,12 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
-void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 // --std=c99
 		printf("2\n");
 	int i = 0;
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-		if(h->joint[i].active) {
+		if(s->joint[i].active) {
 			hInitializeBoard(i, r, h, f);
 			printf("%i\n",i);
 		}
@@ -743,12 +740,12 @@ void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h,
 		sendCan(hubo_socket[h->joint[jnt].can], f); }
 }
 
-void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	fResetEncoderToZero(jnt,r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
-	h->joint[jnt].zeroed == true;		// need to add a can read back to confirm it was zeroed
+	s->joint[jnt].zeroed == true;		// need to add a can read back to confirm it was zeroed
 }
-void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd *c, struct can_frame *f) {
+void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
 //	printf("hubo-ach - interface 2012-08-18\n");
 	size_t fs;
@@ -769,7 +766,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 //			break; }
 			switch (c->cmd[0]) {
 				case HUBO_JMC_INI_ALL:
-					hInitializeBoardAll(r,h,f);
+					hInitializeBoardAll(r,h,s,f);
 					break;
 				case HUBO_JMC_INI:
 					hInitializeBoard(c->cmd[1],r,h,f);
@@ -782,16 +779,16 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_init_cmd 
 					hFeedbackControllerOnOff(c->cmd[1],r,h,f,c->cmd[2]);
 					break;
 				case HUBO_ZERO_ENC:
-					hResetEncoderToZero(c->cmd[1],r,h,f);
+					hResetEncoderToZero(c->cmd[1],r,h,s,f);
 					break;
 				case HUBO_JMC_BEEP:
 					hSetBeep(c->cmd[1],r,h,f,c->val[0]);
 					break;
 				case HUBO_GOTO_HOME_ALL:
-					hGotoLimitAndGoOffsetAll(r,h,f);
+					hGotoLimitAndGoOffsetAll(r,h,s,f);
 					break;
 				case HUBO_GOTO_HOME:
-					hGotoLimitAndGoOffset(c->cmd[1],r,h,f);
+					hGotoLimitAndGoOffset(c->cmd[1],r,h,s,f);
 					break;
 		//		case HUBO_GOTO_REF:
 				default:
@@ -811,7 +808,7 @@ double enc2rad(int jnt, int enc, struct hubo_param *h) {
 
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	int fs = (int)f->can_id;
-	
+
 	/* Current and Temp */
 	if( (fs >= SETTING_BASE_RXDF) & (fs < (SETTING_BASE_RXDF+0x60))) {
 		int jmc = fs-SETTING_BASE_RXDF;		// find the jmc value
@@ -830,7 +827,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].cur = current;
 				s->joint[jnt].tmp = temp;
 
-				
+
 			}
 		}
 
@@ -865,7 +862,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
-			
+
 		else if( motNo == 5 & f->can_dlc == 6 ) {
 			for( i = 0; i < 3 ; i++ ) {
 				enc16 = 0;
@@ -875,7 +872,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
-			
+
 		else if( motNo == 5 & f->can_dlc == 4 ) {
 			for( i = 0; i < 2; i++ ) {
 				enc16 = 0;
@@ -885,113 +882,11 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
-	
+
 	}
 	return 0;
 }
 
-void setPosZeros() {
-        // open ach channel
-//        int r = ach_open(&chan_num, "hubo", NULL);
-//        assert( ACH_OK == r );
-
-        struct hubo_ref H;
-        memset( &H,   0, sizeof(H));
-        size_t fs = 0;
-        int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H) == fs );
-
-        int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-                H.ref[i] = 0.0;
-        }
-        ach_put(&chan_hubo_ref, &H, sizeof(H));
-}
-
-void setConsoleFlags() {
-        struct hubo_init_cmd C;
-        memset( &C,   0, sizeof(C));
-        size_t fs =0;
-        int r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(C) == fs );
-	int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-                C.cmd[i] = 0;
-                C.val[i] = 0;
-        }
-        r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
-	printf("finished setConsoleFlags\n");
-}
-
-int setDefaultValues(struct hubo_param *H) {
-
-	FILE *ptr_file;
-
-	// open file and if fails, return 1
-        if (!(ptr_file=fopen("hubo-config.txt", "r")))
-                return 1;
-
-	struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
-	memset(&tp, 0, sizeof(tp));
-       
-	char active[6];
-        char zeroed[6];
-        int j;
-	char buff[100];
-
-	// read in each non-commented line of the config file corresponding to each joint
-	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
-       		if (buff[0] != '#' && buff[0] != '\n') {
-			//printf("buff: %s\n", buff);
-	 		sscanf(buff, "%hu%s%hu%u%hu%hu%hu%hu%hhu%hu%hhu%hhu%hhu%hhu\n", 
-			&tp.jntNo,
-			tp.name,
-			&tp.motNo,  
-			&tp.refEnc, 
-			&tp.drive, 
-			&tp.driven, 
-			&tp.harmonic, 
-			&tp.enc, 
-			&tp.dir,  
-			&tp.jmc, 
-			&tp.can, 
-			&tp.active, 
-			&tp.numMot, 
-			&tp.zeroed);
-
-		// define i to be the joint number
-        	int i = (int)tp.jntNo;
-
-		//copy contents (all member values) of tp into H.joint[] 
-		//substruct which will populate its member variables
-		memcpy(&(H->joint[i]), &tp, sizeof(tp));        
-		}
-	}
-	// close file stream
-	fclose(ptr_file);
-	
-	// print struct member's values to console to check if it worked
-/*	printf ("printout of setDefaultValues() function in hubo-main.c\n");
-	size_t i;
-	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
-		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\t%hhu\t%hhu\n", 
-			H->joint[i].jntNo, 
-			H->joint[i].name,
-			H->joint[i].motNo, 
-			H->joint[i].refEnc, 
-			H->joint[i].drive, 
-			H->joint[i].driven, 
-			H->joint[i].harmonic, 
-			H->joint[i].enc, 
-			H->joint[i].dir, 
-			H->joint[i].jmc, 
-			H->joint[i].can, 
-			H->joint[i].active, 
-			H->joint[i].numMot, 
-			H->joint[i].zeroed);
-	}	
-*/	return 0;
-}
 
 int main(int argc, char **argv) {
 
@@ -1054,15 +949,12 @@ int main(int argc, char **argv) {
         ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
 
 	// set default values for H_ref in ach	
-	setPosZeros();
+//	setPosZeros();
 
-	// set default values for H_init in ach
-	// this is not working. Not sure if it's really needed
-	// since the structs get initialized with zeros when instantiated
 //	setConsoleFlags();	
 
-	// set default values for Hubo
-	setDefaultValues(&H_param);
+	// set joint parameters for Hubo
+	setJointParams(&H_param);
 
 	// run hubo main loop
 	huboLoop(&H_param);

@@ -19,15 +19,16 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-init-cmd'
-HUBO_PARAM='hubo-param'
 
 DAEMON_DIR='/etc/hubo-daemon'
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
 
-
-
+#check for HUBO_JOINT_TABLE environment variable where jointtab is stored
+if [ -z "$HUBO_JOINT_TABLE" ]; then
+	HUBO_JOINT_TABLE=/etc/hubo/jointtab
+fi
 
 StopHubo()
 {
@@ -53,9 +54,15 @@ StopHubo()
 	*)
 		sudo killall -e hubo-daemon
 	
+<<<<<<< HEAD
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
 		sudo ach -U hubo-init-cmd
+=======
+	sudo ach -U hubo-ref
+	sudo ach -U hubo-state
+	sudo ach -U hubo-init-cmd
+>>>>>>> 354f31b600f4a3e89000e814a7381f6aa9537cc7
 	
 		sudo ifconfig can0 down
 		sudo ifconfig can1 down
