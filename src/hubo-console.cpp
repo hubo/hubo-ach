@@ -63,6 +63,7 @@ using namespace std;
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
+ach_channel_t chan_hubo_ref_filter;      // hubo-ach
 ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 ach_channel_t chan_hubo_param;    // hubo-ach-param
@@ -83,6 +84,7 @@ void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
+double hubo_set(char*s, struct hubo_ref *h, struct hubo_param *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
@@ -110,6 +112,10 @@ int main() {
         r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
         assert( ACH_OK == r );
 
+        // open hubo state
+        r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
+        assert( ACH_OK == r );
+
         // initilize control channel
         r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
         assert( ACH_OK == r );
@@ -120,10 +126,12 @@ int main() {
 
         // get initial values for hubo
         struct hubo_ref H_ref;
+        struct hubo_ref H_ref_filter;
         struct hubo_init_cmd H_init;
         struct hubo_state H_state;
         struct hubo_param H_param;
         memset( &H_ref,   0, sizeof(H_ref));
+        memset( &H_ref,   0, sizeof(H_ref_filter));
         memset( &H_init,  0, sizeof(H_init));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
@@ -131,6 +139,8 @@ int main() {
         size_t fs;
         r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         assert( sizeof(H_ref) == fs );
+        r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_LAST );
+        assert( sizeof(H_ref_filter) == fs );
         r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
         assert( sizeof(H_init) == fs );
         r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
@@ -165,6 +175,16 @@ int main() {
                 double jRef = hubo_get(buf,&H_ref, &H_param);
                 char* tmp = getArg(buf,1);
                 printf(">> %s = %f rad \n",tmp,jRef);
+        }
+        else if (strcmp(buf0,"goto")==0) {
+		int jnt = hubo_set(buf, &H_ref_filter, &H_param);
+                float f = 0.0;
+		char* str = getArg(buf,2);
+		if(sscanf(str, "%f", &f) != 0)  //It's a float.
+		H_ref_filter.ref[jnt] = (double)f;
+      		int r = ach_put( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter) );
+		char* tmp = getArg(buf,1);
+                printf(">> %s = %f rad \n",tmp,f);
         }
         else if (strcmp(buf0,"beep")==0) {
                 hubo_jmc_beep(&H_param, &H_init, buf);
@@ -237,6 +257,14 @@ double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p) {
 
         return h->ref[jointNo];
 }
+
+double hubo_set(char*s, struct hubo_ref *h, struct hubo_param *p) {
+
+        /* get joint number */
+        int jointNo = name2mot(getArg(s,1),p);
+        return jointNo;
+}
+
 
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
         /* make beiep */
