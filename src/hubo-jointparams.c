@@ -28,6 +28,8 @@
 char *fileLocation = "/etc/hubo-daemon/joint.table";
 
 // ach channels
+ach_channel_t chan_hubo_ref;
+ach_channel_t chan_hubo_init_cmd;
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 
