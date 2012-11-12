@@ -959,9 +959,6 @@ int main(int argc, char **argv) {
 	// since the structs get initialized with zeros when instantiated
 //	setConsoleFlags();	
 
-	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
-		fprintf(stdout,"%s\t%hhu\t%hhu\n", H_param.joint[i].name, H_state.joint[i].active, H_state.joint[i].zeroed);
-	} 
 
 	// run hubo main loop
 	huboLoop(&H_param);

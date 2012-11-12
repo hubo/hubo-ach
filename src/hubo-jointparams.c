@@ -200,11 +200,11 @@ int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 			H->driver[i].jmc[4]);
         }
 */
-	// print values saved in H_state.joint[i].active and H_state.joint[i].zeroed
+/*	// print values saved in H_state.joint[i].active and H_state.joint[i].zeroed
 	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf("%s\t%hhu\t%hhu\n", H->joint[i].name, H_state->joint[i].active, H_state->joint[i].zeroed);
 	} 
-	
+*/	
 
 	return 0;
 }
