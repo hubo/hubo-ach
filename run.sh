@@ -54,15 +54,9 @@ StopHubo()
 	*)
 		sudo killall -e hubo-daemon
 	
-<<<<<<< HEAD
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
 		sudo ach -U hubo-init-cmd
-=======
-	sudo ach -U hubo-ref
-	sudo ach -U hubo-state
-	sudo ach -U hubo-init-cmd
->>>>>>> 354f31b600f4a3e89000e814a7381f6aa9537cc7
 	
 		sudo ifconfig can0 down
 		sudo ifconfig can1 down
