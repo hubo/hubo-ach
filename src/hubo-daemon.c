@@ -271,6 +271,9 @@ void huboLoop(struct hubo_param *H_param) {
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
 		t.tv_nsec+=interval;
 		tsnorm(&t);
+
+		fflush(stdout);
+		fflush(stderr);
 	}
 
 
@@ -928,6 +931,8 @@ int main(int argc, char **argv) {
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
 
+	// set joint parameters for Hubo
+	setJointParams(&H_param, &H_state);
 
 	// open hubo reference
 	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
@@ -954,8 +959,9 @@ int main(int argc, char **argv) {
 	// since the structs get initialized with zeros when instantiated
 //	setConsoleFlags();	
 
-	// set joint parameters for Hubo
-	setJointParams(&H_param);
+	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
+		fprintf(stdout,"%s\t%hhu\t%hhu\n", H_param.joint[i].name, H_state.joint[i].active, H_state.joint[i].zeroed);
+	} 
 
 	// run hubo main loop
 	huboLoop(&H_param);

@@ -294,15 +294,11 @@ int main(int argc, char **argv) {
 
         usleep(250000);
 
-        ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
-        ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));
-        ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
-
         // set default values for H_ref in ach
 //	setPosZeros();
 
         // set default values for Hubo
-        setJointParams(&H_param);
+        setJointParams(&H_param, &H_state);
       
 	huboLoop(&H_param);
         pause();

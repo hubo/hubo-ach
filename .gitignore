@@ -2,3 +2,5 @@
 /hubo-default
 /hubo-console
 /hubo-loop
+/src/*.o
+/*.log

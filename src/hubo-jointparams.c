@@ -30,10 +30,10 @@ char *fileLocation = "/etc/hubo-daemon/joint.table";
 // ach channels
 ach_channel_t chan_hubo_ref;
 ach_channel_t chan_hubo_init_cmd;
-ach_channel_t chan_hubo_state;    // hubo-ach-state
+//ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 
-int setJointParams(struct hubo_param *H) {
+int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
 //	if(strcmp(envVar, fileLocation) != 0) exit(EXIT_FAILURE);
@@ -47,22 +47,22 @@ int setJointParams(struct hubo_param *H) {
         struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
 	struct jmcDriver tp2;
 	struct hubo_joint_state s;
-	struct hubo_state H_state;
+//	struct hubo_state H_state;
 	memset(&tp,	 0, sizeof(tp));
 	memset(&tp2,	 0, sizeof(tp2));
 	memset(&s,	 0, sizeof(s));
-	memset(&H_state, 0, sizeof(H_state));
+//	memset(&H_state, 0, sizeof(H_state));
 	size_t i;
 	size_t j;
 
 	// open hubo state channel
-        int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
-        assert( ACH_OK == r );
+  //      int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
+    //    assert( ACH_OK == r );
 
 	size_t fs;
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-        if(ACH_OK != r) {printf("State r = %s\n",ach_result_to_string(r));}
-        assert( sizeof(H_state) == fs );
+//	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+ //       if(ACH_OK != r) {printf("State r = %s\n",ach_result_to_string(r));}
+  //      assert( sizeof(H_state) == fs );
 
 
 	for(i = 0; i < HUBO_JMC_COUNT; i++) {
@@ -71,7 +71,7 @@ int setJointParams(struct hubo_param *H) {
 		}
 	}
 
-	uint16_t jointNamesShorts[] = 
+	uint16_t jointNameValues[] = 
 			{WST, NKY, NK1, NK2,
 			LSP, LSR, LSY, LEB, LWY, LWR, LWP,
 			RSP, RSR, RSY, REB, RWY, RWR, RWP,
@@ -80,7 +80,7 @@ int setJointParams(struct hubo_param *H) {
 			RF1, RF2, RF3, RF4, RF5,
 			LF1, LF2, LF3, LF4, LF5};
 
-	char *jointNamesStrings[] = 
+	char *jointNameStrings[] = 
 			{"WST", "NKY", "NK1", "NK2", 
 			 "LSP", "LSR", "LSY", "LEB", "LWY", "LWR", "LWP",
 			 "RSP", "RSR", "RSY", "REB", "RWY", "RWR", "RWP",
@@ -123,9 +123,9 @@ int setJointParams(struct hubo_param *H) {
 				&s.zeroed) == NUM_OF_PARAMETERS) {
 
 				size_t x;
-				for(x = 0; x < sizeof(jointNamesStrings); x++) {
-					if (0 == strcmp(tp.name, jointNamesStrings[x])) {
-					i = jointNamesShorts[x];
+				for(x = 0; x < sizeof(jointNameStrings); x++) {
+					if (0 == strcmp(tp.name, jointNameStrings[x])) {
+					i = jointNameValues[x];
 					jntNameCount = 1;
 					break;
 					}
@@ -159,7 +159,7 @@ int setJointParams(struct hubo_param *H) {
 				//substruct which will populate its member variables
 				memcpy(&(H->joint[i]), &tp, sizeof(tp));
 				memcpy(&(H->driver[tp.jmc].jmc[tp.motNo]), &tp2.jmc[tp.motNo], sizeof(tp2.jmc[tp.motNo]));
-				memcpy(&(H_state.joint[i]), &s, sizeof(s));
+				memcpy(&(H_state->joint[i]), &s, sizeof(s));
 			}
 			else {
 				printf("number of arguments matched: %lu\n", numOfArgs);
@@ -171,7 +171,7 @@ int setJointParams(struct hubo_param *H) {
         // close file stream
         fclose(ptr_file);
 
-	ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
+//	ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
 //	ach_close(&chan_hubo_state);
 
 /*	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
@@ -201,10 +201,10 @@ int setJointParams(struct hubo_param *H) {
         }
 */
 	// print values saved in H_state.joint[i].active and H_state.joint[i].zeroed
-/*	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
-		printf("%s\t%hhu\t%hhu\n", H->joint[i].name, H_state.joint[i].active, H_state.joint[i].zeroed);
+	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
+		printf("%s\t%hhu\t%hhu\n", H->joint[i].name, H_state->joint[i].active, H_state->joint[i].zeroed);
 	} 
-*/	
+	
 
 	return 0;
 }

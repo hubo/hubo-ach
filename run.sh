@@ -189,6 +189,7 @@ DebugHubo()
 		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 	
 		sudo ./hubo-daemon -d $1
+		sleep 1
 		sudo ./hubo-console
 	;;
 	esac
