@@ -25,10 +25,6 @@ DAEMON_DIR='/etc/hubo-daemon'
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
 
-#check for HUBO_JOINT_TABLE environment variable where jointtab is stored
-if [ -z "$HUBO_JOINT_TABLE" ]; then
-	HUBO_JOINT_TABLE=/etc/hubo/jointtab
-fi
 
 StopHubo()
 {
@@ -341,7 +337,7 @@ ConfigHubo()
 		sudo mkdir $DAEMON_DIR
 		sudo cp joint.table $DAEMON_DIR/joint.table
 		sudo cp joint.table $DAEMON_DIR/default-joint.table
-		sudo a-w $DAEMON_DIR/default-joint.table
+		sudo chmod a-w $DAEMON_DIR/default-joint.table
 	;;
 	esac
 }
