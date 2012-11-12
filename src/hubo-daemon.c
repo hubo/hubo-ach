@@ -892,6 +892,9 @@ int main(int argc, char **argv) {
 		if(strcmp(argv[i], "-d") == 0) {
 			hubo_debug = 1;
 		}
+		if(strcmp(argv[i], "-v") == 0){
+			vflag = 1;
+		}
 		i++;
 	}
 
