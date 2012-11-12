@@ -172,7 +172,7 @@ int setJointParams(struct hubo_param *H) {
         fclose(ptr_file);
 
 	ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
-	ach_close(&chan_hubo_state);
+//	ach_close(&chan_hubo_state);
 
 /*	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\n",
