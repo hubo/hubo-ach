@@ -34,6 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <linux/can/raw.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 // for timer
 #include <time.h>
@@ -205,7 +206,7 @@ void huboLoop(struct hubo_param *H_param) {
 
                 t1 = t0;
                 t0 = tt;
-                double jntTmp = A*sin(f*2*pi*tt);
+                double jntTmp = A*sin(f*2*M_PI*tt);
 		if(jntTmp > 0) {
 	                H_ref.ref[jnt] = -dir*jntTmp; }
 		else { 

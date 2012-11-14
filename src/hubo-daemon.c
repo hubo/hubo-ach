@@ -35,6 +35,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <linux/can/raw.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 // for timer
 #include <time.h>
@@ -302,8 +303,8 @@ static inline void tsnorm(struct timespec *ts){
 /*
 uint32_t getEncRef(int jnt, struct hubo *h)
 {
-	//return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].enc*2.0*pi);
-	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*pi);
+	//return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].enc*2.0*M_PI);
+	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*M_PI);
 }
 */
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
@@ -453,7 +454,7 @@ void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fr
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
 	// set encoder from reference
 	struct hubo_joint_param *p = &h->joint[jnt];
-	return (uint32_t)((double)p->driven/(double)p->drive*(double)p->harmonic*(double)p->enc*(double)r->ref[jnt]/2.0/pi);
+	return (uint32_t)((double)p->driven/(double)p->drive*(double)p->harmonic*(double)p->enc*(double)r->ref[jnt]/2.0/M_PI);
 }
 
 unsigned long signConvention(long _input) {
@@ -795,7 +796,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 
 double enc2rad(int jnt, int enc, struct hubo_param *h) {
 	struct hubo_joint_param *p = &h->joint[jnt];
-        return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*pi);
+        return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*M_PI);
 }
 
 

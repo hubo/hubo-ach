@@ -25,49 +25,40 @@
 #define	NUM_OF_PARAMETERS 13
 
 //set file location
-char *fileLocation = "/etc/hubo-daemon/joint.table";
+static char *fileLocation = "/etc/hubo-daemon/joint.table";
 
 // ach channels
 ach_channel_t chan_hubo_ref;
 ach_channel_t chan_hubo_init_cmd;
-//ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 
-int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
+int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
 //	if(strcmp(envVar, fileLocation) != 0) exit(EXIT_FAILURE);
 
-        FILE *ptr_file;
+	FILE *ptr_file;
 
-        // open file and if fails, return 1
-        if (!(ptr_file=fopen(fileLocation, "r")))
-                return 1;
+	// open file for read access and if it fails, return -1
+	if (!(ptr_file=fopen(fileLocation, "r")))
+		return -1;
 
-        struct hubo_joint_param tp;                     //instantiate hubo_jubo_param struct
-	struct jmcDriver tp2;
-	struct hubo_joint_state s;
-//	struct hubo_state H_state;
+	// instantiate stucts for getting values from joint.table
+	// file and copying them to 
+	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing
+	struct jmcDriver tp2;		//jmcDriver struct member for file parsing
+	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
 	memset(&tp,	 0, sizeof(tp));
 	memset(&tp2,	 0, sizeof(tp2));
 	memset(&s,	 0, sizeof(s));
-//	memset(&H_state, 0, sizeof(H_state));
 	size_t i;
 	size_t j;
 
-	// open hubo state channel
-  //      int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
-    //    assert( ACH_OK == r );
-
-	size_t fs;
-//	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
- //       if(ACH_OK != r) {printf("State r = %s\n",ach_result_to_string(r));}
-  //      assert( sizeof(H_state) == fs );
-
-
+	// inialize jmcDriver struct's jmc numbers with zeros.
+	// these are the motors on each motor driver.
 	for(i = 0; i < HUBO_JMC_COUNT; i++) {
-		for(j = 0; j < sizeof(&H->driver[i].jmc); j++) {
-			H->driver[i].jmc[j] = 0;
+		for(j = 0; j < sizeof(&H_param->driver[i].jmc); j++) {
+			H_param->driver[i].jmc[j] = 0;
 		}
 	}
 
@@ -80,6 +71,7 @@ int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 			RF1, RF2, RF3, RF4, RF5,
 			LF1, LF2, LF3, LF4, LF5};
 
+	// array of joint name strings (total of 40)
 	char *jointNameStrings[] = 
 			{"WST", "NKY", "NK1", "NK2", 
 			 "LSP", "LSR", "LSY", "LEB", "LWY", "LWR", "LWP",
@@ -93,21 +85,32 @@ int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 				JMC6, JMC7, JMC8, JMC9, JMC10, JMC11,
 				EJMC0, EJMC1, EJMC2, EJMC3, EJMC4, EJMC5};
 
+	// array of jmc name strings (total of 18)
 	char *jmcNames[] = {"JMC0", "JMC1", "JMC2", "JMC3", "JMC4", "JMC5",
 			    "JMC6", "JMC7", "JMC8", "JMC9", "JMC10", "JMC11",
 			    "EJMC0", "EJMC1", "EJMC2", "EJMC3", "EJMC4", "EJMC5"};
 
+	char *charPointer;
 	size_t numOfArgs;
 	size_t jntNameCount = 0;
 	size_t jmcNameCount = 0;
 	char jmc[6];
-        char buff[1024];
-        // read in each non-commented line of the config file corresponding to each joint
-        while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
-               
-		 if (strchr(buff, '#') == NULL) {
-                       // printf("buff: %s\n", buff);
-                       if(numOfArgs = sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu\n",
+	char buff[1024];
+	 // read in each non-commented line of the config file corresponding to each joint
+	 while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
+
+			charPointer = strchr(buff, '#');
+			if (NULL != charPointer) {
+				*charPointer = '\0';
+			}
+
+			if( strlen(buff) == sizeof(buff)-1 ) {
+				fprintf(stderr, "Hubo-Parser: Line length overflow");
+				return -1; // parsing failed
+			}
+
+			// printf("buff: %s\n", buff);
+			if(13 == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu",
 				tp.name,
 				&tp.motNo,
 				&tp.refEnc,
@@ -120,24 +123,24 @@ int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 				&s.active,
 				&tp.can,
 				&tp.numMot,
-				&s.zeroed) == NUM_OF_PARAMETERS) {
-
+				&s.zeroed) ) // check that all values are found
+			{
 				size_t x;
-				for(x = 0; x < sizeof(jointNameStrings); x++) {
+				for(x = 0; x < sizeof(jointNameStrings)/sizeof(jointNameStrings[0]); x++) {
 					if (0 == strcmp(tp.name, jointNameStrings[x])) {
-					i = jointNameValues[x];
-					jntNameCount = 1;
-					break;
+						i = jointNameValues[x];
+						jntNameCount = 1;
+						break;
 					}
 				}
 
 				if (jntNameCount != 1) {
-					printf("joint name '%s' is incorrect\n", tp.name);
-					exit(EXIT_FAILURE);
+					fprintf(stderr, "joint name '%s' is incorrect\n", tp.name);
+					return -1; // parsing failed
 				}
 
 				size_t y;
-				for(y = 0; y < sizeof(jmcNames); y++) {
+				for(y = 0; y < sizeof(jmcNames)/sizeof(jmcNames[0]); y++) {
 					if (0 == strcmp(jmc, jmcNames[y])) {
 						tp.jmc = jmcNumbers[y];
 						jmcNameCount = 1;
@@ -146,8 +149,8 @@ int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 				}
 
 				if (jmcNameCount != 1) {
-					printf("jmc name '%s' is incorrect\n", jmc);
-					exit(EXIT_FAILURE);
+					fprintf(stderr, "jmc name '%s' is incorrect\n", jmc);
+					return -1; // parsing failed
 				}
 
 				// define i to be the joint number
@@ -157,47 +160,46 @@ int setJointParams(struct hubo_param *H, struct hubo_state *H_state) {
 
 				//copy contents (all member values) of tp into H.joint 
 				//substruct which will populate its member variables
-				memcpy(&(H->joint[i]), &tp, sizeof(tp));
-				memcpy(&(H->driver[tp.jmc].jmc[tp.motNo]), &tp2.jmc[tp.motNo], sizeof(tp2.jmc[tp.motNo]));
+				memcpy(&(H_param->joint[i]), &tp, sizeof(tp));
+				memcpy(&(H_param->driver[tp.jmc].jmc[tp.motNo]), &tp2.jmc[tp.motNo], sizeof(tp2.jmc[tp.motNo]));
 				memcpy(&(H_state->joint[i]), &s, sizeof(s));
+		//	}
+		//	else {
+		//		printf("number of arguments matched: %d\n", (int)numOfArgs); //typecasted to work on both 32/64-bit
+		//		printf("malformed line in parameters file: %s\n", buff);
+		//		return -1;
+		//	} 
+	//	}
 			}
-			else {
-				printf("number of arguments matched: %lu\n", numOfArgs);
-				printf("malformed line in parameters file: %s\n", buff);
-				exit(EXIT_FAILURE);
-			} 
-		}
         }
         // close file stream
         fclose(ptr_file);
 
-//	ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
-//	ach_close(&chan_hubo_state);
-
-/*	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
+/*	printf("jntNo\tname\tmotNo\trefEnc\tdrive\tdriven\tharm\tenc\tdir\tjmc\tcan\tnumMot\n"); 
+	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\n",
-		H->joint[i].jntNo,
-		H->joint[i].name,
-		H->joint[i].motNo,
-		H->joint[i].refEnc,
-		H->joint[i].drive,
-		H->joint[i].driven,
-		H->joint[i].harmonic,
-		H->joint[i].enc,
-		H->joint[i].dir,
-		H->joint[i].jmc,
-		H->joint[i].can,
-		H->joint[i].numMot);
+		H_param->joint[i].jntNo,
+		H_param->joint[i].name,
+		H_param->joint[i].motNo,
+		H_param->joint[i].refEnc,
+		H_param->joint[i].drive,
+		H_param->joint[i].driven,
+		H_param->joint[i].harmonic,
+		H_param->joint[i].enc,
+		H_param->joint[i].dir,
+		H_param->joint[i].jmc,
+		H_param->joint[i].can,
+		H_param->joint[i].numMot);
         }
 */	        
 /*	for (i = 0; i < HUBO_JMC_COUNT; i++) {
 		printf("%lu\t%hhu\t%hhu\t%hhu\t%hhu\t%hhu\n",
 			i,
-			H->driver[i].jmc[0],
-			H->driver[i].jmc[1],
-			H->driver[i].jmc[2],
-			H->driver[i].jmc[3],
-			H->driver[i].jmc[4]);
+			H_param->driver[i].jmc[0],
+			H_param->driver[i].jmc[1],
+			H_param->driver[i].jmc[2],
+			H_param->driver[i].jmc[3],
+			H_param->driver[i].jmc[4]);
         }
 */
 /*	// print values saved in H_state.joint[i].active and H_state.joint[i].zeroed
@@ -218,18 +220,18 @@ void setPosZeros() {
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
         assert( ACH_OK == r );
 
-        struct hubo_ref H;
-        memset( &H,   0, sizeof(H));
+        struct hubo_ref H_ref;
+        memset( &H_ref,   0, sizeof(H_ref));
         size_t fs = 0;
 
-        r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H) == fs );
+        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+        assert( sizeof(H_ref) == fs );
 
         size_t i;
         for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-                H.ref[i] = 0.0;
+                H_ref.ref[i] = 0.0;
         }
-        ach_put(&chan_hubo_ref, &H, sizeof(H));
+        ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
 }
 
 void setConsoleFlags() {

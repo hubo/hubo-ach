@@ -104,7 +104,6 @@
 #define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
 //#define		numOfCmd	3		//  	number of commiands
 //#define 	numOfJmc	0x40		//	number of JMCs
-#define 	pi		3.141593
 
 #define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
 #define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
