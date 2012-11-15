@@ -77,7 +77,7 @@ void *xmalloc (int);
 void parse(char *s);
 int test(char *s , struct hubo *h);
 char* getArg(string s, int argNum);
-void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_param *h_param);
+void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_param *h_param, struct hubo_ref *h_ref_fitler);
 int name2mot(char*s, struct hubo_param *h);
 double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p);
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
@@ -131,7 +131,7 @@ int main() {
         struct hubo_state H_state;
         struct hubo_param H_param;
         memset( &H_ref,   0, sizeof(H_ref));
-        memset( &H_ref,   0, sizeof(H_ref_filter));
+        memset( &H_ref_filter,   0, sizeof(H_ref_filter));
         memset( &H_init,  0, sizeof(H_init));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
@@ -161,14 +161,14 @@ int main() {
         printf("   ");
 
         /* get update after every command */
-        hubo_update(&H_ref, &H_state, &H_param);
+        hubo_update(&H_ref, &H_state, &H_param, &H_ref_filter);
 
 	int tsleep = 0;
         char* buf0 = getArg(buf, 0);
         //printf(buf0);
 
         if (strcmp(buf0,"update")==0) {
-                hubo_update(&H_ref, &H_state, &H_param);
+                hubo_update(&H_ref, &H_state, &H_param, &H_ref_filter);
                 printf("--->Hubo Information Updated\n");
         }
         else if (strcmp(buf0,"get")==0) {
@@ -180,11 +180,15 @@ int main() {
 		int jnt = hubo_set(buf, &H_ref_filter, &H_param);
                 float f = 0.0;
 		char* str = getArg(buf,2);
-		if(sscanf(str, "%f", &f) != 0)  //It's a float.
-		H_ref_filter.ref[jnt] = (double)f;
-      		int r = ach_put( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter) );
-		char* tmp = getArg(buf,1);
-                printf(">> %s = %f rad \n",tmp,f);
+		if(sscanf(str, "%f", &f) != 0){  //It's a float.
+			H_ref_filter.ref[jnt] = (double)f;
+      			int r = ach_put( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter) );
+			char* tmp = getArg(buf,1);
+                	printf(">> %s = %f rad \n",tmp,f);
+			}
+		else {
+			printf(">> Bad input \n");
+			}
         }
         else if (strcmp(buf0,"beep")==0) {
                 hubo_jmc_beep(&H_param, &H_init, buf);
@@ -290,7 +294,7 @@ void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff
         int r = ach_put( &chan_hubo_init_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
-void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_param *h_param) {
+void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_param *h_param, struct hubo_ref *h_ref_filter) {
         size_t fs;
         int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );
         if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
@@ -301,6 +305,9 @@ void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo
         r = ach_get( &chan_hubo_param, h_param, sizeof(*h_param), &fs, NULL, ACH_O_LAST );
         if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
                 assert( sizeof(*h_param) == fs );}
+        r = ach_get( &chan_hubo_ref_filter, h_ref_filter, sizeof(*h_ref_filter), &fs, NULL, ACH_O_LAST );
+        if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
+        	assert( sizeof(*h_ref_filter) == fs );}
         // look into posix message que
         // posix rt signal can give signal numb er and an interger
 }

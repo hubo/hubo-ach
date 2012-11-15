@@ -143,31 +143,31 @@ void setActive() {
 	H.joint[RSY].active = true;
 	H.joint[REB].active = true;
 	H.joint[RWY].active = true;
-	H.joint[RWP].active = true;
+	H.joint[RWP].active = false;
 
 	H.joint[LSP].active = true;
 	H.joint[LSR].active = true;
 	H.joint[LSY].active = true;
 	H.joint[LEB].active = true;
 	H.joint[LWY].active = true;
-	H.joint[LWP].active = true;
+	H.joint[LWP].active = false;
 
 	H.joint[NKY].active = false;
 	H.joint[NK1].active = false;
 	H.joint[NK2].active = false;
 	H.joint[WST].active = true;
 
-	H.joint[RF1].active = true;
-	H.joint[RF2].active = true;
-	H.joint[RF3].active = true;
-	H.joint[RF4].active = true;
-	H.joint[RF5].active = true;
+	H.joint[RF1].active = false;
+	H.joint[RF2].active = false;
+	H.joint[RF3].active = false;
+	H.joint[RF4].active = false;
+	H.joint[RF5].active = false;
 
-	H.joint[LF1].active = true;
-	H.joint[LF2].active = true;
-	H.joint[LF3].active = true;
-	H.joint[LF4].active = true;
-	H.joint[LF5].active = true;
+	H.joint[LF1].active = false;
+	H.joint[LF2].active = false;
+	H.joint[LF3].active = false;
+	H.joint[LF4].active = false;
+	H.joint[LF5].active = false;
 
 	ach_put(&chan_hubo_param, &H, sizeof(H));
 }
