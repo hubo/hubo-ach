@@ -222,6 +222,54 @@ void huboLoop() {
 				H_state.joint[jnt].tmp);	
 		}}
 
+		i = HUBO_FT_R_FOOT;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+
+		i = HUBO_FT_L_FOOT;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+		
+		i = HUBO_FT_R_HAND;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+
+		i = HUBO_FT_L_HAND;
+		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+			H_param.sensor[i].name,
+			H_state.ft[i].m_x,
+			H_state.ft[i].m_y,
+			H_state.ft[i].f_z);
+
+		i = HUBO_IMU0;
+		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
+			H_param.sensor[i].name,
+			H_state.imu[0].a_x,
+			H_state.imu[0].a_y,
+			H_state.imu[0].a_z);
+
+		i = HUBO_IMU1;
+		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
+			H_param.sensor[i].name,
+			H_state.imu[1].a_x,
+			H_state.imu[1].a_y,
+			H_state.imu[1].a_z);
+
+		i = HUBO_IMU2;
+		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
+			H_param.sensor[i].name,
+			H_state.imu[2].a_x,
+			H_state.imu[2].a_y,
+			H_state.imu[2].a_z);
 	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 

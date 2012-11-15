@@ -116,6 +116,14 @@ void setActive() {
 		H.joint[i].refEnc = 0;
 	}
 
+	H.sensor[HUBO_FT_R_FOOT].active = true;
+	H.sensor[HUBO_FT_L_FOOT].active = true;
+	H.sensor[HUBO_FT_R_HAND].active = true;
+	H.sensor[HUBO_FT_L_HAND].active = true;
+	H.sensor[HUBO_IMU0].active = true;
+	H.sensor[HUBO_IMU1].active = true;
+	H.sensor[HUBO_IMU2].active = true;
+
 	H.joint[RHY].active = true;
 	H.joint[RHR].active = true;
 	H.joint[RHP].active = true;
@@ -135,31 +143,31 @@ void setActive() {
 	H.joint[RSY].active = true;
 	H.joint[REB].active = true;
 	H.joint[RWY].active = true;
-	H.joint[RWP].active = true;
+	H.joint[RWP].active = false;
 
 	H.joint[LSP].active = true;
 	H.joint[LSR].active = true;
 	H.joint[LSY].active = true;
 	H.joint[LEB].active = true;
 	H.joint[LWY].active = true;
-	H.joint[LWP].active = true;
+	H.joint[LWP].active = false;
 
 	H.joint[NKY].active = false;
 	H.joint[NK1].active = false;
 	H.joint[NK2].active = false;
 	H.joint[WST].active = true;
 
-	H.joint[RF1].active = true;
-	H.joint[RF2].active = true;
-	H.joint[RF3].active = true;
-	H.joint[RF4].active = true;
-	H.joint[RF5].active = true;
+	H.joint[RF1].active = false;
+	H.joint[RF2].active = false;
+	H.joint[RF3].active = false;
+	H.joint[RF4].active = false;
+	H.joint[RF5].active = false;
 
-	H.joint[LF1].active = true;
-	H.joint[LF2].active = true;
-	H.joint[LF3].active = true;
-	H.joint[LF4].active = true;
-	H.joint[LF5].active = true;
+	H.joint[LF1].active = false;
+	H.joint[LF2].active = false;
+	H.joint[LF3].active = false;
+	H.joint[LF4].active = false;
+	H.joint[LF5].active = false;
 
 	ach_put(&chan_hubo_param, &H, sizeof(H));
 }
@@ -187,6 +195,14 @@ void setDefaults() {
 //	}
 
 
+	sprintf(H.sensor[HUBO_FT_R_FOOT].name , "%s", "FT0");
+	sprintf(H.sensor[HUBO_FT_L_FOOT].name , "%s", "FT1" );
+	sprintf(H.sensor[HUBO_FT_R_HAND].name , "%s", "FT2" );
+	sprintf(H.sensor[HUBO_FT_L_HAND].name , "%s", "FT3" );
+	sprintf(H.sensor[HUBO_IMU0].name , "%s", "IMU0" );
+	sprintf(H.sensor[HUBO_IMU1].name , "%s", "IMU1" );
+	sprintf(H.sensor[HUBO_IMU2].name , "%s", "IMU2" );
+	
 	setName(&H , RHY , "RHY"  );
 	setName(&H , RHR , "RHR"  );
 	setName(&H , RHP , "RHP"  );
@@ -231,6 +247,24 @@ void setDefaults() {
 	setName(&H , LF3 , "LF3"  );
 	setName(&H , LF4 , "LF4"  );
 	setName(&H , LF5 , "LF5"  );
+
+
+	H.sensor[HUBO_FT_R_FOOT].boardNo = 1;
+	H.sensor[HUBO_FT_L_FOOT].boardNo = 2;
+	H.sensor[HUBO_FT_R_HAND].boardNo = 6;
+	H.sensor[HUBO_FT_L_HAND].boardNo = 7;
+	H.sensor[HUBO_IMU0].boardNo = 3;
+	H.sensor[HUBO_IMU1].boardNo = 4;
+	H.sensor[HUBO_IMU2].boardNo = 5;
+
+	
+	H.sensor[HUBO_FT_R_FOOT].sensNo = HUBO_FT_R_FOOT;
+	H.sensor[HUBO_FT_L_FOOT].sensNo = HUBO_FT_L_FOOT;
+	H.sensor[HUBO_FT_R_HAND].sensNo = HUBO_FT_R_HAND;
+	H.sensor[HUBO_FT_L_HAND].sensNo = HUBO_FT_L_HAND;
+	H.sensor[HUBO_IMU0].sensNo = HUBO_IMU0;
+	H.sensor[HUBO_IMU1].sensNo = HUBO_IMU1;
+	H.sensor[HUBO_IMU2].sensNo = HUBO_IMU2;
 
 	H.joint[RHY].jntNo = RHY;
 	H.joint[RHR].jntNo = RHR;
@@ -278,105 +312,6 @@ void setDefaults() {
 	H.joint[LF5].jntNo = LF5;
 
 
-/*
-	strncpy(H.joint[RHY].name , "RHY" , 3);
-	strncpy(H.joint[RHR].name , "RHR" , 3);
-	strncpy(H.joint[RHP].name , "RHP" , 3);
-	strncpy(H.joint[RKN].name , "RKN" , 3);
-	strncpy(H.joint[RAP].name , "RAP" , 3);
-	strncpy(H.joint[RAR].name , "RAR" , 3);
-
-	strncpy(H.joint[LHY].name , "LHY" , 3);
-	strncpy(H.joint[LHR].name , "LHR" , 3);
-	strncpy(H.joint[LHP].name , "LHP" , 3);
-	strncpy(H.joint[LKN].name , "LKN" , 3);
-	strncpy(H.joint[LAP].name , "LAP" , 3);
-	strncpy(H.joint[LAR].name , "LAR" , 3);
-
-	strncpy(H.joint[RSP].name , "RSP" , 3);
-	strncpy(H.joint[RSR].name , "RSR" , 3);
-	strncpy(H.joint[RSY].name , "RSY" , 3);
-	strncpy(H.joint[REB].name , "REB" , 3);
-	strncpy(H.joint[RWY].name , "RWY" , 3);
-	strncpy(H.joint[RWP].name , "RWP" , 3);
-
-	strncpy(H.joint[LSP].name , "LSP" , 3);
-	strncpy(H.joint[LSR].name , "LSR" , 3);
-	strncpy(H.joint[LSY].name , "LSY" , 3);
-	strncpy(H.joint[LEB].name , "LEB" , 3);
-	strncpy(H.joint[LWY].name , "LWY" , 3);
-	strncpy(H.joint[LWP].name , "LWP" , 3);
-
-	strncpy(H.joint[NKY].name , "NKY" , 3);
-	strncpy(H.joint[NK1].name , "NK1" , 3);
-	strncpy(H.joint[NK2].name , "NK2" , 3);
-	strncpy(H.joint[WST].name , "WST" , 3);
-
-	strncpy(H.joint[RF1].name , "RF1" , 3);
-	strncpy(H.joint[RF2].name , "RF2" , 3);
-	strncpy(H.joint[RF3].name , "RF3" , 3);
-	strncpy(H.joint[RF4].name , "RF4" , 3);
-	strncpy(H.joint[RF5].name , "RF5" , 3);
-
-	strncpy(H.joint[LF1].name , "LF1" , 3);
-	strncpy(H.joint[LF2].name , "LF2" , 3);
-	strncpy(H.joint[LF3].name , "LF3" , 3);
-	strncpy(H.joint[LF4].name , "LF4" , 3);
-	strncpy(H.joint[LF5].name , "LF5" , 3);
-
-*/
-/*
-	H.joint[RHY].name = "RHY";
-	H.joint[RHR].name = "RHR";
-	H.joint[RHP].name = "RHP";
-	H.joint[RKN].name = "RKN";
-	H.joint[RAP].name = "RAP";
-	H.joint[RAR].name = "RAR";
-
-	H.joint[LHY].name = "LHY";
-	H.joint[LHR].name = "LHR";
-	H.joint[LHP].name = "LHP";
-	H.joint[LKN].name = "LKN";
-	H.joint[LAP].name = "LAP";
-	H.joint[LAR].name = "LAR";
-
-	H.joint[RSP].name = "RSP";
-	H.joint[RSR].name = "RSR";
-	H.joint[RSY].name = "RSY";
-	H.joint[REB].name = "REB";
-	H.joint[RWY].name = "RWY";
-	H.joint[RWP].name = "RWP";
-
-	H.joint[LSP].name = "LSP";
-	H.joint[LSR].name = "LSR";
-	H.joint[LSY].name = "LSY";
-	H.joint[LEB].name = "LEB";
-	H.joint[LWY].name = "LWY";
-	H.joint[LWP].name = "LWP";
-
-	H.joint[NKY].name = "NKY";
-	H.joint[NK1].name = "NK1";
-	H.joint[NK2].name = "NK2";
-	H.joint[WST].name = "WST";
-
-	H.joint[RF1].name = "RF1";
-	H.joint[RF2].name = "RF2";
-	H.joint[RF3].name = "RF3";
-	H.joint[RF4].name = "RF4";
-	H.joint[RF5].name = "RF5";
-
-	H.joint[LF1].name = "LF1";
-	H.joint[LF2].name = "LF2";
-	H.joint[LF3].name = "LF3";
-	H.joint[LF4].name = "LF4";
-	H.joint[LF5].name = "LF5";
-
-	int i = 0;
-	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-		printf(H.joint[i].name);
-		printf(" ");
-	}
-*/
 
 	/* Drive wheels */
 	H.joint[RHY].drive = 10;
@@ -567,6 +502,16 @@ void setDefaults() {
 	H.joint[LF5].enc = 128;
 
 	/* CAN channel */
+
+
+	H.sensor[HUBO_FT_R_FOOT].can = 0;
+	H.sensor[HUBO_FT_L_FOOT].can = 0;
+	H.sensor[HUBO_FT_R_HAND].can = 1;
+	H.sensor[HUBO_FT_L_HAND].can = 1;
+	H.sensor[HUBO_IMU0].can = 1;
+	H.sensor[HUBO_IMU1].can = 1;
+	H.sensor[HUBO_IMU2].can = 1;
+
 	H.joint[RHY].can = 0;
 	H.joint[RHR].can = 0;
 	H.joint[RHP].can = 0;
@@ -663,6 +608,13 @@ void setDefaults() {
 
 
 	/* JMC */
+	H.sensor[HUBO_IMU0].canID = IMU0;
+	H.sensor[HUBO_IMU1].canID = IMU1;
+	H.sensor[HUBO_IMU2].canID = IMU2;
+	H.sensor[HUBO_FT_R_FOOT].canID = FT0;
+	H.sensor[HUBO_FT_L_FOOT].canID = FT1;
+	H.sensor[HUBO_FT_R_HAND].canID = FT2;
+	H.sensor[HUBO_FT_L_HAND].canID = FT3;
 	H.joint[RHY].jmc = JMC0;
 	H.joint[RHR].jmc = JMC0;
 	H.joint[RHP].jmc = JMC1;

@@ -45,3 +45,33 @@ cd drivers
 tar -zxvf peak-linux-driver-7.7.tar.gz
 cd peak-linux-driver-7.7
 make
+=======
+
+Remote
+======
+
+Install inetd
+sudo apt-get install inetutils-inetd
+sudo apt-get install openbsd-inetd
+
+(1) Remote Channels
+
+Ensure the the remote host has inetd running
+Ensure the the remote host's /etc/inetd.conf contains the line
+
+    8075                stream     tcp     nowait     nobody     /usr/bin/achpipe   /usr/bin/achpipe -R 
+
+Ensure any channels exist on both the remote and local host
+Ensure that the remote channel is chmodded to 666 (or better yet, set up an ach user in inted.conf)
+
+$ chmod /dev/shm/achshm-CHANNEL_NAME 666 
+
+
+(2) Pull a Channel from a Remote Host
+
+$ achpipe -Wp CHANNEL_NAME -H REMOTE_HOST 
+
+
+(2) Push a Channel to a Remote Host
+
+$ achpipe -Ws CHANNEL_NAME -H REMOTE_HOST 
