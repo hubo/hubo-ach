@@ -48,6 +48,8 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing
 	struct jmcDriver tp2;		//jmcDriver struct member for file parsing
 	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
+
+	// initialize all structs with zeros
 	memset(&tp,	 0, sizeof(tp));
 	memset(&tp2,	 0, sizeof(tp2));
 	memset(&s,	 0, sizeof(s));
@@ -56,12 +58,13 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 
 	// inialize jmcDriver struct's jmc numbers with zeros.
 	// these are the motors on each motor driver.
-	for(i = 0; i < HUBO_JMC_COUNT; i++) {
-		for(j = 0; j < sizeof(&H_param->driver[i].jmc); j++) {
+	for (i = 0; i < HUBO_JMC_COUNT; i++) {
+		for (j = 0; j < sizeof(&H_param->driver[i].jmc); j++) {
 			H_param->driver[i].jmc[j] = 0;
 		}
 	}
 
+	// array of joint name values from header file hubo.h
 	uint16_t jointNameValues[] = 
 			{WST, NKY, NK1, NK2,
 			LSP, LSR, LSY, LEB, LWY, LWR, LWP,
@@ -81,6 +84,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 			 "RF1", "RF2", "RF3", "RF4", "RF5",
 			 "LF1", "LF2", "LF3", "LF4", "LF5"};
 
+	// array of jmc name values from header file canId.h
 	uint8_t jmcNumbers[] = {JMC0, JMC1, JMC2, JMC3, JMC4, JMC5,
 				JMC6, JMC7, JMC8, JMC9, JMC10, JMC11,
 				EJMC0, EJMC1, EJMC2, EJMC3, EJMC4, EJMC5};
@@ -91,26 +95,30 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 			    "EJMC0", "EJMC1", "EJMC2", "EJMC3", "EJMC4", "EJMC5"};
 
 	char *charPointer;
-	size_t numOfArgs;
 	size_t jntNameCount = 0;
 	size_t jmcNameCount = 0;
 	char jmc[6];
 	char buff[1024];
-	 // read in each non-commented line of the config file corresponding to each joint
-	 while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
 
+	// read in each non-commented line of the config file corresponding to each joint
+	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
+
+			// set first occurrence of comment character, '#' to the
+			// null character, '\0'.
 			charPointer = strchr(buff, '#');
 			if (NULL != charPointer) {
 				*charPointer = '\0';
 			}
 
-			if( strlen(buff) == sizeof(buff)-1 ) {
+			// check if a line is longer than the buffer, 'buff', and return -1 if so.
+			if ( strlen(buff) == sizeof(buff)-1 ) {
 				fprintf(stderr, "Hubo-Parser: Line length overflow");
 				return -1; // parsing failed
 			}
 
-			// printf("buff: %s\n", buff);
-			if(13 == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu",
+			// read in the buffered line from fgets, matching the following pattern
+			// to get all the parameters for the joint on this line.
+			if (13 == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu",
 				tp.name,
 				&tp.motNo,
 				&tp.refEnc,
@@ -125,8 +133,10 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 				&tp.numMot,
 				&s.zeroed) ) // check that all values are found
 			{
+				
+				// check to make sure jointName is valid
 				size_t x;
-				for(x = 0; x < sizeof(jointNameStrings)/sizeof(jointNameStrings[0]); x++) {
+				for (x = 0; x < sizeof(jointNameStrings)/sizeof(jointNameStrings[0]); x++) {
 					if (0 == strcmp(tp.name, jointNameStrings[x])) {
 						i = jointNameValues[x];
 						jntNameCount = 1;
@@ -134,11 +144,13 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 					}
 				}
 
+				// if joint name is invalid print error and return -1
 				if (jntNameCount != 1) {
 					fprintf(stderr, "joint name '%s' is incorrect\n", tp.name);
 					return -1; // parsing failed
 				}
 
+				// check to make sure jmc name is valid
 				size_t y;
 				for(y = 0; y < sizeof(jmcNames)/sizeof(jmcNames[0]); y++) {
 					if (0 == strcmp(jmc, jmcNames[y])) {
@@ -148,33 +160,28 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 					}	
 				}
 
+				// if jmc name is invalid, print error and return -1
 				if (jmcNameCount != 1) {
 					fprintf(stderr, "jmc name '%s' is incorrect\n", jmc);
 					return -1; // parsing failed
 				}
 
-				// define i to be the joint number
-				tp.jntNo = i;
-				// set jmc driver number	
-				tp2.jmc[tp.motNo] = i;
+				tp.jntNo = i;		// define i to be the joint number
+				tp2.jmc[tp.motNo] = i;	// set jmc driver number	
 
-				//copy contents (all member values) of tp into H.joint 
-				//substruct which will populate its member variables
+				// copy contents (all member values) of tp into H_param.joint 
+				// substruct which will populate its member variables
 				memcpy(&(H_param->joint[i]), &tp, sizeof(tp));
+				// copy contents of tp.jmc into H_param structs driver substruct
 				memcpy(&(H_param->driver[tp.jmc].jmc[tp.motNo]), &tp2.jmc[tp.motNo], sizeof(tp2.jmc[tp.motNo]));
+				// copy contents of s into H_state (initializing active and zeroed members)
 				memcpy(&(H_state->joint[i]), &s, sizeof(s));
-		//	}
-		//	else {
-		//		printf("number of arguments matched: %d\n", (int)numOfArgs); //typecasted to work on both 32/64-bit
-		//		printf("malformed line in parameters file: %s\n", buff);
-		//		return -1;
-		//	} 
-	//	}
 			}
         }
-        // close file stream
-        fclose(ptr_file);
 
+        fclose(ptr_file);	// close file stream
+
+	// print the paramter values in H_param for each joint
 /*	printf("jntNo\tname\tmotNo\trefEnc\tdrive\tdriven\tharm\tenc\tdir\tjmc\tcan\tnumMot\n"); 
 	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\n",
@@ -192,6 +199,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 		H_param->joint[i].numMot);
         }
 */	        
+	// print values of driver jmc motor numbers in H_param
 /*	for (i = 0; i < HUBO_JMC_COUNT; i++) {
 		printf("%lu\t%hhu\t%hhu\t%hhu\t%hhu\t%hhu\n",
 			i,
@@ -208,7 +216,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	} 
 */	
 
-	return 0;
+	return 0;	// return without errors
 }
 
 void setPosZeros() {

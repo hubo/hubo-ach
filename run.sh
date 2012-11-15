@@ -3,7 +3,7 @@
 # M.X. Grey ( mxgrey@gatech.edu )
 # Last updated: 11/11/2012
 
-
+export LD_LIBRARY_PATH=/usr/local/lib:
 
 
 HUBO_BITRATE=0x0014 # 1 Mbit/s
