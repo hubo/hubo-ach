@@ -18,27 +18,29 @@ CAN_DEFS :=
 # CAN_OBJS := src/hubo-esdcan.o
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
-BINARIES := hubo-main hubo-default hubo-console hubo-loop hubo-read
+BINARIES := hubo-daemon hubo-console hubo-loop hubo-read
 all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS)
 
-hubo_main_objs := src/hubo-main.o $(CAN_OBJS)
+hubo_daemon_objs := src/hubo-daemonizer.o src/hubo-daemon.o src/hubo-jointparams.o $(CAN_OBJS)
+hubo_main_objs := src/hubo-main.o src/hubo-jointparams.o $(CAN_OBJS)
 
-hubo-main: $(hubo_main_objs)
-	$(CC) -o $@  $(hubo_main_objs) $(LIBS) -lm -lc
-
-hubo-default: src/hubo-default.c
-	$(CC) $(CFLAGS) -o $@ $< -lach -lm -lc
+hubo-daemon: $(hubo_daemon_objs)
+	$(CC) -o $@  $(hubo_daemon_objs) $(LIBS) -lm -lc
 
 hubo-read: src/hubo-read.c
 	$(CC) $(CFLAGS) -o $@ $< -lach
 
-hubo-console: src/hubo-console.o
-	$(CXX)  -o $@ $< -lach -lreadline -lm -lc
+hubo_console_objs := src/hubo-jointparams.o src/hubo-console.o 
 
-hubo-loop: src/hubo-loop.o
-	gcc -o $@ $< -lach -lrt -lm -lc
+hubo-console: $(hubo_console_objs)
+	$(CXX) $(CFLAGS) -o $@ $(hubo_console_objs) -lach -lreadline -lm -lc
+
+hubo_loop_objs := src/hubo-jointparams.o src/hubo-loop.o
+
+hubo-loop: $(hubo_loop_objs)
+	$(CC) $(CFLAGS) -o $@ $(hubo_loop_objs) -lach -lrt -lm -lc
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<

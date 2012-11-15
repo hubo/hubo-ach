@@ -104,7 +104,6 @@
 #define 	HUBO_SENSOR_COUNT	10	///< Hubo Sensor Count
 //#define		numOfCmd	3		//  	number of commiands
 //#define 	numOfJmc	0x40		//	number of JMCs
-#define 	pi		3.141596
 
 #define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
 #define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
@@ -112,6 +111,12 @@
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
+
+
+#define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
+				   guaranteed safe to access without
+				   faulting */
+
 
 /* def for console do flags */
 /* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
@@ -159,9 +164,7 @@ struct hubo_joint_param {
 	char name[4];		///< name
 	uint16_t jmc;		///< motor controller number
 	uint8_t can;		///< can channel
-	uint8_t active; 	///< checks if the joint is active or not
 	uint8_t numMot;		///< number of motors
-	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 //}__attribute__((packed));
 
@@ -170,6 +173,8 @@ struct hubo_joint_state {
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
 	double tmp;	///< temperature (dec C)
+	uint8_t active; 	///< checks if the joint is active or not
+	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 
 struct hubo_ft {

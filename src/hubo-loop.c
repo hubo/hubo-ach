@@ -34,6 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <linux/can/raw.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 // for timer
 #include <time.h>
@@ -47,6 +48,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // for hubo
 #include "hubo.h"
+#include "hubo-jointparams.h"
 
 // for ach
 #include <errno.h>
@@ -101,14 +103,8 @@ struct timeb {
 void stack_prefault(void);
 static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
-void huboLoop();
+void huboLoop(struct hubo_param *h);
 int ftime(struct timeb *tp);
-
-
-
-
-
-
 
 
 
@@ -120,19 +116,16 @@ int ftime(struct timeb *tp);
 ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
-ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
 int hubo_debug = 1;
 
-void huboLoop() {
+void huboLoop(struct hubo_param *H_param) {
         // get initial values for hubo
         struct hubo_ref H_ref;
 	struct hubo_state H_state;
-	struct hubo_param H_param;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
-	memset( &H_param, 0, sizeof(H_param));
 
         size_t fs;
         //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
@@ -152,16 +145,6 @@ void huboLoop() {
 	else{   
 		assert( sizeof(H_state) == fs );
 	 }
-
-	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {
-		if(hubo_debug) {
-                       	printf("State ini r = %s\n",ach_result_to_string(r));}
-		}
-	else{   
-		assert( sizeof(H_state) == fs );
-  	}
-
 
       	/* Send a message to the CAN bus */
         struct can_frame frame;
@@ -211,7 +194,7 @@ void huboLoop() {
 
 		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
 		printf("\033[2J");
-		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_param.joint[jnt].name,H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n", H_param->joint[jnt].name, H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 
                 ftime(&tp);
@@ -223,7 +206,7 @@ void huboLoop() {
 
                 t1 = t0;
                 t0 = tt;
-                double jntTmp = A*sin(f*2*pi*tt);
+                double jntTmp = A*sin(f*2*M_PI*tt);
 		if(jntTmp > 0) {
 	                H_ref.ref[jnt] = -dir*jntTmp; }
 		else { 
@@ -241,10 +224,6 @@ void huboLoop() {
 
 
 }
-
-
-
-
 
 
 void stack_prefault(void) {
@@ -301,13 +280,28 @@ int main(int argc, char **argv) {
         int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
         assert( ACH_OK == r );
 
-        r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
-        assert( ACH_OK == r );
-        
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
         assert( ACH_OK == r );
-        
-	huboLoop();
+  	
+	// get initial values for hubo
+        struct hubo_ref H_ref;
+        struct hubo_init_cmd H_init;
+        struct hubo_state H_state;
+        struct hubo_param H_param;
+        memset( &H_ref,   0, sizeof(H_ref));
+        memset( &H_init,  0, sizeof(H_init));
+        memset( &H_state, 0, sizeof(H_state));
+        memset( &H_param, 0, sizeof(H_param));
+
+        usleep(250000);
+
+        // set default values for H_ref in ach
+//	setPosZeros();
+
+        // set default values for Hubo
+        setJointParams(&H_param, &H_state);
+      
+	huboLoop(&H_param);
         pause();
         return 0;
 

@@ -32,8 +32,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include "hubo.h"
-
-
+// this is because this header file
+// refers to a .c file not a .cpp file
+extern "C" {
+#include "hubo-jointparams.h"
+}
 
 // for ach
 #include <errno.h>
@@ -48,15 +51,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ach.h"
 
 
-
-
-
-
 #include <iostream>
 #include <sstream>
 #include <string>
 using namespace std;
-
 
 // ach message type
 //typedef struct hubo h[1];
@@ -66,7 +64,7 @@ ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_ref_filter;      // hubo-ach
 ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
-ach_channel_t chan_hubo_param;    // hubo-ach-param
+ach_channel_t chan_hubo_param;    // hubo-ach-state
 
 
 
@@ -116,12 +114,8 @@ int main() {
         r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
         assert( ACH_OK == r );
 
-        // initilize control channel
+        // initialize control channel
         r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
-        assert( ACH_OK == r );
-
-        // paramater
-        r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME, NULL);
         assert( ACH_OK == r );
 
         // get initial values for hubo
@@ -135,6 +129,8 @@ int main() {
         memset( &H_init,  0, sizeof(H_init));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
+	
+	usleep(250000);
 
         size_t fs;
         r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -147,7 +143,13 @@ int main() {
         assert( sizeof(H_state) == fs );
         r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
         assert( sizeof(H_param) == fs );
+	// set default values for H_ref in ach
+//	setPosZeros();
 
+//	setConsoleFlags();	
+
+	// set default values for Hubo
+	setJointParams(&H_param, &H_state);
 
         char *buf;
         rl_attempted_completion_function = my_completion;
@@ -235,12 +237,12 @@ int main() {
                 H_init.cmd[1] = name2mot(getArg(buf,1),&H_param);	// set motor num
                 //C.val[0] = atof(getArg(buf,2));
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
-                printf("%s - Initilize \n",getArg(buf,1));
+		printf("%s - Initialize \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"initializeAll")==0) {
                 H_init.cmd[0] = HUBO_JMC_INI_ALL;
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
-                printf("%s - Initilize All\n",getArg(buf,1));
+                printf("%s - Initialize All\n",getArg(buf,1));
 		tsleep = 8;
         }
         /* Quit */
@@ -271,7 +273,7 @@ double hubo_set(char*s, struct hubo_ref *h, struct hubo_param *p) {
 
 
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
-        /* make beiep */
+        /* make beep */
         c->cmd[0] = HUBO_JMC_BEEP;
         c->cmd[1] = name2mot(getArg(buff, 1), h);
         c->val[2] = atof(getArg(buff,2));
@@ -309,7 +311,7 @@ void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo
         if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
         	assert( sizeof(*h_ref_filter) == fs );}
         // look into posix message que
-        // posix rt signal can give signal numb er and an interger
+        // posix rt signal can give signal number and an interger
 }
 
 
@@ -324,7 +326,7 @@ char* getArg(string s, int argNum) {
         {
                 string sub;
                 iss >> sub;
- //             cout << "Substring: " << sub << endl;
+//              cout << "Substring: " << sub << endl;
                 if( i == argNum ) {
                         return (char*)sub.c_str(); }
                 i++;
@@ -353,7 +355,7 @@ int name2mot(char* name, struct hubo_param *h) {
 //				printf("i = %i\n", i);
                                 iout = i;}
         }
-        return iout;
+	return iout;
 }
 
 
