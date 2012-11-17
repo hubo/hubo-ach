@@ -9,9 +9,8 @@ Install ACH
 
   (Replace squeeze with the codename for your distribution, ie lucid,
   precise, etc.)
-
 (2) `sudo apt-get update`
-(3) `sudo apt-get install libach0 libach-dev`
+(3) `sudo apt-get install libach-dev`
 (4) `sudo apt-get install ach-utils`
 
 Run Hubo-Ach
