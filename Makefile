@@ -18,7 +18,7 @@ CAN_DEFS :=
 # CAN_OBJS := src/hubo-esdcan.o
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
-BINARIES := hubo-daemon hubo-console hubo-loop hubo-read
+BINARIES := hubo-daemon hubo-console hubo-loop hubo-read hubo-ref-filter
 all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS)
@@ -32,6 +32,10 @@ hubo-daemon: $(hubo_daemon_objs)
 hubo_read_objs := src/hubo-jointparams.o
 hubo-read: src/hubo-read.c
 	$(CC) $(CFLAGS) -o $@ $(hubo_read_objs) $< -lach
+
+hubo_ref_filter_objs := src/hubo-jointparams.o
+hubo-ref-filter: src/hubo-ref-filter.c
+	$(CC) $(CFLAGS) -o $@ $(hubo_ref_filter_objs) $< -lach
 
 hubo_console_objs := src/hubo-jointparams.o src/hubo-console.o 
 

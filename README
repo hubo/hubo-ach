@@ -1,5 +1,16 @@
 HUBO-ACH
 
+Run Hubo-Ach
+============
+
+(1) Setup Config (first time only or new builds and param changes)
+	$ sudo ./run.sh config
+(2) Start hubo-ach daemon.  This will automatically start hubo-console as well
+    CAN packets will not start to be sent
+	$ sudo ./run.sh start
+(3) To stop hubo-ach daemon 
+	$ sudo ./run.sh stop
+
 Install ACH
 ===========
 
@@ -14,18 +25,6 @@ Install ACH
 (3) `sudo apt-get install libach0 libach-dev`
 (4) `sudo apt-get install ach-utils`
 
-Run Hubo-Ach
-============
-
-(1) build the system
-	$ make
-
-(2) run run.sh, this will open all 4 can devices, initilize them to 1mbps and run hubo-main
-	For Hardware CAN run: `./run.sh`
-	For Virturl CAN run: `./vrun.sh`
-
-hubo-main options
-	-d : debug mode, will print out all sending and receiving CAN data
 
 hubo-ach-console
 ================
@@ -33,6 +32,12 @@ console input for hubo ach
 
 Required for installation:
     sudo apt-get install libreadline-dev
+
+For joint "goto" functionality must have hubo-ref-filter running
+    Note: do not have hubo-ref-filter running when trying to write directly
+          to the hubo-ref channel.
+	$ sudo ./hubo-ref-filter
+
 
 hubo-ach-loop
 =============
