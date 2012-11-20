@@ -29,8 +29,9 @@ hubo_main_objs := src/hubo-main.o src/hubo-jointparams.o $(CAN_OBJS)
 hubo-daemon: $(hubo_daemon_objs)
 	$(CC) -o $@  $(hubo_daemon_objs) $(LIBS) -lm -lc
 
+hubo_read_objs := src/hubo-jointparams.o
 hubo-read: src/hubo-read.c
-	$(CC) $(CFLAGS) -o $@ $< -lach
+	$(CC) $(CFLAGS) -o $@ $(hubo_read_objs) $< -lach
 
 hubo_console_objs := src/hubo-jointparams.o src/hubo-console.o 
 

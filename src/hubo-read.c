@@ -112,7 +112,6 @@ int ftime(struct timeb *tp);
 
 
 
-
 // ach message type
 //typedef struct hubo h[1];
 
@@ -134,6 +133,11 @@ void huboLoop() {
 	memset( &H_state, 0, sizeof(H_state));
 	memset( &H_param, 0, sizeof(H_param));
 
+
+
+        // set default values for Hubo
+        setJointParams(&H_param, &H_state);
+
         size_t fs;
         //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
         //assert( sizeof(H) == fs );
@@ -151,15 +155,6 @@ void huboLoop() {
 		}
 	else{   
 		assert( sizeof(H_state) == fs );
-	 }
-
-	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {
-		if(hubo_debug) {
-                       	printf("State ini r = %s\n",ach_result_to_string(r));}
-		}
-	else{   
-		assert( sizeof(H_param) == fs );
 	 }
 
         /* Send a message to the CAN bus */
@@ -344,9 +339,6 @@ int main(int argc, char **argv) {
 
         r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
         assert( ACH_OK == r );
-	
-	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
-	assert( ACH_OK == r );
         
 	huboLoop();
         pause();
