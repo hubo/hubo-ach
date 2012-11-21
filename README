@@ -32,9 +32,7 @@ hubo-ach-console
 Console input for hubo-ach
 
 Usage:
-    Help menu: 
-               $ ./hubo-read-trajectory -h
-
+    
     Functions: "initilize XXX" - turns on FETs and initilizes motor XXX
                "initilizeAll"  - turns on FETs and initilizes all active motors
                "home XXX"      - homes motor XXX, must be initilized
