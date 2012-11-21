@@ -28,7 +28,19 @@ Install ACH
 
 hubo-ach-console
 ================
-console input for hubo ach
+Console input for hubo-ach
+
+Usage:
+    Functions: "initilize XXX" - turns on FETs and initilizes motor XXX
+               "initilizeAll"  - turns on FETs and initilizes all active motors
+               "home XXX"      - homes motor XXX, must be initilized
+               "homeAll"       - homes all motors that are active and initilized
+               "goto XXX val"  - sets motor XXX to goto position "val" in rad. 
+                                 uses linear interpolation via hubo-ref-filter
+                                 0.5 sec linear filter by default
+               "get XXX"       - gets current encoder location of motor XXX
+
+
 
 Required for installation:
     sudo apt-get install libreadline-dev
