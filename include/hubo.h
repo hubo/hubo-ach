@@ -1,5 +1,6 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 #include "hubo/canId.h"
+#include "hub/hubo-daemonId.h"
 #include <stdint.h>
 
 //#define true 1;
@@ -96,56 +97,36 @@
 #define		LF4		40		//	Left Finger
 #define		LF5		41		//	Left Finger
 
+
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 
-#define		HUBO_JOINT_COUNT	50	///< The size of the array
-						///< For the joints
-#define 	HUBO_JMC_COUNT		0X40	///< Numbher of jmc
-#define 	HUBO_SENSOR_COUNT	10	///< Hubo Sensor Count
+#define		HUBO_JOINT_COUNT	42		// 	the size of the array
+						//	for the joints
+#define 	HUBO_JMC_COUNT		0X40	// 	numbher of jmc
 //#define		numOfCmd	3		//  	number of commiands
 //#define 	numOfJmc	0x40		//	number of JMCs
-#define 	pi		3.141596
 
 #define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
 #define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
-#define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
 
-/* def for console do flags */
-/* unless otherwise noted cmd[0] = command, cmd[1] = motor# */
-typedef enum {
-	HUBO_JMC_INI 		= 1,	///> Initilize jmc
-	HUBO_FET_ON_OFF 	= 2,	///> turn fet on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_CTRL_ON_OFF 	= 3,	///> turn control on or off cmd[2] = 1 (on), 0 (off)
-	HUBO_ZERO_ENC		= 4,	///> zero encoder for given motor
-	HUBO_GOTO_REF		= 5,	///> go to ref val[0] = ref (rad)
-	HUBO_JMC_BEEP		= 6,	///> make beep val[0] = beep time in sec
-	HUBO_GOTO_HOME		= 7,	///> go home position
-	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
-	HUBO_JMC_INI_ALL	= 9	///> Initilize all JMC boards
-} hubo_console_t;
+
+#define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
+				   guaranteed safe to access without
+				   faulting */
+
+
 
 typedef enum {
 	HUBO_FT_R_HAND    = 0, ///< Index of right hand FT
 	HUBO_FT_L_HAND    = 1, ///< Index of left hand FT
 	HUBO_FT_R_FOOT    = 2, ///< Index of right foot FT
-	HUBO_FT_L_FOOT    = 3, ///< Index of left foot FT
-	HUBO_IMU0	  = 4, ///< Index of IMU0
-	HUBO_IMU1	  = 5, ///< Index of IMU1
-	HUBO_IMU2	  = 6  ///< Index of IMU2
-} hubo_sensor_index_t;
+	HUBO_FT_L_FOOT    = 3  ///< Index of left foot FT
+} hubo_ft_index_t;
 
 
-struct hubo_sensor_param {
-	char name[5];		///< Name of sensor
-	uint16_t sensNo;	///< Sensor number
-	uint16_t can;		///< Can channel
-	uint8_t active;		///< Active sensor
-	uint16_t canID;		///< Can I.D. of the sensor
-	uint16_t boardNo;	///< Sensor Board Nuber
-};
 
 struct hubo_joint_param {
 	uint16_t motNo;		///< joint number (on board i.e. 0, 1, 2)
@@ -159,9 +140,7 @@ struct hubo_joint_param {
 	char name[4];		///< name
 	uint16_t jmc;		///< motor controller number
 	uint8_t can;		///< can channel
-	uint8_t active; 	///< checks if the joint is active or not
 	uint8_t numMot;		///< number of motors
-	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 //}__attribute__((packed));
 
@@ -170,12 +149,14 @@ struct hubo_joint_state {
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
 	double tmp;	///< temperature (dec C)
+	uint8_t active; 	///< checks if the joint is active or not
+	uint8_t zeroed;		///< checks to see if the motor is zeroed
 };
 
 struct hubo_ft {
-	double m_x;	///< Moment in X (Mx) in Nm
-	double m_y;       ///< Moment in Y (My) in Nm
-	double f_z;       ///< Force in Z (Fz) in N
+	double m_x;	///< Moment in X (Mx)
+	double m_y;       ///< Moment in Y (My)
+	double f_z;       ///< Force in Z (Fz)
 };
 
 struct hubo_imu {
@@ -193,7 +174,7 @@ struct hubo_ref {
 };
 
 struct hubo_state {
-	struct hubo_imu imu[3];	///< IMU
+	struct hubo_imu imu;	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
 };
@@ -209,9 +190,8 @@ struct jmcDriver{
 };
 
 struct hubo_param {
-	struct hubo_joint_param joint[HUBO_JOINT_COUNT];	///< Joint param
-	struct jmcDriver driver[HUBO_JMC_COUNT];		///< Motor driver param
-	struct hubo_sensor_param sensor[HUBO_SENSOR_COUNT];	///< Sensor param
+	struct hubo_joint_param joint[HUBO_JOINT_COUNT];
+	struct jmcDriver driver[HUBO_JMC_COUNT];	// motor driver conneciton info
 };
 
 extern int hubo_debug;

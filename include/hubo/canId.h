@@ -3,6 +3,7 @@
 #define CAN_ID_H
 
 
+#define H_BLANK		0x00
 
 
 // This file contains 'CAN-ID' for HUBO2
@@ -315,25 +316,33 @@
 
 // Command(Not CAN ID)
 #define AllController				0x20
+
+// Motor Board Information Requests ( H_ = Hex )
 #define NameInfo				0x01
-#define BoardStatus				0x02
-#define SendEncoder				0x03
-#define SendCurrent				0x04
-#define SendPM					0x05
-#define EncZero					0x06
-#define SetPosGainA				0x07
-#define SetPosGainB				0x08
-#define SetTorqueGainA				0x09
-#define SetTorqueGainB				0x0A
-#define HipEnable				0x0B
-#define GoHome					0x0C
-#define PwmCMD					0x0D
-#define RunCMD					0x0E
-#define StopCMD					0x0F
-#define ControlMode				0x10
-#define GoLimitPos				0x11
-#define TorqueLimit				0x12
-#define RequestPara				0x24
+#define H_GET_STATUS				0x02
+#define H_GET_ENCODER				0x03 // Request an encoder position value
+#define H_GET_CURRENT				0x04 // Request a current (amp) value
+//#define SendPM					0x05	// I don't know where this comes from
+#define H_SET_ENC_ZERO				0x06
+#define H_SET_POS_GAIN_0			0x07
+#define H_SET_POS_GAIN_1			0x08
+#define H_SET_CUR_GAIN_0			0x09
+#define H_SET_CUR_GAIN_1			0x0A
+#define H_ENABLE_DRIVER				0x0B
+//#define GoHome					0x0C	// I don't know where this comes from
+#define H_OPENLOOP_PWM				0x0D
+#define H_MOTOR_CTRL_ON				0x0E
+#define H_MOTOR_CTRL_OFF			0x0F
+#define H_SET_CTRL_MODE				0x10
+#define H_HOME					0x11
+#define H_SET_DEADZONE				0x20 // "Set the value of Dead zone to remove FET's PWM null"
+#define H_GET_PARAMETERS			0x24 // Get the board parameters
+#define H_SET_HOME_PARAM			0x30
+#define H_SET_ENC_RES				0x38 // Set encoder resolution
+#define H_SET_MAX_ACC_VEL			0x40 // Set maximum acceleration and velocity
+#define H_SET_LOW_POS_LIM			0x50 // Set lower position limit
+#define H_SET_UPP_POS_LIM			0x56 // Set upper position limit
+#define H_SET_HOME_VEL_ACC			0x60
 
 #define NullCMD					0x81
 #define SetPeriod				0x82
@@ -344,5 +353,36 @@
 #define DAOffsetCMD				0x87
 #define ADOffsetCMD				0x88
 #define OffsetCMD				0x89
+
+#define H_INIT_BOARD				0xFA
+
+
+// Auxiliary parameters
+
+#define H_ALARM		0x82
+#define H_ALARM_OFF	0x00
+#define H_ALARM_S1	0x01	// Sound 1
+#define H_ALARM_S2	0x02	// Sound 2
+#define H_ALARM_S3	0x03	// Sound 3
+#define H_ALARM_S4	0x04	// Sound 4
+
+#define H_BEEP		0x83
+
+#define H_VCREAD	0xE0	// Request voltage and current readings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif
