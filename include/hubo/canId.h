@@ -318,7 +318,7 @@
 #define AllController				0x20
 
 // Motor Board Information Requests ( H_ = Hex )
-#define NameInfo				0x01
+#define H_GET_BOARD_INFO			0x01
 #define H_GET_STATUS				0x02
 #define H_GET_ENCODER				0x03 // Request an encoder position value
 #define H_GET_CURRENT				0x04 // Request a current (amp) value
@@ -328,7 +328,7 @@
 #define H_SET_POS_GAIN_1			0x08
 #define H_SET_CUR_GAIN_0			0x09
 #define H_SET_CUR_GAIN_1			0x0A
-#define H_ENABLE_DRIVER				0x0B
+#define H_SWITCH_DRIVER				0x0B
 //#define GoHome					0x0C	// I don't know where this comes from
 #define H_OPENLOOP_PWM				0x0D
 #define H_MOTOR_CTRL_ON				0x0E
@@ -343,6 +343,14 @@
 #define H_SET_LOW_POS_LIM			0x50 // Set lower position limit
 #define H_SET_UPP_POS_LIM			0x56 // Set upper position limit
 #define H_SET_HOME_VEL_ACC			0x60
+#define H_GAIN_OVERRIDE				0x6F
+#define H_SET_BOARD_NUM				0xF0 // Change the number and CAN rate of a board
+#define H_SET_JAM_SAT_LIM			0xF2
+#define H_SET_ERR_BOUND				0xF3
+#define H_INIT_BOARD				0xFA
+
+
+
 
 #define NullCMD					0x81
 #define SetPeriod				0x82
@@ -354,7 +362,6 @@
 #define ADOffsetCMD				0x88
 #define OffsetCMD				0x89
 
-#define H_INIT_BOARD				0xFA
 
 
 // Auxiliary parameters

@@ -61,7 +61,7 @@ using namespace std;
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
-ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 
@@ -76,10 +76,10 @@ char* getArg(string s, int argNum);
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state);
 int name2mot(char*s, struct hubo_param *h);
 double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p);
-void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
-void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
+void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
-void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
+void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
@@ -108,16 +108,16 @@ int main() {
         assert( ACH_OK == r );
 
         // initialize control channel
-        r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
+        r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
         assert( ACH_OK == r );
 
         // get initial values for hubo
         struct hubo_ref H_ref;
-        struct hubo_init_cmd H_init;
+        struct hubo_board_cmd H_cmd;
         struct hubo_state H_state;
         struct hubo_param H_param;
         memset( &H_ref,   0, sizeof(H_ref));
-        memset( &H_init,  0, sizeof(H_init));
+        memset( &H_cmd,  0, sizeof(H_cmd));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
 	
@@ -159,14 +159,14 @@ int main() {
                 printf(">> %s = %f rad \n",tmp,jRef);
         }
         else if (strcmp(buf0,"beep")==0) {
-                hubo_jmc_beep(&H_param, &H_init, buf);
+                hubo_jmc_beep(&H_param, &H_cmd, buf);
         }
         else if (strcmp(buf0,"home")==0) {
-                hubo_jmc_home(&H_param, &H_init, buf);
+                hubo_jmc_home(&H_param, &H_cmd, buf);
                 printf("%s - Home \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"homeAll")==0) {
-                hubo_jmc_home_all(&H_param, &H_init, buf);
+                hubo_jmc_home_all(&H_param, &H_cmd, buf);
                 printf("%s - Home All \n",getArg(buf,1));
 		tsleep = 5;
 		
@@ -174,10 +174,10 @@ int main() {
         else if (strcmp(buf0,"ctrl")==0) {
                 int onOrOff = atof(getArg(buf,2));
                 if(onOrOff == 0 | onOrOff == 1) {
-                        H_init.cmd[0] = D_CTRL_SWITCH;
-                        H_init.cmd[1] = name2mot(getArg(buf,1),&H_param);  // set motor num
-                        H_init.cmd[2] = atof(getArg(buf,2));         // 1 = on, 0 = 0ff
-                        r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+                        H_cmd.cmd[0] = D_CTRL_SWITCH;
+                        H_cmd.cmd[1] = name2mot(getArg(buf,1),&H_param);  // set motor num
+                        H_cmd.cmd[2] = atof(getArg(buf,2));         // 1 = on, 0 = 0ff
+                        r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
                         if(onOrOff == 0) {
                                 printf("%s - Turning Off CTRL\n",getArg(buf,1));}
                         else {
@@ -188,10 +188,10 @@ int main() {
         else if (strcmp(buf0,"fet")==0) {
                 int onOrOff = atof(getArg(buf,2));
                 if(onOrOff == 0 | onOrOff == 1) {
-                        H_init.cmd[0] = D_FET_SWITCH;
-                        H_init.cmd[1] = name2mot(getArg(buf,1),&H_param);  // set motor num
-                        H_init.cmd[2] = atof(getArg(buf,2));		// 1 = on, 0 = 0ff
-                        int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+                        H_cmd.cmd[0] = D_FET_SWITCH;
+                        H_cmd.cmd[1] = name2mot(getArg(buf,1),&H_param);  // set motor num
+                        H_cmd.cmd[2] = atof(getArg(buf,2));		// 1 = on, 0 = 0ff
+                        int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
                         if(onOrOff == 0) {
                                 printf("%s - Turning Off FET\n",getArg(buf,1));}
                         else {
@@ -199,15 +199,15 @@ int main() {
                 }
         }
         else if (strcmp(buf0,"initialize")==0) {
-                H_init.cmd[0] = D_JMC_INITIALIZE;
-                H_init.cmd[1] = name2mot(getArg(buf,1),&H_param);	// set motor num
+                H_cmd.cmd[0] = D_JMC_INITIALIZE;
+                H_cmd.cmd[1] = name2mot(getArg(buf,1),&H_param);	// set motor num
                 //C.val[0] = atof(getArg(buf,2));
-                int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+                int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
 		printf("%s - Initialize \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"initializeAll")==0) {
-                H_init.cmd[0] = D_JMC_INITIALIZE_ALL;
-                int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+                H_cmd.cmd[0] = D_JMC_INITIALIZE_ALL;
+                int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
                 printf("%s - Initialize All\n",getArg(buf,1));
 		tsleep = 8;
         }
@@ -230,28 +230,28 @@ double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p) {
         return h->ref[jointNo];
 }
 
-void hubo_jmc_beep(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
+void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beep */
         c->cmd[0] = D_JMC_BEEP;
         c->cmd[1] = name2mot(getArg(buff, 1), h);
         c->val[2] = atof(getArg(buff,2));
-        int r = ach_put( &chan_hubo_init_cmd, c, sizeof(*c) );
+        int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
         printf("send beep r = %i C = %i v = %f\n",r, c->cmd[0], c->val[0]);
 
 }
 
-void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
+void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beiep */
         c->cmd[0] = D_GOTO_HOME;
         c->cmd[1] = name2mot(getArg(buff, 1), h);
-        int r = ach_put( &chan_hubo_init_cmd, c, sizeof(*c) );
+        int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
-void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff) {
+void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beiep */
         c->cmd[0] = D_GOTO_HOME_ALL;
-        int r = ach_put( &chan_hubo_init_cmd, c, sizeof(*c) );
+        int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state) {

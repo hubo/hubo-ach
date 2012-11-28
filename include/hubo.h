@@ -1,6 +1,6 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 #include "hubo/canId.h"
-#include "hub/hubo-daemonId.h"
+#include "hub/hubo-daemonID.h"
 #include <stdint.h>
 
 //#define true 1;
@@ -107,7 +107,7 @@
 //#define 	numOfJmc	0x40		//	number of JMCs
 
 #define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
-#define		HUBO_CHAN_INIT_CMD_NAME	 "hubo-init-cmd"   ///> hubo console channel for ach
+#define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"   ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
@@ -173,16 +173,41 @@ struct hubo_ref {
 	struct timespec time;           ///< time message sent
 };
 
+// Structure for sending board commands to the daemon
+struct hubo_board_cmd {
+
+	hubo_d_cmd_t type;		// Type of command. This value is REQUIRED. 
+					// Enumerated in hubo-daemonID.h
+
+	int joint;			// Target joint. If the message is meant for an entire board,
+					// then fill this value with any joint number belonging to that
+					// board. This value is REQUIRED (with a few exceptions).
+
+	hubo_d_param_t param[8];	// Parameters for the command. Enumerated in hubo-daemonID.h
+					// Note: This might or might not be used depending on the 
+					// type of message. TODO: Figure out if 8 is sufficient (or excessive)
+
+	int iValues[10];		// Integer values for the message. This may or may not be used
+					// depending on the type of message. TODO: Figure out of 10 is sufficient
+	
+	double dValues[8];		// Double values for the message. This may or may not be used
+					// depending on the type of message. TODO: Figure out of 8 is sufficient
+	
+};
+
+struct hubo_board_msg {
+
+	hubo_d_msg_t type;	// Type of message. Enumerated in hubo-daemonID.h
+	int board;		// Board number which the message originates from
+	int values[8];		// Content of the message TODO: Figure out if 8 is sufficient
+
+};
+
 struct hubo_state {
 	struct hubo_imu imu;	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
-};
-
-struct hubo_init_cmd {
-	/* values for console commands */
-	double val[3];
-	uint16_t cmd[3];
+	struct hubo_board_msg msg;
 };
 
 struct jmcDriver{

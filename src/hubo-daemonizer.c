@@ -288,6 +288,32 @@ void hubo_assert( int result )
 	}
 } 
 
+void hubo_assert( int result, const char * msg )
+{
+	if(!result)
+	{
+		fprintf(stderr, "Assertion failed. code=%d (%s)\n", errno, strerror(errno));
+		fprintf(stderr, "Assertion message: %s\n", msg);
+		hubo_daemon_close();
+		exit(EXIT_FAILURE);
+	}
+} 
+
+void hubo_verbose( const char *verb )
+{
+	if( verbose==1 )
+		fprintf(stdout, "%s\n", verb); // TODO: Put a time stamp in here
+
+} 
+
+void hubo_debug( const char *deb )
+{
+	if( debug==1 ) 
+		fprintf(stderr, "%s\n", deb); //TODO: Put a time stamp in here
+}
+
+
+
 
 
 

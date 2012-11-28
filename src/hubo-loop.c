@@ -114,7 +114,7 @@ int ftime(struct timeb *tp);
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
-ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 int debug = 0;
@@ -285,11 +285,11 @@ int main(int argc, char **argv) {
   	
 	// get initial values for hubo
         struct hubo_ref H_ref;
-        struct hubo_init_cmd H_init;
+        struct hubo_board_cmd H_cmd;
         struct hubo_state H_state;
         struct hubo_param H_param;
         memset( &H_ref,   0, sizeof(H_ref));
-        memset( &H_init,  0, sizeof(H_init));
+        memset( &H_cmd,  0, sizeof(H_cmd));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
 

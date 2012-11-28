@@ -29,7 +29,7 @@ static char *fileLocation = "/etc/hubo-daemon/joint.table";
 
 // ach channels
 ach_channel_t chan_hubo_ref;
-ach_channel_t chan_hubo_init_cmd;
+ach_channel_t chan_hubo_board_cmd;
 
 
 int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
@@ -244,19 +244,19 @@ void setPosZeros() {
 
 void setConsoleFlags() {
 	// initilize control channel
-        int r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
+        int r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
         assert( ACH_OK == r );
 
-        struct hubo_init_cmd C;
+        struct hubo_board_cmd C;
         memset( &C,   0, sizeof(C));
 
         size_t fs =0;
-        r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+        r = ach_get( &chan_hubo_board_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
         assert( sizeof(C) == fs );
         int i = 0;
         for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
                 C.cmd[i] = 0;
                 C.val[i] = 0;
         }
-        r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
+        r = ach_put(&chan_hubo_board_cmd, &C, sizeof(C));
 }
