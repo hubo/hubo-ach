@@ -60,16 +60,6 @@ typedef enum {
 					iValues: N/A
 					dValues: [0] = Length of Beep Time	*/	
 	
-	D_GET_CURRENT		,///> Request current (amp) reading from JMC
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_RESET_ZERO		,///> Set current encoder position to zero
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
 	D_SET_POS_GAIN		,///> Set the position ctrl gains for a joint
 						// NOTE: For 3 or 5 channel boards,
 						//	 all channels have the same gains
@@ -139,65 +129,105 @@ typedef enum {
 					iValues: 	[0] = Deadzone Value [0,255]
 					dValues: N/A	*/	
 	
+	D_SET_HOME_PARAMS	,///> Set the home search parameters
+			/*		joint: Target joint number
+					param: 		[0] = Search direction
+								D_CLOCKWISE or D_COUNTERCLOCKWISE
+					iValues:	[0] = Search limit
+							      (maximum number of spins)
+							[1] = Offset from index position
+					dValues: N/A	*/	
+	D_SET_ENC_RESOLUTION	,///> Set the encoder resolution
+			/*		joint: Target joint number
+					param: 		[0] = Motor direction
+								D_CLOCKWISE or D_COUNTERCLOCKWISE
+							[1] = Auto-Scale
+								D_ENABLE or D_DISABLE
+					iValues:	[0] = Encoder Resolution
+								Max: 16383
+					dValues: N/A	*/	
+	D_SET_MAX_ACC_VEL	,///> Set maximum acceleration and velocity
+			/*		joint: Target joint number
+					param: N/A
+					iValues: 	[0] Max Acceleration (up to 65535)
+							[1] Max Velocity (up to 65535)
+					dValues: N/A	*/	
+	D_SET_LOW_POS_LIM	,///> Set a lower bound for the position limit
+			/*		joint: Target joint number
+					param:		[0] = Should the new limit value be used
+								or ignored until rebooting?
+									D_UPDATE or D_IGNORE
+							[1] = Should the lower limit be enabled?
+								D_ENABLE or D_DISABLE
+					iValues:	[0] = Lower position limit value
+					dValues: N/A	*/	
+	D_SET_UPP_POS_LIM	,///> Set an upper bound for the position limit
+			/*		joint: Target joint number
+					param:		[0] = Should the new limit value be used
+								or ignored until rebooting?
+									D_UPDATE or D_IGNORE
+							[1] = Should the upper limit be enabled?
+								D_ENABLE or D_DISABLE
+					iValues:	[0] = Upper position limit value
+					dValues: N/A	*/	
+	D_SET_HOME_VEL_ACC	,///> Set maximum acceleration/velocity while homing
+			/*		joint: Target joint number
+					param:		[0] = Home Search Mode
+								D_SWITCH_AND_INDEX or D_SWITCH
+								or D_JAM_LIMIT
+					iValues:	[0] = Max velocity to reach Limit Switch
+							[1] = Max velocity to reach Offset Position
+							[2] = PWM Duty% for jam limit detection
+					dValues:	[0] = Max acceleration	*/	
+	D_SET_GAIN_SCALE	,///> Scale down the position control gains (?)// TODO: Look into this. It seems fishy.
+			/*		joint: Target board number
+					param: N/A
+	//Note: 3+ channel boards	iValues:	[0] = % Override value for channel 0
+	//will all use the [0] value			[1] = % Override value for channel 1
+					dValues:	[0] = Time duration of override in seconds //TODO: Verify this
+							*/		
+	D_SET_BOARD_NUM		,///> Change a JMC's board number or baud rate
+			/*		joint: Any joint number on the board
+					param:	N/A
+					iValues:	[0] = New board number
+							[1] = New CAN Rate (in msec)
+					dValues: N/A	*/	
+	D_SET_JAM_SAT_LIMIT	,///> Set jam & PWM saturation limits
+			/*		joint: Any joint number on the board
+					param: N/A
+					iValues:	[0] = Jam limit in % duty
+							[1] = PWM duty % for limit detection.
+								Used for limit search mode 2.
+					dValues:	[0] = Jam detection time (seconds)
+							[1] = PWM saturation detection time (seconds)	*/	
+	D_SET_ERR_BOUND		,///> Set input max difference error, max error, and max temp warning
+			/*		joint: Any joint number on the board
+					param: N/A
+					iValues:	[0] = Maximum input difference error
+							[1] = Maximum error
+							[2] = Maximum temperature warning temperature
+					dValues: N/A	*/
+	D_GET_BOARD_ERRORS	,///> Request board status and error flags
+			/* INCOMPLETE	joint: Any joint number on the board
+					param: N/A
+					iValues: N/A
+					dValues: N/A	
+			Return type: */
+	D_SET_AND_GET_BOARD_INFO ///> Set board CAN rate and get board info
+			/* INCOMPLETE	joint: Any joint number on the board
+					param: N/A
+					iValues:	[0] = CAN rate (in msec)
+								Default: 5ms
+					dValues: N/A	*/
+			
 	D_GET_BOARD_PARAMS	,///> Get the JMC's board parameters
 			/* INCOMPLETE	joint: Any joint number on the board
 					param: N/A
 					iValues: N/A
 					dValues: N/A	*/	
-	D_SET_HOME_PARAMS	,///> Set the home search parameters
-			/* INCOMPLETE	joint: Target joint number
-					param: N/A
-					iValues:	[0] = Search limit
-							      (maximum number of spins)
-							
-					dValues: N/A	*/	
-	D_SET_ENC_RESOLUTION	,///> Set the encoder resolution
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_MAX_ACC_VEL	,///> Set maximum acceleration and velocity
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_LOW_POS_LIM	,///> Set a lower bound for the position limit
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_UPP_POS_LIM	,///> Set an upper bound for the position limit
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_HOME_VEL_ACC	,///> Set maximum acceleration/velocity while homing
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_GAIN_SCALE	,///> Scale down the position control gains (?)
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_BOARD_NUM		,///> Change a JMC's board number
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_JAM_SAT_LIMIT	,///> Set jam & PWM saturation limits
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	D_SET_ERR_BOUND		,///> Set input max difference error, max error, and max temp warning
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
-					iValues: N/A
-					dValues: N/A	*/	
-	
 
+
+	
 } hubo_d_cmd_t;
 
 
@@ -224,15 +254,24 @@ typedef enum {
 	D_ENABLE		,	///> Parameter to request enabling
 	D_DISABLE		,	///> Parameter to request disabling
 	D_UPDATE		,	///> Parameter to request updating
+	D_IGNORE		,	///> Parameter to request ignoring
 
 	D_CLOCKWISE		,	///> Parameter to indicate clockwise turning
-	D_COUNTERCLOCKWISE		///> Parameter to indicate counter-clockwise turning
+	D_COUNTERCLOCKWISE	,	///> Parameter to indicate counter-clockwise turning
+
+	// Homing modes
+	D_SWITCH_AND_INDEX	,	///> Sets homing mode to use the switch plus the offset position
+	D_SWITCH		,	///> Homes only using the limit switch
+	D_JAM_LIMIT			///> Homes without the limit switch. "LIMD is used to detect jam"
 
 } hubo_d_param_t;
 
 
+typedef enum {
 
-
+	D_ERROR			,///> Indicates an error message
+			/* INCOMPLETE	param: N/A
+					values: N/A	*/
 
 
 

@@ -145,7 +145,7 @@ void fSetPosGain1(int jnt, struct hubo_param *h, struct can_frame *f, int Kp, in
 void hSetCurGain(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
 void fSetCurGain0(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int Kp, int Ki, int Kd);
 void fSetCurGain1(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int Kp, int Ki, int Kd);
-void hOpenLoopPWM( hubo_board_cmd *c, hubo_param *h, struct can_frame *f);
+void hOpenLoopPWM(struct hubo_board_cmd *c, hubo_param *h, struct can_frame *f);
 void fOpenLoopPWM_2CH(int jnt, struct hubo_param *h, struct can_frame *f,
 			int dir0, int duty0, int dir1, int duty1);
 void fOpenLoopPWM_3CH(int jnt, struct hubo_param *h, struct can_frame *f,
@@ -160,17 +160,28 @@ void fSetAlarm(int jnt, struct hubo_param *h, struct can_frame *f, int sound);
 void hSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone);
 void fSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone);
 void fGetBoardParameters(int jnt, struct hubo_param *h, struct can_frame *f, int parm);
-void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, int limit, int dir, int offset);
+void hSetHomeSearchParams( struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f );
+void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, int limit,
+				unsigned int dir, unsigned int offset);
+void hSetEncoderResolution(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
 void fSetEncoderResolution(int jnt, struct hubo_param *h, struct can_frame *f, int res);
+void hSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAcc, int maxVel);
 void fSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAcc, int maxVel);
+void hSetLowerPosLimit(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
 void fSetLowerPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int enable, int update, int limit);
+void hSetUpperPosLimit(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
 void fSetUpperPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int enable, int update, int limit);
+void hSetHomeAccVel(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
 void fSetHomeAccVel(int jnt, struct hubo_param *h, struct can_frame *f, float mAcc, int mVelS,
 			int mVelP, int mode, int mDuty);
+void hSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int gain0, int gain1, double dur);
 void fSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int gain0, int gain1, int duration);
+void hSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate);
 void fSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate);
 void fSetJamPwmLimits(int jnt, struct hubo_param *h, struct can_frame *f, int jamLimit, int pwmLimit,
 			int lim_detection_duty, int jam_detection_duty );
+void hSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
+			int tempError);
 void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
 			int tempError);
 
@@ -433,7 +444,7 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 			decodeFrame(s, h, f);
 			c[jmc] = 1;
 		}
-	}}	
+	}}
 }
 
 
@@ -713,7 +724,7 @@ void fSetAlarm(int jnt, struct hubo_param *h, struct can_frame *f, int h_sound)
 }
 
 
-void hOpenLoopPWM( hubo_board_cmd *c, hubo_param *h, struct can_frame *f)
+void hOpenLoopPWM(struct hubo_board_cmd *c, hubo_param *h, struct can_frame *f)
 {
 	int jnt = c->joint;
 	
@@ -725,8 +736,11 @@ void hOpenLoopPWM( hubo_board_cmd *c, hubo_param *h, struct can_frame *f)
 			(c->iValues[1]>100&&c->iValues[1]<-100) )
 
 		{
-			fprintf(stderr, "Invalid PWM Values:\n\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\n",
-					c->param[0], c->iValues[0], c->param[1], c->iValues[1] );
+			fprintf(stderr, "Invalid PWM Values:\n\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\n\t"
+					"Dir must be D_CLOCKWISE (%d) or D_COUNTERCLOCKWISE (%d)\n\t"
+					"Duty range: [-100,100]\n",
+					c->param[0], c->iValues[0], c->param[1], c->iValues[1],
+					D_CLOCKWISE, D_COUNTERCLOCKWISE );
 		}
 		else
 		{
@@ -748,10 +762,13 @@ void hOpenLoopPWM( hubo_board_cmd *c, hubo_param *h, struct can_frame *f)
 			(c->iValues[1]>100&&c->iValues[1]<-100) ||
 			(c->iValues[2]>100&&c->iValues[2]<-100) )
 		{
-			fprintf(stderr, "Invalid PWM Values:\n\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\t
-					Dir:%d\tDuty:%d\n",
-					c->param[0], c->iValues[0], c->param[1], c->iValues[1],
-					c->param[2], c->iValues[2] );
+			fprintf(stderr, "Invalid PWM Values:\n\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\t"
+					"Dir:%d\tDuty:%d\n\t"
+					"Dir must be D_CLOCKWISE (%d) or D_COUNTERCLOCKWISE (%d)\n\t"
+					"Duty range: [-100,100]\n",
+					(int)c->param[0], c->iValues[0], (int)c->param[1], c->iValues[1],
+					(int)c->param[2], c->iValues[2],
+					(int)D_CLOCKWISE, (int)D_COUNTERCLOCKWISE );
 		}
 		else
 		{
@@ -780,11 +797,14 @@ void hOpenLoopPWM( hubo_board_cmd *c, hubo_param *h, struct can_frame *f)
 			(c->iValues[3]>100&&c->iValues[3]<-100) ||
 			(c->iValues[4]>100&&c->iValues[4]<-100) )
 		{
-			fprintf(stderr, "Invalid PWM Values:\n\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\t
-					Dir:%d\tDuty:%d\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\n",
-					c->param[0], c->iValues[0], c->param[1], c->iValues[1],
-					c->param[2], c->iValues[2], c->param[3], c->iValues[3],
-					c->param[4], c->iValues[4] );	
+			fprintf(stderr, "Invalid PWM Values:\n\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\t"
+					"Dir:%d\tDuty:%d\tDir:%d\tDuty:%d\tDir:%d\tDuty:%d\n\t"
+					"Dir must be D_CLOCKWISE (%d) or D_COUNTERCLOCKWISE (%d)\n\t"
+					"Duty range: [-100,100]\n",
+					(int)c->param[0], c->iValues[0], (int)c->param[1], c->iValues[1],
+					(int)c->param[2], c->iValues[2], (int)c->param[3], c->iValues[3],
+					(int)c->param[4], c->iValues[4],
+					(int)D_CLOCKWISE, (int)D_COUNTERCLOCKWISE );	
 		}
 		else
 		{
@@ -877,7 +897,9 @@ void hSetControlMode(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_
 			sendCan(getSocket(h,jnt),f);
 			break;
 		default:
-			fprintf(stderr,"Invalid Control Mode: %d\n", (int)mode);
+			fprintf(stderr,"Invalid Control Mode: %d\n\t"
+					"Must use: D_POSITION (%d) or D_CURRENT (%d)\n",
+					(int)mode, (int)D_POSITION, (int)D_CURRENT);
 			break;
 	}
 }
@@ -970,7 +992,8 @@ void hSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzo
 		sendCan(getSocket(h,jnt),f);
 	}
 	else
-		fprintf(stderr,"Invalid value for deadzone: %d", deadzone);
+		fprintf(stderr,"Invalid value for deadzone: %d\n\t"
+					"Range: [0,255]\n", deadzone);
 }
 
 void fSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone)
@@ -997,7 +1020,31 @@ void fGetBoardParameters(int jnt, struct hubo_param *h, struct can_frame *f, int
 	f->can_dlc	= 3;
 }
 
-void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, int limit, int dir, int offset)
+
+void hSetHomeSearchParams( struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f )
+{
+	unsigned int dir, offset;
+	
+	switch (c->param[0]){
+		default:
+			fprintf(stderr, "Invalid parameter for Limit switch search direction: %d\n\t"
+						"Defaulting to D_CLOCKWISE (%d)\n",
+						(int)c->param[0], (int)D_CLOCKWISE);
+		case D_CLOCKWISE:
+			dir = 0; break;
+		case D_COUNTERCLOCKWISE:
+			dir = 1; break;
+	}
+
+	offset = (unsigned int)c->iValues[1];
+
+	fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
+
+	sendCan(getSocket(h,c->joint),f);
+}
+
+void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, int limit,
+				unsigned int dir, unsigned int offset)
 {
 	f->can_id	= CMD_TDXF;
 	
@@ -1014,6 +1061,44 @@ void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, in
 	f->can_dlc	= 8;
 }
 
+void hSetEncoderResolution(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f)
+{
+	uint16_t res;
+	
+	switch(c->param[0]){
+		case D_CLOCKWISE:
+			res = 1 << 16; break;
+		case default:
+			fprintf(stderr, "Invalid parameter for Motor Direction: %d\n\t"
+						"Defaulting to D_CLOCKWISE (%d)\n",
+						(int)c->param[0], (int)D_CLOCKWISE);
+		case D_CLOCKWISE:
+			res = 0 << 16; break;
+	}
+	
+	switch(c->param[1]){
+		case default:
+			fprintf(stderr, "Invalid Parameter for Auto-Scale: %d\n\t"
+						"Defauling to D_ENABLE (%d)\n", (int)c->param[1], D_ENABLE);
+		case D_ENABLE:
+			res = res | (1<<15); break;
+		case D_DISABLE:
+			res = res | (0<<15); break;
+	}
+
+	if(c->iValues[0] >= 16384 || c->iValues[0]<0) // Cannot exceed 14 bits. 2^14 = 16384
+	{
+		fprintf(stderr, "Encoder resolution value out of range: %d\n\t"
+					"Defaulting to max resolution (16383)\n", (int)c->iValues[0] );
+		res = res | 16383;
+	}
+	else
+		res = res | c->iValues[0];
+
+	fSetEncoderResolution(c->joint, h, f, res);
+	sendCan(getSocket(h,c->joint),f);
+}
+
 void fSetEncoderResolution(int jnt, struct hubo_param *h, struct can_frame *f, int res)
 {
 	f->can_id	= CMD_TDXF;
@@ -1025,6 +1110,21 @@ void fSetEncoderResolution(int jnt, struct hubo_param *h, struct can_frame *f, i
 	f->data[3]	= num_to_bytes(res,2);
 
 	f->can_dlc	= 4;
+}
+
+void hSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAcc, int maxVel)
+{
+	if( maxAcc >= 65536 || maxAcc <=0 )
+		fprintf("Max Acceleration value out of bounds: %d\n\t"
+				"Maximum value is 65535\n", maxAcc);
+	else if( maxVel < 65536 && maxVel > 0 )
+	{
+		fSetMaxAccVel(jnt, h, f, maxAcc, maxVel);
+		sendCan(getSocket(h,jnt),f);
+	}
+	else
+		fprintf("Max Velocity value is out of bounds: %d\n\t"
+				"Maximum value is 65535\n", maxVel);
 }
 
 void fSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAcc, int maxVel)
@@ -1040,6 +1140,34 @@ void fSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAc
 	f->data[5]	= num_to_bytes(maxVel,2);
 
 	f->can_dlc	= 6;
+}
+
+void hSetLowerPosLimit(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f)
+{
+	uint8_t enable, update;
+	
+	switch(c->param[0]){
+		case D_UPDATE:
+			update = 1; break;
+		default:
+			fprintf(stderr, "Lower position limit update parameter invalid: %d\n\t"
+						"Defaulting to D_IGNORE (%d)\n", (int)c->param[0], (int)D_IGNORE);
+		case D_IGNORE:
+			update = 0; break;
+	}
+	
+	switch(c->param[1]){
+		default:
+			fprintf(stderr, "Lower position limit enabling parameter invalid: %d\n\t"
+						"Defaulting to D_ENABLE (%d)\n", (int)c->param[1], (int)D_ENABLE);
+		case D_ENABLE:
+			enable = 1; break;
+		case D_DISABLE:
+			enable = 0; break;
+	}
+
+	fSetLowerPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
+	sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetLowerPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int enable, int update, int limit)
@@ -1058,6 +1186,36 @@ void fSetLowerPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int e
 	f->can_dlc	= 7;
 }
 
+
+
+void hSetUpperPosLimit(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f)
+{
+	uint8_t enable, update;
+	
+	switch(c->param[0]){
+		case D_UPDATE:
+			update = 1; break;
+		default:
+			fprintf(stderr, "Upper position limit update parameter invalid: %d\n\t"
+						"Defaulting to D_IGNORE (%d)\n", (int)c->param[0], (int)D_IGNORE);
+		case D_IGNORE:
+			update = 0; break;
+	}
+	
+	switch(c->param[1]){
+		default:
+			fprintf(stderr, "Upper position limit enabling parameter invalid: %d\n\t"
+						"Defaulting to D_ENABLE (%d)\n", (int)c->param[1], (int)D_ENABLE);
+		case D_ENABLE:
+			enable = 1; break;
+		case D_DISABLE:
+			enable = 0; break;
+	}
+
+	fSetUpperPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
+	sendCan(getSocket(h,c->joint),f);
+}
+
 void fSetUpperPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int enable, int update, int limit)
 {
 	f->can_id	= CMD_TDXF;
@@ -1074,7 +1232,33 @@ void fSetUpperPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int e
 	f->can_dlc	= 7;
 }
 
-void fSetHomeAccVel(int jnt, struct hubo_param *h, struct can_frame *f, float mAcc, int mVelS, int mVelP, int mode, int mDuty)
+void hSetHomeAccVel(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f)
+{
+	int mode;
+
+	switch(c->param[0]){
+		default:
+			fprintf("Invalid homing mode parameter: %d\n\t"
+					"Must use D_SWITCH_AND_INDEX (%d), D_SWITCH (%d),\n\t"
+					"or D_JAM_LIMIT (%d)\n"
+				"Defaulting to D_SWITCH_AND_INDEX\n", (int)c->param[0],
+					(int)D_SWITCH_AND_INDEX, (int)D_SWITCH, (int)D_JAM_LIMIT);
+		case D_SWITCH_AND_INDEX:
+			mode = 0; break;
+		case D_SWITCH:
+			mode = 1; break;
+		case D_JAM_LIMIT:
+			mode = 2; break;
+	}
+
+	fSetHomeAccVel(c->joint, h, f, (float)c->dValues[0], c->iValues[0], c->iValues[1],
+			mode, c->iValues[2]);
+
+	sendCan(getSocket(h,c->joint),f);
+}
+
+void fSetHomeAccVel(int jnt, struct hubo_param *h, struct can_frame *f, float mAcc, int mVelS,
+			int mVelP, int mode, int mDuty)
 {
 	f->can_id	= CMD_TDXF;
 
@@ -1093,6 +1277,13 @@ void fSetHomeAccVel(int jnt, struct hubo_param *h, struct can_frame *f, float mA
 	f->can_dlc	= 7;
 }
 
+void hSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int gain0, int gain1, double dur)
+{
+	fSetGainOverride(jnt, h, f, gain0, gain1, (int)(dur*1000);
+	sendCan(getSocket(h,jnt),f);
+}
+
+
 void fSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int gain0, int gain1, int duration)
 {
 	f->can_id	= CMD_TDXF;
@@ -1108,6 +1299,15 @@ void fSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int ga
 	f->can_dlc = 6;
 }
 
+void hSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate)
+{
+	fprintf(stdout, "WARNING: Changing board number %d to %d with baud rate %d\n",
+			getJMC(h,jnt), boardNum, rate);
+	fSetBoardNumber(jnt, h, f, boardNum, rate);
+	sendCan(getSocket(h,jnt),f);
+}
+
+
 void fSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate)
 {
 	f->can_id	= CMD_TDXF;
@@ -1119,6 +1319,18 @@ void fSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boa
 	f->data[3]	= (uint8_t)(rate);
 
 	f->can_dlc = 4;
+}
+
+void hSetJamPwmLimits(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f)
+{
+	fprintf( stdout, "Changing Jam and PWM Saturation limits:\n\t
+				Jam Duty: %d \t Sat Duty: %d\n\t
+				Jam Time: %d \t Sat time: %d\n",
+			c->iValues[0], c->iValues[1], c->dValues[0], c->dValues[1] );
+	fSetJamPwmLimits(c->joint, h, f, (int)(c->dValues[0]*1000), (int)(c->dValues[1]*1000),
+				c->iValues[0], c->iValues[1] );
+
+	sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetJamPwmLimits(int jnt, struct hubo_param *h, struct can_frame *f, int jamLimit, int pwmLimit,
@@ -1137,6 +1349,18 @@ void fSetJamPwmLimits(int jnt, struct hubo_param *h, struct can_frame *f, int ja
 	f->data[7]	= (uint8_t)(jam_detection_duty);
 	
 	f->can_dlc = 8;
+}
+
+void hSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
+			int tempError)
+{
+	fprintf(stdout, "Changing error bounds on board %d:\n\t"
+			"Input Difference error: %d\n\t"
+			"Maximum error: %d\n\t"
+			"Max temperature: %d\n", jnt, inputDiffErr, maxError, tempError);
+
+	fSetErrorBound(jnt, h, f, inputDiffErr, maxError, tempError);
+	sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
@@ -1237,7 +1461,9 @@ void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_
 		fDisableMotorDriver(jnt, h, f);
 		sendCan(getSocket(h,jnt), f); }
 	else
-		fprintf(stderr,"FET Switch Error: Invalid param[0]\n");
+		fprintf(stderr,"FET Switch Error: Invalid param[0]\n\t
+					Must be D_ENABLE (%d) or D_DISABLE (%d)",
+				D_ENABLE, D_DISABLE);
 }
 
 void fEnableMotorDriver(int jnt, struct hubo_param *h, struct can_frame *f) {
@@ -1270,7 +1496,9 @@ void hFeedbackControllerOnOff(int jnt, struct hubo_param *h, struct can_frame *f
 		fDisableFeedbackController(jnt, h, f);
 		sendCan(getSocket(h,jnt), f); }
 	else
-		fprintf(stderr, "Controller Switch Error: Invalid param[0]\n");
+		fprintf(stderr, "Controller Switch Error: Invalid param[0] (%d)\n\t
+					Must be D_ENABLE (%d) or D_DISABLE (%d)", c->param[0],
+					D_ENABLE, D_DISABLE);
 }
 
 void fEnableFeedbackController(int jnt, struct hubo_param *h, struct can_frame *f)
@@ -1389,6 +1617,39 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					break;
 				case D_SET_DEAD_ZONE:
 					hSetDeadZone( c->joint, h, f, c->iValue[0] );
+					break;
+				case D_SET_HOME_PARAMS:
+					hSetHomeSearchParams( c, h, f );
+					break;
+				case D_SET_ENC_RESOLUTION:
+					hSetEncoderResolution( c, h, f );
+					break;
+				case D_SET_MAX_ACC_VEL:
+					hSetMaxAccVel( c->joint, h, f, c->iValues[0], c->iValues[1] );
+					break;
+				case D_SET_LOW_POS_LIM:
+					hSetLowerPosLimit( c, h, f );
+					break;
+				case D_SET_UPP_POS_LIM:
+					hSetUpperPosLimit( c, h, f );
+					break;
+				case D_SET_HOME_VEL_ACC:
+					hSetHomeAccVel( c, h, f);
+					break;
+				case D_SET_GAIN_SCALE:
+					hSetGainOverride(c->joint, h, f, c->iValues[0],
+							c->iValues[1], c->dValues[0]); break;
+				case D_SET_BOARD_NUM:
+					hSetBoardNumber(c->joint, h, f, c->iValues[0], c->iValues[1]);
+					break;
+				case D_SET_JAM_SAT_LIMIT:
+					hSetJamPwmLimits( c, h, f );
+					break;
+				case D_SET_ERR_BOUND:
+					hSetErrorBound( c->joint, h, f, c->iValues[0], c->iValues[1],
+							c->iValues[2] ); break;
+				case D_GET_BOARD_PARAMS:
+					hGetBoardParams( c, h, f );
 					break;
 				default:
 					fprintf(stderr,"Unrecognized command type: %d",c->type);

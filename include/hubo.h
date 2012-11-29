@@ -197,9 +197,10 @@ struct hubo_board_cmd {
 
 struct hubo_board_msg {
 
-	hubo_d_msg_t type;	// Type of message. Enumerated in hubo-daemonID.h
-	int board;		// Board number which the message originates from
-	int values[8];		// Content of the message TODO: Figure out if 8 is sufficient
+	hubo_d_msg_t type;		// Type of message. Enumerated in hubo-daemonID.h
+	int board;			// Board number which the message originates from
+	hubo_d_param_t param[8];	// Parameters for the command. Enumerated in hubo-daemonID.h
+	int values[8];			// Content of the message TODO: Figure out if 8 is sufficient
 
 };
 
