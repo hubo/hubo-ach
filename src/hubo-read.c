@@ -211,7 +211,6 @@ void huboLoop() {
 				H_ref.ref[jnt], 
 				H_state.joint[jnt].pos, 
 				H_state.joint[jnt].cur,
-				H_state.joint[jnt].tmp);	
 		}}
 */
 	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	

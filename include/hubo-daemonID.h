@@ -274,7 +274,7 @@ typedef enum {
 					values: N/A	*/
 
 
-
+} hubo_d_msg_t;
 
 
 

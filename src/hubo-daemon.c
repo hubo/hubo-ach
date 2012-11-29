@@ -415,8 +415,8 @@ void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) 
 	}}	
 	memset( &c, 0, sizeof(c));
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-		jmc = h->joint[i].jmc;
-		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+		jmc = h->joint[i].jmc; //Note: I changed "&" below to "&&". Make sure this is right.
+		if((0 == c[jmc]) && (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
 			readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
 			decodeFrame(s, h, f);
 			c[jmc] = 1;
@@ -530,8 +530,8 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 	__u8 data[6];
 	uint16_t jmc = h->joint[jnt].jmc;
 	if(h->joint[jnt].numMot == 2) {
-		__u8 m0 = h->driver[jmc].jmc[0];
-		__u8 m1 = h->driver[jmc].jmc[1];
+		__u8 m0 = h->driver[jmc].joints[0];
+		__u8 m1 = h->driver[jmc].joints[1];
 //		printf("m0 = %i, m1= %i \n",m0, m1);
 
 
@@ -552,8 +552,8 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		}
 	}
 	else if(h->joint[jnt].numMot == 1) {
-		__u8 m0 = h->driver[jmc].jmc[0];
-		__u8 m1 = h->driver[jmc].jmc[0];
+		__u8 m0 = h->driver[jmc].joints[0];
+		__u8 m1 = h->driver[jmc].joints[0];
 //		printf("m0 = %i, m1= %i \n",m0, m1);
 
 
@@ -1670,81 +1670,213 @@ double enc2rad(int jnt, int enc, struct hubo_param *h) {
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	int fs = (int)f->can_id;
 	
-	/* Current and Temp */
-	if( (fs >= SETTING_BASE_RXDF) & (fs < (SETTING_BASE_RXDF+0x60))) {
-		int jmc = fs-SETTING_BASE_RXDF;		// find the jmc value
-		int i = 0;
-		int jnt0 = h->driver[jmc].jmc[0];     // jmc number
-		int motNo = h->joint[jnt0].numMot;     // motor number   
-		double current = 0;				// motor current
-		double temp = 0;			// temperature
-		if(motNo == 2 | motNo == 1) {
-			for( i = 0; i < motNo; i++) {
-				current = f->data[0+i*1];
-				current = current/100.0;
-				temp = f->data[3];
-				temp = temp/100.0;
-				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
-				s->joint[jnt].cur = current;
-				s->joint[jnt].tmp = temp;
+	/* Force-Torque Readings */
+	if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs < H_SENSOR_FT_MAX_RXDF) )
+	{
+		int num = fs - H_SENSOR_FT_BASE_RXDF;
+		switch (num)
+		{
+			case 1:
+				int val=0;
 
+				val = (val<<8) | f->data[0];
+				val = (val<<8) | f->data[1];
+				s->ft[HUBO_FT_R_FOOT].m_x = val/100;
 				
-			}
+				val = (val<<8) | f->data[2];
+				val = (val<<8) | f->data[3];
+				s->ft[HUBO_FT_R_FOOT].m_y = val/100;
+
+				val = (val<<8) | f->data[4];
+				val = (val<<8) | f->data[5];
+				s->ft[HUBO_FT_R_FOOT].f_z = val/10;
+				break;
+			case 2:
+				int val=0;
+
+				val = (val<<8) | f->data[0];
+				val = (val<<8) | f->data[1];
+				s->ft[HUBO_FT_L_FOOT].m_x = val/100;
+				
+				val = (val<<8) | f->data[2];
+				val = (val<<8) | f->data[3];
+				s->ft[HUBO_FT_L_FOOT].m_y = val/100;
+
+				val = (val<<8) | f->data[4];
+				val = (val<<8) | f->data[5];
+				s->ft[HUBO_FT_L_FOOT].f_z = val/10;
+				break;
+			case 6:
+				int val=0;
+
+				val = (val<<8) | f->data[0];
+				val = (val<<8) | f->data[1];
+				s->ft[HUBO_FT_R_HAND].m_x = val/100;
+				
+				val = (val<<8) | f->data[2];
+				val = (val<<8) | f->data[3];
+				s->ft[HUBO_FT_R_HAND].m_y = val/100;
+
+				val = (val<<8) | f->data[4];
+				val = (val<<8) | f->data[5];
+				s->ft[HUBO_FT_R_HAND].f_z = val/10;
+				break;
+			case 7:
+				int val=0;
+
+				val = (val<<8) | f->data[0];
+				val = (val<<8) | f->data[1];
+				s->ft[HUBO_FT_L_HAND].m_x = val/100;
+				
+				val = (val<<8) | f->data[2];
+				val = (val<<8) | f->data[3];
+				s->ft[HUBO_FT_L_HAND].m_y = val/100;
+
+				val = (val<<8) | f->data[4];
+				val = (val<<8) | f->data[5];
+				s->ft[HUBO_FT_L_HAND].f_z = val/10;
+				break;
+			default:
+				fprintf(stderr, "Invalid value for FT Sensor: %d\n\t"
+						"Must be 1, 2, 6, or 7\n", num);
+				break;
+				
 		}
-
-
 	}
+	else if( (fs >= H_SENSOR_IMU_BASE_RXDF) || (fs <= H_SENSOR_IMU_MAX_RXDF) )
+	{
+		int num = fs - H_SENSOR_IMU_BASE_RXDF;
+
+		switch (num)
+		{
+			case 3:
+				
+
+		}
+	}
+
+	/* Current and temperature readings */
+	else if( (fs >= H_CURRENT_BASE_RXDF) && (fs < H_CURRENT_RXDF_MAX) ) //Changed "&" to "&&". Check if correct
+	{
+		int jmc = fs - H_SETTING_BASE_RXDF;	// Find the jmc value
+		int jnt0 = h->driver[jmc].joints[0];	// First joint number
+		int motNo = h->joint[jnt0].numMot;	// Number of motors
+		double current = 0;			// Initialize motor current variable
+		double temp = 0;			// Initialize temperature variable
+		if( motNo == 1 || motNo == 2 )
+		{
+			for(int i = 0; i < motNo; i++)
+			{
+				int jnt = h->driver[jmc].joints[i];
+				s->joint[jnt].cur = f->data[0+i*1]/100.0;
+			}
+			s->driver[jmc].temp = f->data[2]; // TODO: Check if this is correct. I changed "3" to "2"
+			//temp = temp/100.0; // I don't see anywhere in the docs that it says to do this
+		}
+		else if( motNo == 3 )
+		{
+			int jnt;
+
+			jnt = h->driver[jmc].joints[0];
+			s->joint[jnt].cur = f->data[0]/250.0; // The 250 scale comes from the documentation
+
+			jnt = h->driver[jmc].joints[1];
+			s->joint[jnt].cur = f->data[1]/250.0;
+
+			jnt = h->driver[jmc].joints[2];
+			s->joint[jnt].cur = f->data[3]/250.0;
+
+
+			s->driver[jmc].temp = f->data[2]; // TODO: Check if this is correct. I changed "3" to "2"
+			//temp = temp/100.0; // I don't see anywhere in the docs that it says to do this
+		}
+		else if( motNo == 5 )
+		{
+			int jnt;
+
+			jnt = h->driver[jmc].joints[0];
+			s->joint[jnt].cur = f->data[0]/1000.0; // The 1000 scale comes from the documentation
+
+			jnt = h->driver[jmc].joints[1];
+			s->joint[jnt].cur = f->data[1]/1000.0
+
+			jnt = h->driver[jmc].joints[2];
+			s->joint[jnt].cur = f->data[2]/1000.0
+
+			jnt = h->driver[jmc].joints[3];
+			s->joint[jnt].cur = f->data[4]/1000.0
+
+			jnt = h->driver[jmc].joints[4];
+			s->joint[jnt].cur = f->data[5]/1000.0
+
+			s->driver[jmc].temp = 0; // 0 indicates that no temperature reading is available
+		}
+	}
+	/* FT Sensor Data */
+
+
+
+	
 	/* Return Motor Position */
-	else if( (fs >= ENC_BASE_RXDF) & (fs < CUR_BASE_RXDF) ) {
-		int jmc = fs-ENC_BASE_RXDF;
+	else if( (fs >= H_ENC_BASE_RXDF) && (fs < H_ENC_MAX_RXDF) )
+	{
+		int jmc = fs - H_ENC_BASE_RXDF;
 		int i = 0;
-		int jnt0 = h->driver[jmc].jmc[0];     // jmc number
-		int motNo = h->joint[jnt0].numMot;     // motor number   
+		int jnt0 = h->driver[jmc].joints[0];	// jmc number
+		int motNo = h->joint[jnt0].numMot;	// motor number   
 		int32_t enc = 0;
 		int16_t enc16 = 0;			// encoder value for neck and fingers
-		if(motNo == 2 | motNo == 1){
-			for( i = 0; i < motNo; i++ ) {
+		if( motNo == 1 || motNo == 2 )
+		{
+			for( i = 0; i < motNo; i++ )
+			{
 				enc = 0;
 				enc = (enc << 8) + f->data[3 + i*4];
 				enc = (enc << 8) + f->data[2 + i*4];
 				enc = (enc << 8) + f->data[1 + i*4];
 				enc = (enc << 8) + f->data[0 + i*4];
-				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				int jnt = h->driver[jmc].joints[i];          // motor on the same drive
 				s->joint[jnt].pos =  enc2rad(jnt,enc, h);
 			}
 		}
 
-		else if( motNo == 3 ) { 	// neck
-			for( i = 0; i < motNo; i++ ) {
+		else if( motNo == 3 ) // neck
+		{
+			for( i = 0; i < motNo; i++ )
+			{
 				enc16 = 0;
 				enc16 = (enc << 8) + f->data[1 + i*4];
 				enc16 = (enc << 8) + f->data[0 + i*4];
-				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				int jnt = h->driver[jmc].joints[i];          // motor on the same drive
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
 			
-		else if( motNo == 5 & f->can_dlc == 6 ) {
+		else if( motNo == 5 && f->can_dlc == 6 )
+		{
 			for( i = 0; i < 3 ; i++ ) {
 				enc16 = 0;
 				enc16 = (enc << 8) + f->data[1 + i*4];
 				enc16 = (enc << 8) + f->data[0 + i*4];
-				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				int jnt = h->driver[jmc].joints[i];          // motor on the same drive
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
 			
-		else if( motNo == 5 & f->can_dlc == 4 ) {
-			for( i = 0; i < 2; i++ ) {
+		else if( motNo == 5 && f->can_dlc == 4 )
+		{
+			for( i = 0; i < 2; i++ )
+			{
 				enc16 = 0;
 				enc16 = (enc << 8) + f->data[1 + i*4];
 				enc16 = (enc << 8) + f->data[0 + i*4];
-				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
+				int jnt = h->driver[jmc].joints[i];          // motor on the same drive
 				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
 	
 	}
+	
 	return 0;
 }
 
@@ -1756,7 +1888,8 @@ int main(int argc, char **argv) {
 	int c;
 
 	int i = 1;
-	while(argc > i) {
+	while(argc > i)
+	{
 		if(strcmp(argv[i], "-d") == 0) {
 			debug = 1;
 		}

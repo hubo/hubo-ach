@@ -59,8 +59,8 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	// inialize jmcDriver struct's jmc numbers with zeros.
 	// these are the motors on each motor driver.
 	for (i = 0; i < HUBO_JMC_COUNT; i++) {
-		for (j = 0; j < sizeof(&H_param->driver[i].jmc); j++) {
-			H_param->driver[i].jmc[j] = 0;
+		for (j = 0; j < sizeof(&H_param->driver[i].joints); j++) {
+			H_param->driver[i].joints[j] = 0;
 		}
 	}
 
@@ -167,13 +167,13 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 				}
 
 				tp.jntNo = i;		// define i to be the joint number
-				tp2.jmc[tp.motNo] = i;	// set jmc driver number	
+				tp2.joints[tp.motNo] = i;	// set jmc driver number	
 
 				// copy contents (all member values) of tp into H_param.joint 
 				// substruct which will populate its member variables
 				memcpy(&(H_param->joint[i]), &tp, sizeof(tp));
 				// copy contents of tp.jmc into H_param structs driver substruct
-				memcpy(&(H_param->driver[tp.jmc].jmc[tp.motNo]), &tp2.jmc[tp.motNo], sizeof(tp2.jmc[tp.motNo]));
+				memcpy(&(H_param->driver[tp.jmc].joints[tp.motNo]), &tp2.joints[tp.motNo], sizeof(tp2.joints[tp.motNo]));
 				// copy contents of s into H_state (initializing active and zeroed members)
 				memcpy(&(H_state->joint[i]), &s, sizeof(s));
 			}
@@ -203,11 +203,11 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 /*	for (i = 0; i < HUBO_JMC_COUNT; i++) {
 		printf("%lu\t%hhu\t%hhu\t%hhu\t%hhu\t%hhu\n",
 			i,
-			H_param->driver[i].jmc[0],
-			H_param->driver[i].jmc[1],
-			H_param->driver[i].jmc[2],
-			H_param->driver[i].jmc[3],
-			H_param->driver[i].jmc[4]);
+			H_param->driver[i].joints[0],
+			H_param->driver[i].joints[1],
+			H_param->driver[i].joints[2],
+			H_param->driver[i].joints[3],
+			H_param->driver[i].joints[4]);
         }
 */
 /*	// print values saved in H_state.joint[i].active and H_state.joint[i].zeroed
