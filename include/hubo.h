@@ -150,7 +150,7 @@ struct hubo_param {
 struct hubo_imu {
 	double w_x;    ///< rotational velocity in x (rad/s)
 	double w_y;    ///< rotational velocity in y (rad/s)
-	double w_z;    ///< rotational velocity in z (rad/s)
+//	double w_z;    ///< rotational velocity in z (rad/s)
 	double a_x;    ///< linear acceleration in x (m/s/s)
 	double a_y;    ///< linear acceleration in y (m/s/s)
 	double a_z;    ///< linear acceleration in z (m/s/s)
@@ -212,7 +212,7 @@ struct hubo_board_cmd {
 					// Note: This might or might not be used depending on the 
 					// type of message. TODO: Figure out if 8 is sufficient (or excessive)
 
-	int iValues[10];		// Integer values for the message. This may or may not be used
+	int iValues[8];			// Integer values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 10 is sufficient
 	
 	double dValues[8];		// Double values for the message. This may or may not be used
