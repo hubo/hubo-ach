@@ -385,6 +385,7 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 }
 
 void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+    printf("Getting sensors...\n");
 	///> Requests all sensor data and saves to state
 	char c[HUBO_SENSOR_COUNT];
 	memset( &c, 0, sizeof(c));
@@ -401,7 +402,7 @@ INT:
                 case HUBO_FT_L_HAND:
                 case HUBO_FT_R_FOOT:
                 case HUBO_FT_L_FOOT:
-                    //T
+                    printf("Polling sensor %d\n",i);
                     hGetFT(i, h, f);
                     readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                     decodeFrame(s, h, f);
