@@ -117,8 +117,6 @@ ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 
-int debug = 0;
-int hubo_debug = 1;
 
 void huboLoop(struct hubo_param *H_param) {
         // get initial values for hubo
@@ -127,19 +125,21 @@ void huboLoop(struct hubo_param *H_param) {
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
 
+	int debug = 1;
+
         size_t fs;
         //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
         //assert( sizeof(H) == fs );
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
-		if(hubo_debug) {
+		if(debug) {
                        	printf("Ref ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{   assert( sizeof(H_ref) == fs ); }
 
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
-		if(hubo_debug) {
+		if(debug) {
                        	printf("State ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{   
@@ -181,13 +181,13 @@ void huboLoop(struct hubo_param *H_param) {
                 /* Get latest ACH message */
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
+			if(debug) {
                         	printf("Ref r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_ref) == fs ); }
 		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
+			if(debug) {
                         	printf("State r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_state) == fs ); }
@@ -248,6 +248,7 @@ int main(int argc, char **argv) {
 
         int vflag = 0;
         int c;
+	int debug = 0;
 
         int i = 1;
         while(argc > i) {

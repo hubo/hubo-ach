@@ -15,7 +15,7 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
-HUBO_INIT_CMD='hubo-board-cmd'
+HUBO_BOARD_CHAN='hubo-board-cmd'
 
 DAEMON_DIR='/etc/hubo-daemon'
 
@@ -47,9 +47,9 @@ StopHubo()
 	*)
 		sudo killall -e hubo-daemon
 	
-		sudo ach -U hubo-ref
-		sudo ach -U hubo-state
-		sudo ach -U hubo-init-cmd
+		sudo ach -U $HUBO_REF_CHAN
+		sudo ach -U $HUBO_STATE_CHAN
+		sudo ach -U $HUBO_BOARD_CHAN
 	
 		sudo ifconfig can0 down
 		sudo ifconfig can1 down
@@ -88,9 +88,9 @@ StartHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 		
-		sudo ach -1 -C hubo-ref -m 10 -n 3000
-		sudo ach -1 -C hubo-state -m 10 -n 3000
-		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
+		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000
 		
 
 		DAEMON_ARGS=''
@@ -139,9 +139,9 @@ VirtualHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 		
-		sudo ach -1 -C hubo-ref -m 10 -n 3000
-		sudo ach -1 -C hubo-state -m 10 -n 3000
-		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
+		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000
 		
 		sudo ./hubo-daemon -v
 		sudo ./hubo-console
@@ -177,9 +177,9 @@ DebugHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 	
-		sudo ach -1 -C hubo-ref -m 10 -n 3000
-		sudo ach -1 -C hubo-state -m 10 -n 3000
-		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
+		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000
 	
 		sudo ./hubo-daemon -d $1
 		sleep 1
@@ -251,7 +251,7 @@ LogHubo()
 	*)
 		echo 
 		echo "System Log:"
-		tail /var/log/syslog | grep hubo-daemon
+		sudo tail /var/log/syslog | grep hubo-daemon
 		echo "_______________________________"
 		echo
 		echo "Hubo Output:"

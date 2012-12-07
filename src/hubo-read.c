@@ -122,7 +122,6 @@ ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 int debug = 0;
-int hubo_debug = 1;
 
 void huboLoop() {
         // get initial values for hubo
@@ -138,14 +137,14 @@ void huboLoop() {
         //assert( sizeof(H) == fs );
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
-		if(hubo_debug) {
+		if(debug) {
                        	printf("Ref ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{   assert( sizeof(H_ref) == fs ); }
 
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
-		if(hubo_debug) {
+		if(debug) {
                        	printf("State ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{   
@@ -187,13 +186,13 @@ void huboLoop() {
                 /* Get latest ACH message */
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
+			if(debug) {
                         	printf("Ref r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_ref) == fs ); }
 		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
+			if(debug) {
                         	printf("State r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_state) == fs ); }
@@ -214,10 +213,26 @@ void huboLoop() {
 		}}
 */
 	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+/*
+		printf("Right Foot: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[HUBO_FT_R_FOOT].m_x, H_state.ft[0].m_y, H_state.ft[0].f_z);
+		printf("Left Foot: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[1].m_x, H_state.ft[1].m_y, H_state.ft[1].f_z);
+		printf("Right Hand: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[2].m_x, H_state.ft[2].m_y, H_state.ft[2].f_z);
+		printf("Left Hand: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[2].m_x, H_state.ft[3].m_y, H_state.ft[3].f_z);
+*/
+		fprintf(stdout, "FT Values:\n\t"
+                                "Right Foot: mx:%g \t my:%g \t fz:%g\n\t"
+                                "Left Foot: mx:%g \t my:%g \t fz:%g\n\t"
+                                "Right Hand: mx:%g \t my:%g \t fz:%g\n\t"
+                                "Left Hand: mx:%g \t my:%g \t fz:%g\n",
+                                H_state.ft[0].m_x, H_state.ft[0].m_y, H_state.ft[0].f_z,
+                                H_state.ft[1].m_x, H_state.ft[1].m_y, H_state.ft[1].f_z,
+                                H_state.ft[2].m_x, H_state.ft[2].m_y, H_state.ft[2].f_z,
+                                H_state.ft[3].m_x, H_state.ft[3].m_y, H_state.ft[3].f_z);
 
-
-
-
+		fprintf(stdout, "IMU Values:\n\t"
+				"X-angle:%g \t Y-angle:%g \t w_x:%g \t w_y:%g\n",
+				H_state.imu.angle_x, H_state.imu.angle_y,
+				H_state.imu.w_x, H_state.imu.w_y);
 
                 t.tv_nsec+=interval;
                 tsnorm(&t);

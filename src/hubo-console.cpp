@@ -82,6 +82,8 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
+//char** cmd ={ "initialize","fet","initializeAll","homeAll",
+//                "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
                 "get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR",
                 "get LHY", "get LHR", "get LHP", "get LKN", "get LAP", "get LAR",
@@ -174,11 +176,14 @@ int main() {
         else if (strcmp(buf0,"ctrl")==0) {
                 int onOrOff = atof(getArg(buf,2));
                 if(onOrOff == 0 | onOrOff == 1) {
-                        H_cmd.cmd[0] = D_CTRL_SWITCH;
-                        H_cmd.cmd[1] = name2mot(getArg(buf,1),&H_param);  // set motor num
-                        H_cmd.cmd[2] = atof(getArg(buf,2));         // 1 = on, 0 = 0ff
-                        r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-                        if(onOrOff == 0) {
+                        H_cmd.type = D_CTRL_SWITCH;
+                        H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if(onOrOff==1)			// 1 = on, 0 = 0ff
+                        	H_cmd.param[0] = D_ENABLE;
+			else if(onOrOff==0)
+				H_cmd.param[0] = D_DISABLE;	
+			r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if(onOrOff == 0) {
                                 printf("%s - Turning Off CTRL\n",getArg(buf,1));}
                         else {
                                 printf("%s - Turning On CTRL\n",getArg(buf,1));}
@@ -188,9 +193,12 @@ int main() {
         else if (strcmp(buf0,"fet")==0) {
                 int onOrOff = atof(getArg(buf,2));
                 if(onOrOff == 0 | onOrOff == 1) {
-                        H_cmd.cmd[0] = D_FET_SWITCH;
-                        H_cmd.cmd[1] = name2mot(getArg(buf,1),&H_param);  // set motor num
-                        H_cmd.cmd[2] = atof(getArg(buf,2));		// 1 = on, 0 = 0ff
+                        H_cmd.type = D_FET_SWITCH;
+                        H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if(onOrOff==1)
+				H_cmd.param[0] = D_ENABLE;
+			else if(onOrOff==0)
+				H_cmd.param[0] = D_DISABLE;
                         int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
                         if(onOrOff == 0) {
                                 printf("%s - Turning Off FET\n",getArg(buf,1));}
@@ -199,14 +207,14 @@ int main() {
                 }
         }
         else if (strcmp(buf0,"initialize")==0) {
-                H_cmd.cmd[0] = D_JMC_INITIALIZE;
-                H_cmd.cmd[1] = name2mot(getArg(buf,1),&H_param);	// set motor num
+                H_cmd.type = D_JMC_INITIALIZE;
+                H_cmd.joint = name2mot(getArg(buf,1),&H_param);	// set motor num
                 //C.val[0] = atof(getArg(buf,2));
                 int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
 		printf("%s - Initialize \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"initializeAll")==0) {
-                H_cmd.cmd[0] = D_JMC_INITIALIZE_ALL;
+                H_cmd.type = D_JMC_INITIALIZE_ALL;
                 int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
                 printf("%s - Initialize All\n",getArg(buf,1));
 		tsleep = 8;
@@ -232,25 +240,25 @@ double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p) {
 
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beep */
-        c->cmd[0] = D_JMC_BEEP;
-        c->cmd[1] = name2mot(getArg(buff, 1), h);
-        c->val[2] = atof(getArg(buff,2));
+        c->type = D_JMC_BEEP;
+        c->joint = name2mot(getArg(buff, 1), h);
+        c->dValues[0] = atof(getArg(buff,2));
         int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
-        printf("send beep r = %i C = %i v = %f\n",r, c->cmd[0], c->val[0]);
+        printf("send beep r = %i C = %i v = %f\n",r, (int)c->type, c->dValues[0]);
 
 }
 
 void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beiep */
-        c->cmd[0] = D_GOTO_HOME;
-        c->cmd[1] = name2mot(getArg(buff, 1), h);
+        c->type = D_GOTO_HOME;
+        c->joint = name2mot(getArg(buff, 1), h);
         int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beiep */
-        c->cmd[0] = D_GOTO_HOME_ALL;
+        c->type = D_GOTO_HOME_ALL;
         int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }

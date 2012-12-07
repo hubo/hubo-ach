@@ -1,6 +1,6 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
-#include "hubo/canId.h"
-#include "hub/hubo-daemonID.h"
+#include "hubo/canID.h"
+#include "hubo-daemonID.h"
 #include <stdint.h>
 
 //#define true 1;
@@ -115,16 +115,19 @@
 
 
 typedef enum {
-	HUBO_FT_R_FOOT    = 0, ///< Index of right hand FT
-	HUBO_FT_L_FOOT    = 1, ///< Index of left hand FT
-	HUBO_FT_R_HAND    = 2, ///< Index of right foot FT
-	HUBO_FT_L_HAND    = 3  ///< Index of left foot FT
+	HUBO_FT_R_FOOT    = 0, ///< Index of right foot FT
+	HUBO_FT_L_FOOT    = 1, ///< Index of left foot FT
+	HUBO_FT_R_HAND    = 2, ///< Index of right hand FT
+	HUBO_FT_L_HAND    = 3  ///< Index of left hand FT
 } hubo_ft_index_t;
+
+#define RIGHT 0
+#define LEFT 1
 
 
 
 struct hubo_joint_param {
-	uint16_t motNo;		///< joint number (on board i.e. 0, 1, 2)
+	uint16_t motNo;		///< Onboard channel number
 	uint16_t jntNo;		///< what overall number joint is it i.e. what RSP=23
 	uint32_t refEnc; 	///< encoder reference
 	uint16_t drive;		///< size of drive wheel
@@ -148,12 +151,18 @@ struct hubo_param {
 };
 
 struct hubo_imu {
-	double w_x;    ///< rotational velocity in x (rad/s)
-	double w_y;    ///< rotational velocity in y (rad/s)
-//	double w_z;    ///< rotational velocity in z (rad/s)
-	double a_x;    ///< linear acceleration in x (m/s/s)
-	double a_y;    ///< linear acceleration in y (m/s/s)
-	double a_z;    ///< linear acceleration in z (m/s/s)
+	
+	// LEFT and RIGHT are enumerated above
+	double a_foot_x[2];	//< Linear accelerations for the feet along the x-axis (m/s/s)
+	double a_foot_y[2];	//< Linear accelerations for the feet along the y-axis (m/s/s)
+	double a_foot_z[2];	//< Linear accelerations for the feet along the z-axis (m/s/s)
+
+	double angle_x;		//< IMU angle about the x-axis (degrees)
+	double angle_y;		//< IMU angle about the y-axis (degrees)
+
+	double w_x;		//< IMU rotational velocity about the x-axis (degrees/sec)
+	double w_y;		//< IMU rotational velocity about the y-axis (degrees/sec)
+
 };
 
 struct hubo_ft {
@@ -220,4 +229,5 @@ struct hubo_board_cmd {
 	
 };
 
-extern int hubo_debug;
+//extern int hubo_debug;
+//extern int verbose;

@@ -46,7 +46,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	// instantiate stucts for getting values from joint.table
 	// file and copying them to 
 	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing
-	struct jmcDriver tp2;		//jmcDriver struct member for file parsing
+	struct hubo_jmc_param tp2;	//jmcDriver struct member for file parsing
 	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
 
 	// initialize all structs with zeros
@@ -253,10 +253,5 @@ void setConsoleFlags() {
         size_t fs =0;
         r = ach_get( &chan_hubo_board_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
         assert( sizeof(C) == fs );
-        int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-                C.cmd[i] = 0;
-                C.val[i] = 0;
-        }
         r = ach_put(&chan_hubo_board_cmd, &C, sizeof(C));
 }

@@ -2,6 +2,16 @@
 #ifndef CAN_ID_H
 #define CAN_ID_H
 
+#define		LOWER_CAN		0
+#define		UPPER_CAN		1
+
+#define		SBNO_RIGHT_FOOT_FT	1
+#define		SBNO_LEFT_FOOT_FT	2
+#define		SBNO_IMU_0		3
+#define		SBNO_IMU_1		4
+#define		SBNO_IMU_2		5
+#define		SBNO_RIGHT_HAND_FT	6
+#define		SBNO_LEFT_HAND_FT	7
 
 #define		HUBO_JOINT_COUNT	42		///> The max number of joints
 #define 	HUBO_JMC_COUNT		0x26		///> The max number of JMCs
@@ -13,7 +23,7 @@
 // This file contains 'CAN-ID' for HUBO2
 
 #define CMD_TXDF			0x01	// Base hex for sending motor/board commands
-#define SEND_SENSOR_TXDF		0x02	// Base hex for sending sensor commands
+#define REQ_SENSOR_TXDF			0x02	// Base hex for requesting sensor commands
 
 #define REF_BASE_TXDF			0x10	// Base hex for receiving messages
 
@@ -393,6 +403,16 @@
 
 
 
+// Sensor requests
+#define H_GET_FT_ACC_DIGIT	0x00
+#define H_GET_FT_ACC_SCALED	0x02
+#define H_GET_FT_S_ACC_D	0x03	// Get scaled force-torque and digital acceleration
+#define H_GET_FT_D_ACC_S	0x04	// Get digital force-torque and scaled acceleration
+#define H_GET_FT_DIGIT		0x11
+#define H_GET_FT_SCALED		0x12
+#define H_GET_ACC_DIGIT		0x21
+#define H_GET_ACC_SCALED	0x22
+#define H_GET_GYRO_TEMP		0x13
 
 
 

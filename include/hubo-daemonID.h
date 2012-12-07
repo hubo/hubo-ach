@@ -69,7 +69,7 @@ typedef enum {
 							[1] = Integral Gain
 							[2] = Derivative Gain
 					dValues: N/A	*/
-	D_SET_CUR_GAIN		,///> Set the 0th current gain
+	D_SET_CUR_GAIN		,///> Set the current gain
 						// NOTE: For 3 or 5 channel boards,
 						//	 all channels have the same gains
 			/*		joint: Target joint number
@@ -213,14 +213,14 @@ typedef enum {
 					iValues: N/A
 					dValues: N/A	
 			Return type: */
-	D_SET_AND_GET_BOARD_INFO ///> Set board CAN rate and get board info
+	D_SET_AND_GET_BOARD_INFO,///> Set board CAN rate and get board info
 			/* INCOMPLETE	joint: Any joint number on the board
 					param: N/A
 					iValues:	[0] = CAN rate (in msec)
 								Default: 5ms
 					dValues: N/A	*/
 			
-	D_GET_BOARD_PARAMS	,///> Get the JMC's board parameters
+	D_GET_BOARD_PARAMS	///> Get the JMC's board parameters
 			/* INCOMPLETE	joint: Any joint number on the board
 					param: N/A
 					iValues: N/A

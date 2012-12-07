@@ -288,6 +288,7 @@ void hubo_assert( int result )
 	}
 } 
 
+/*
 void hubo_assert( int result, const char * msg )
 {
 	if(!result)
@@ -297,7 +298,8 @@ void hubo_assert( int result, const char * msg )
 		hubo_daemon_close();
 		exit(EXIT_FAILURE);
 	}
-} 
+}
+*/
 
 void hubo_verbose( const char *verb )
 {
@@ -305,14 +307,13 @@ void hubo_verbose( const char *verb )
 		fprintf(stdout, "%s\n", verb); // TODO: Put a time stamp in here
 
 } 
-
+/*
 void hubo_debug( const char *deb )
 {
 	if( debug==1 ) 
 		fprintf(stderr, "%s\n", deb); //TODO: Put a time stamp in here
 }
-
-
+*/
 
 
 
