@@ -249,13 +249,12 @@ int main() {
         }
         else if (strcmp(buf0,"nullft")==0){
             int ft = name2sensor(getArg(buf,1),&H_param);
-            if (ft>0){
+            if (ft>=0){
                 H_init.cmd[0] = HUBO_ZERO_FT;
                 H_init.cmd[1] = (char)ft;
 
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
                 printf("%s - Null, id = %d \n",getArg(buf,1),H_init.cmd[1]);
-                printf("FT0 should be %sn",H_param.sensor[0].name);
             }
             else
                 fprintf(stderr,"Name %s not found!\n",getArg(buf,1));

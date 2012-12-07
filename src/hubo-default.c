@@ -203,6 +203,8 @@ void setDefaults() {
 	sprintf(H.sensor[HUBO_IMU1].name , "%s", "IMU1" );
 	sprintf(H.sensor[HUBO_IMU2].name , "%s", "IMU2" );
 	
+	printf("%s\n",H.sensor[0].name);
+	
 	setName(&H , RHY , "RHY"  );
 	setName(&H , RHR , "RHR"  );
 	setName(&H , RHP , "RHP"  );

@@ -150,6 +150,7 @@ int hubo_debug = 0;
 //double hubo_noRefTime[HUBO_JOINT_NUM];
 double hubo_noRefTimeAll = 0.0;
 
+
 void huboLoop(struct hubo_param *H_param) {
 	int i = 0;  // iterator
 	// get initial values for hubo
@@ -202,6 +203,8 @@ void huboLoop(struct hubo_param *H_param) {
 	frame.can_dlc = strlen( frame.data );
 
 	int a = 0;
+	
+	setupSensorDefaults(&H_param);
 
 	printf("Start Hubo Loop\n");
 //	while(1) {
@@ -259,7 +262,7 @@ void huboLoop(struct hubo_param *H_param) {
 		}
 		
 		/* Get all Encoder data */
-		//getEncAllSlow(&H_state, H_param, &frame); 
+		getEncAllSlow(&H_state, H_param, &frame); 
 		getSensorAllSlow(&H_state, H_param, &frame); 
 
 		/* Get all Current data */
@@ -676,14 +679,14 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
     if (hubo_debug) printf("Entering hGetFT\n");
     if (chan == 0){
-        fGetFT( 0xFF, 0x12, h, f);
+        fGetFT( 0xFF, 0x03, h, f);
         sendCan(hubo_socket[chan], f);
-        //fGetFT( 0x03, 0x00, h, f);
-        //sendCan(hubo_socket[chan], f);
+        fGetFT( 0x03, 0x00, h, f);
+        sendCan(hubo_socket[chan], f);
     }
 
     else if (chan == 1){
-        fGetFT( 0xFF, 0x12, h, f);
+        fGetFT( 0xFF, 0x03, h, f);
         sendCan(hubo_socket[chan], f);
     }
 }
@@ -736,6 +739,7 @@ void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct 
 
 
 void hInitializeSensorBoard(int snr, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+	if (hubo_debug) printf("Initializing sensor board %d\n",snr);
 	fIniFT(snr, h, f);
 	sendCan(hubo_socket[h->sensor[snr].can], f);
 	readCan(hubo_socket[h->sensor[snr].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read

@@ -32,6 +32,38 @@ ach_channel_t chan_hubo_ref;
 ach_channel_t chan_hubo_init_cmd;
 
 
+//Hack way to set up sensor until a table can be made
+void setupSensorDefaults(struct hubo_param* H) {
+
+	sprintf(H->sensor[HUBO_FT_R_FOOT].name , "%s", "FT0");
+	sprintf(H->sensor[HUBO_FT_L_FOOT].name , "%s", "FT1" );
+	sprintf(H->sensor[HUBO_FT_R_HAND].name , "%s", "FT2" );
+	sprintf(H->sensor[HUBO_FT_L_HAND].name , "%s", "FT3" );
+	sprintf(H->sensor[HUBO_IMU0].name , "%s", "IMU0" );
+	sprintf(H->sensor[HUBO_IMU1].name , "%s", "IMU1" );
+	sprintf(H->sensor[HUBO_IMU2].name , "%s", "IMU2" );
+
+	printf("Sensor 0 named %s\n",H->sensor[0].name);
+
+	H->sensor[HUBO_FT_R_FOOT].boardNo = 1;
+	H->sensor[HUBO_FT_L_FOOT].boardNo = 2;
+	H->sensor[HUBO_FT_R_HAND].boardNo = 6;
+	H->sensor[HUBO_FT_L_HAND].boardNo = 7;
+	H->sensor[HUBO_IMU0].boardNo = 3;
+	H->sensor[HUBO_IMU1].boardNo = 4;
+	H->sensor[HUBO_IMU2].boardNo = 5;
+
+
+	H->sensor[HUBO_FT_R_FOOT].sensNo = HUBO_FT_R_FOOT;
+	H->sensor[HUBO_FT_L_FOOT].sensNo = HUBO_FT_L_FOOT;
+	H->sensor[HUBO_FT_R_HAND].sensNo = HUBO_FT_R_HAND;
+	H->sensor[HUBO_FT_L_HAND].sensNo = HUBO_FT_L_HAND;
+	H->sensor[HUBO_IMU0].sensNo = HUBO_IMU0;
+	H->sensor[HUBO_IMU1].sensNo = HUBO_IMU1;
+	H->sensor[HUBO_IMU2].sensNo = HUBO_IMU2;
+
+}
+
 int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
@@ -215,7 +247,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 		printf("%s\t%hhu\t%hhu\n", H->joint[i].name, H_state->joint[i].active, H_state->joint[i].zeroed);
 	} 
 */	
-
+	//setupSensorDefaults(H_param);
 	return 0;	// return without errors
 }
 
