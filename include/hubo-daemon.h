@@ -14,8 +14,6 @@ int hubo_sig_quit;
 int hubo_sig_usr1;
 int hubo_sig_usr2;
 
-extern int verbose;
-extern int debug;
 
 void hubo_daemonize();
 void hubo_daemon_close();

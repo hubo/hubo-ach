@@ -13,6 +13,15 @@
 #define		SBNO_RIGHT_HAND_FT	SBNO_RIGHT_FOOT_FT+5
 #define		SBNO_LEFT_HAND_FT	SBNO_RIGHT_FOOT_FT+6
 
+#define		BNO_RIGHT_FOOT_FT	0x30
+#define		BNO_LEFT_FOOT_FT	BNO_RIGHT_FOOT_FT+1
+#define		BNO_IMU_0		BNO_RIGHT_FOOT_FT+2
+#define		BNO_IMU_1		BNO_RIGHT_FOOT_FT+3
+#define		BNO_IMU_2		BNO_RIGHT_FOOT_FT+4
+#define		BNO_RIGHT_HAND_FT	BNO_RIGHT_FOOT_FT+5
+#define		BNO_LEFT_HAND_FT	BNO_RIGHT_FOOT_FT+6
+
+
 #define		HUBO_JOINT_COUNT	42		///> The max number of joints
 #define 	HUBO_JMC_COUNT		0x26		///> The max number of JMCs
 #define		HUBO_SENSOR_COUNT	0x36-0x2F	///> The max number of sensor units
@@ -375,7 +384,11 @@
 
 
 
-#define NullCMD					0x81
+#define H_REQ_NULL				0x81
+#define H_NULL_FT				0x00
+#define H_NULL_ACC				0x02
+
+
 #define SetPeriod				0x82
 #define SetSample				0x83
 #define ADRead					0x84

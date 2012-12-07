@@ -27,6 +27,34 @@ typedef enum {
 					param: N/A
 					iValues: N/A
 					dValues: N/A	*/
+	D_NULL_FT_SENSOR	,///> Send a null request to force-torque sensor
+			/*		joint: N/A
+					param: Force-torque board
+						D_R_FOOT_FT, D_L_FOOT_FT,
+						D_R_HAND_FT, D_L_HAND_FT
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_ACC_SENSOR	,///> Send null request to accelerometer sensor
+			/*		joint: N/A
+					param: Accelerometer board
+						D_R_FOOT_ACC or D_L_FOOT_ACC
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_ACC_SENSOR_ALL	,///> Send null requests to all accelerometer sensors
+			/*		joint: N/A
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_FT_SENSOR_ALL	,///> Send null requests to all force-torque sensors
+			/*		joint: N/A
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_FT_ACC_SENSOR_ALL,///> Send null requests to all ft and accel sensors
+			/*		joint: N/A
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
 	D_JMC_INITIALIZE_ALL	,///> Initilize all JMC boards
 			/*		joint: N/A
 					param: N/A
@@ -262,7 +290,15 @@ typedef enum {
 	// Homing modes
 	D_SWITCH_AND_INDEX	,	///> Sets homing mode to use the switch plus the offset position
 	D_SWITCH		,	///> Homes only using the limit switch
-	D_JAM_LIMIT			///> Homes without the limit switch. "LIMD is used to detect jam"
+	D_JAM_LIMIT		,	///> Homes without the limit switch. "LIMD is used to detect jam"
+
+	D_R_FOOT_FT		,	///> Right foot force-torque sensor
+	D_L_FOOT_FT		,	///> Left foot force-torque sensor
+	D_R_HAND_FT		,	///> Right hand force-torque sensor
+	D_L_HAND_FT		,	///> Left hand force-torque sensor
+
+	D_R_FOOT_ACC		,	///> Right foot accelerometer
+	D_L_FOOT_ACC			///> Left foot accelerometer
 
 } hubo_d_param_t;
 

@@ -100,7 +100,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( (bytes_sent < 0) & (1 == hubo_ver_can) ) {
 		perror("bad write");
-	} else if( debug == 1 ) {
+	} /*else if( debug == 1 ) {
 
 		printf("%d bytes sent -- ", bytes_sent);
 		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
@@ -109,7 +109,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 			printf(" %i ",f->data[i]);
 		}
 		printf("\n");
-	}
+	}*/ //TODO: Come up with better debug system
 
 	return bytes_sent;
 }
@@ -184,7 +184,7 @@ torDriverOnOff
 //	int bytes_read = read( skt, f, sizeof(*f));
 	if( (bytes_read < 0) & (1 == hubo_ver_can) ) {
 		perror("bad read");
-	} else if( debug == 1 ) {
+	} /*else if( debug == 1 ) {
 		printf("%d bytes read -- ", bytes_read);
 		int i = 0;
 		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
@@ -192,7 +192,7 @@ torDriverOnOff
 			printf(" %d ",f->data[i]);
 		}
 		printf("\n");
-	}
+	}*/ //TODO: Come up with better debug system
 
 	return bytes_read;
 }

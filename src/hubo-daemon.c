@@ -144,6 +144,11 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void fNullAccFTSensor(int bno, int nullType, struct can_frame *f);
+void hNullFTSensor(hubo_d_param_t board, struct can_frame *f);
+void hNullAccSensor(hubo_d_param_t board, struct can_frame *f);
+void hNullAllFTSensors(struct can_frame *f);
+void hNullAllAccSensors(struct can_frame *f);
 
 
 /*   ~~~~   Added by M.X. Grey. Auxiliary CAN functions   ~~~~   */
@@ -194,8 +199,6 @@ void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inpu
 			int tempError);
 
 
-
-
 uint8_t getJMC( struct hubo_param *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; }
 uint8_t getCAN( struct hubo_param *h, int jnt ) { return h->joint[jnt].can; }
 hubo_can_t getSocket( struct hubo_param *h, int jnt ) { return hubo_socket[h->joint[jnt].can]; }
@@ -203,6 +206,12 @@ hubo_can_t getSocket( struct hubo_param *h, int jnt ) { return hubo_socket[h->jo
 
 uint8_t int_to_bytes(int d, int index);
 uint8_t duty_to_byte(int dir, int duty);
+
+
+
+int verbose;
+int debug;
+
 
 // ach message type
 //typedef struct hubo h[1];
@@ -269,6 +278,10 @@ void huboLoop(struct hubo_param *H_param) {
 	frame.can_dlc = strlen( frame.data );
 
 	int a = 0;
+
+	// This is a test. TODO: Either put this in a proper init function or remove it
+	hNullAllAccSensors( &frame );
+	hNullAllFTSensors( &frame );
 
 	fprintf(stdout, "Start Hubo Loop\n");
 //	while(1) {
@@ -579,7 +592,6 @@ void getIMUAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	hGetIMU(SBNO_IMU_2, f);
 	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
-
 }
 
 /* THIS APPEARS TO BE OUTDATED. TODO: Schedule for removal
@@ -1547,6 +1559,7 @@ void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct h
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 		if(s->joint[i].active == true) {
 			hGotoLimitAndGoOffset(i, r, h, s, f);
+			fprintf(stdout, "Homed Joint Number: %d\n", i);
 		}
 	}
 }
@@ -1696,7 +1709,79 @@ void fResetEncoderToZero(int jnt, struct hubo_param *h, struct can_frame *f) {
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
 
-void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f) {
+void fNullAccFTSensor(int bno, int nullType, struct can_frame *f)
+{
+	f->can_id	= CMD_TXDF;
+
+	f->data[0]	= (uint8_t)bno;
+	f->data[1]	= H_REQ_NULL;
+	f->data[2]	= (uint8_t)nullType;
+
+	f->can_dlc = 3;
+}
+
+
+void hNullFTSensor(hubo_d_param_t board, struct can_frame *f)
+{
+	switch (board)
+	{
+		case D_R_FOOT_FT:
+			fNullAccFTSensor(BNO_RIGHT_FOOT_FT, H_NULL_FT, f);
+			sendCan(hubo_socket[LOWER_CAN], f);
+			break;
+		case D_L_FOOT_FT:
+			fNullAccFTSensor(BNO_LEFT_FOOT_FT,  H_NULL_FT, f);
+			sendCan(hubo_socket[LOWER_CAN], f);
+			break;
+		case D_R_HAND_FT:
+			fNullAccFTSensor(BNO_RIGHT_HAND_FT, H_NULL_FT, f);
+			sendCan(hubo_socket[UPPER_CAN], f);
+			break;
+		case D_L_HAND_FT:
+			fNullAccFTSensor(BNO_LEFT_HAND_FT,  H_NULL_FT, f);
+			sendCan(hubo_socket[UPPER_CAN], f);
+			break;
+		default:
+			fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
+					"Must be D_R_FOOT_FT (%d), D_L_FOOT_FT(%d),\n\t"
+					"        D_R_HAND_FT (%d), D_L_HAND_FT(%d)\n",
+					(int)board,
+					(int)D_R_FOOT_FT, (int)D_L_FOOT_FT,
+					(int)D_R_HAND_FT, (int)D_L_HAND_FT );
+	}
+}
+
+void hNullAccSensor(hubo_d_param_t board, struct can_frame *f)
+{
+	switch (board)
+	{
+		case D_R_FOOT_ACC:
+			fNullAccFTSensor(BNO_RIGHT_FOOT_FT, H_NULL_ACC, f);
+			sendCan(hubo_socket[LOWER_CAN], f);
+			break;
+		case D_L_FOOT_ACC:
+			fNullAccFTSensor(BNO_LEFT_FOOT_FT,  H_NULL_ACC, f);
+			sendCan(hubo_socket[LOWER_CAN], f);
+			break;
+	}
+}
+
+void hNullAllFTSensors(struct can_frame *f)
+{
+	hNullFTSensor(D_R_FOOT_FT, f);
+	hNullFTSensor(D_L_FOOT_FT, f);
+	hNullFTSensor(D_R_HAND_FT, f);
+	hNullFTSensor(D_L_HAND_FT, f);
+}
+
+void hNullAllAccSensors(struct can_frame *f)
+{
+	hNullAccSensor(D_R_FOOT_ACC, f);
+	hNullAccSensor(D_L_FOOT_ACC, f);
+}
+
+void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f)
+{
 	/* gui for controling basic features of the hubo  */
 //	printf("hubo-ach - interface 2012-08-18\n");
 	size_t fs;
@@ -1795,6 +1880,21 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 				case D_SET_ERR_BOUND:
 					hSetErrorBound( c->joint, h, f, c->iValues[0], c->iValues[1],
 							c->iValues[2] ); break;
+				case D_NULL_FT_SENSOR:
+					hNullFTSensor( c->param[0], f );
+					break;
+				case D_NULL_ACC_SENSOR:
+					hNullAccSensor( c->param[0], f );
+					break;
+				case D_NULL_FT_SENSOR_ALL:
+					hNullAllFTSensors( f );
+					break;
+				case D_NULL_ACC_SENSOR_ALL:
+					hNullAllAccSensors( f );
+					break;
+				case D_NULL_FT_ACC_SENSOR_ALL:
+					hNullAllFTSensors( f ); hNullAllAccSensors( f );
+					break;
 //				case D_GET_BOARD_PARAMS:
 //					hGetBoardParams( c, h, f ); // TODO: Do this.
 //					break;
@@ -1823,72 +1923,58 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs <= H_SENSOR_FT_MAX_RXDF) )
 	{
 		int num = fs - H_SENSOR_FT_BASE_RXDF;
-		int val;
+		int16_t val;
 		switch (num)
 		{
 			case SBNO_RIGHT_FOOT_FT:
-				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val = (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
 			
-				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val = (f->data[3]<<8) | f->data[2];
 				s->ft[HUBO_FT_R_FOOT].m_y = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				val = (f->data[5]<<8) | f->data[4];
 				s->ft[HUBO_FT_R_FOOT].f_z = ((double)(val))/10.0;
 				break;
+
 			case SBNO_LEFT_FOOT_FT:
 				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val =  (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_L_FOOT].m_x = ((double)(val))/100.0;
 				
 				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val =  (f->data[3]<<8) | f->data[2];
 				s->ft[HUBO_FT_L_FOOT].m_y = ((double)(val))/100.0;
 
 				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				val =  (f->data[5]<<8) | f->data[4];
 				s->ft[HUBO_FT_L_FOOT].f_z = ((double)(val))/10.0;
 				break;
 			case SBNO_RIGHT_HAND_FT:
-				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val =  (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
 				
-				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val =  (f->data[3]<<8) | f->data[2];
 				s->ft[HUBO_FT_R_HAND].m_y = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				s->ft[HUBO_FT_R_HAND].f_z = 0;
+
+				val = (f->data[5]<<8) | f->data[4];
 				s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
+
 				break;
 			case SBNO_LEFT_HAND_FT:
-				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val =  (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
 				
-				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val =  (f->data[3]<<8) | f->data[2];
 				s->ft[HUBO_FT_L_HAND].m_y = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				s->ft[HUBO_FT_L_HAND].f_z = 0;
+
+				val =  (f->data[5]<<8) | f->data[4];
 				s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
+
 				break;
 			default:
 				fprintf(stderr, "Invalid value for FT Sensor: %d\n\t"
@@ -1903,43 +1989,31 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	else if( (fs >= H_SENSOR_IMU_BASE_RXDF) && (fs <= H_SENSOR_IMU_MAX_RXDF) )
 	{
 		int num = fs - H_SENSOR_IMU_BASE_RXDF;
-		int val;
+		int16_t val;
 
 
 		switch (num)
 		{
 			case SBNO_RIGHT_FOOT_FT:
-				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val = (f->data[1]<<8) | f->data[0];
 				s->imu.a_foot_x[RIGHT] = ((double)(val))/100.0;
 				
-				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val = (f->data[3]<<8) | f->data[2];
 				s->imu.a_foot_y[RIGHT] = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				val = (f->data[5]<<8) | f->data[4];
 				s->imu.a_foot_z[RIGHT] = ((double)(val))/100.0*9.8;
 									// The sensor scales this by 9.8.
 									// I think that's rather silly.
 				break;
 			case SBNO_LEFT_FOOT_FT:
-				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val = (f->data[1]<<8) | f->data[0];
 				s->imu.a_foot_x[LEFT] = ((double)(val))/100.0;
 				
-				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val = (f->data[3]<<8) | f->data[2];
 				s->imu.a_foot_y[LEFT] = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				val = (f->data[5]<<8) | f->data[4];
 				s->imu.a_foot_z[LEFT] = ((double)(val))/100.0*9.8;
 									// The sensor scales this by 9.8.
 									// I think that's rather silly.
@@ -1947,24 +2021,16 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 			case SBNO_IMU_0:
 			case SBNO_IMU_1:
 			case SBNO_IMU_2:
-				val=0;
-				val = (val<<8) | f->data[0];
-				val = (val<<8) | f->data[1];
+				val = (f->data[1]<<8) | f->data[0];
 				s->imu.angle_x = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[2];
-				val = (val<<8) | f->data[3];
+				val = (f->data[3]<<8) | f->data[2];
 				s->imu.angle_y = ((double)(val))/100.0;
 				
-				val=0;
-				val = (val<<8) | f->data[4];
-				val = (val<<8) | f->data[5];
+				val = (f->data[5]<<8) | f->data[4];
 				s->imu.w_x = ((double)(val))/100.0;
 
-				val=0;
-				val = (val<<8) | f->data[6];
-				val = (val<<8) | f->data[7];
+				val = (f->data[7]<<8) | f->data[6];
 				s->imu.w_y = ((double)(val))/100.0;
 
 				fprintf(stdout, "Reading IMU data\n");
@@ -2200,7 +2266,8 @@ int main(int argc, char **argv) {
 
 uint8_t int_to_bytes(int d, int index)
 {
-	return (uint8_t)(d%((int)(pow(256,index)))/((int)(pow(256,index-1))));
+	return (uint8_t)( ( d >> ((index-1)*8) ) & 255);
+	//return (uint8_t)(d%((int)(pow(256,index)))/((int)(pow(256,index-1))));
 }
 
 uint8_t duty_to_byte(int dir, int duty)
