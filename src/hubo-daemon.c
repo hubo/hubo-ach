@@ -384,19 +384,19 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 
 void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
     ///> Requests all sensor data and saves to state
-    printf("Request CAN Channel  %d\n",0);
+    //printf("Request CAN Channel  %d\n",0);
     hGetFT(0,h, f);
     int i=0;
-    for (i = 0; i <4 ; ++i){
-        readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        decodeFrame(s, h, f);
+    for (i = 0; i <2 ; ++i){
+        readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT*2);
+        decodeFrameSensor(s, h, f);
     }
 
-    printf("Request CAN Channel  %d\n",1);
+    //printf("Request CAN Channel  %d\n",1);
     hGetFT(1, h, f);
-    for (i = 0; i <4 ; ++i){
-        readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        decodeFrame(s, h, f);
+    for (i = 0; i <2 ; ++i){
+        readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT*2);
+        decodeFrameSensor(s, h, f);
     }
 }
 
@@ -537,7 +537,7 @@ fGetFT(char b0,char b1, struct hubo_param *h, struct can_frame *f) {
 	f->data[1]	= b1;
 	//sprintf(f->data, "%s", data);
 	f->can_dlc = 2; //= strlen( data );	// Set DLC
-    printf("Formed GetFT CAN packet\n");
+    //printf("Formed GetFT CAN packet\n");
 }
   
 
@@ -668,14 +668,14 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
     printf("Entering hGetFT\n");
     if (chan == 0){
-        fGetFT( 0xFF, 0x03, h, f);
+        fGetFT( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
-        fGetFT( 0x03, 0x00, h, f);
-        sendCan(hubo_socket[chan], f);
+        //fGetFT( 0x03, 0x00, h, f);
+        //sendCan(hubo_socket[chan], f);
     }
 
     else if (chan == 1){
-        fGetFT( 0xFF, 0x00, h, f);
+        fGetFT( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
     }
 }
@@ -1036,7 +1036,134 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	return 0;
 }
 
+int decodeFrameSensor(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+	int fs = (int)f->can_id;
+	printf("FS: %d\t",fs); // Andy
+	printf("Data1: %lu ",( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0]); // Andy
+	printf("Data2: %lu ",( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2]); // Andy
+	printf("Data3: %lu\n",( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4]); // Andy
+	//printf("RF_FT: %d\t",(SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_R_FOOT].sensNo)); // Andy
+	//printf("LF_FT: %d\t",(SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_L_FOOT].sensNo)); // Andy
+	//printf("RH_FT: %d\t",(SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_R_HAND].sensNo)); // Andy
+	//printf("LH_FT: %d\n",(SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_L_HAND].sensNo)); // Andy
 
+	//if( (fs >= SENSOR_FT_BASE_RXDF) & (fs < (SENSOR_FT_BASE_RXDF+0x20))) {
+	if(1) {
+		if( fs == 65 ) { // right foot FT
+			unsigned int tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Mx = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double My = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Fz = ((double)((int16_t)tmp))/10.0;
+
+			int num = 0;
+			s->ft[num].m_x = Mx;
+			s->ft[num].m_y = My;
+			s->ft[num].f_z = Fz;
+		}
+		else if( fs == 66 ) { // left foot FT
+			unsigned int tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Mx = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double My = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Fz = ((double)((int16_t)tmp))/10.0;
+
+			int num = 1;
+			s->ft[num].m_x = Mx;
+			s->ft[num].m_y = My;
+			s->ft[num].f_z = Fz;
+		}
+		else if( fs == 70 ) { // right hand FT
+			unsigned int tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Mx = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double My = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Fz = ((double)((int16_t)tmp))/10.0;
+
+			int num = 2;
+			s->ft[num].m_x = Mx;
+			s->ft[num].m_y = My;
+			s->ft[num].f_z = Fz;
+		}
+		else if( fs == 71 ) { // left hand FT
+			unsigned int tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Mx = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double My = ((double)((int16_t)tmp))/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Fz = ((double)((int16_t)tmp))/10.0;
+
+			int num = 3;
+			s->ft[num].m_x = Mx;
+			s->ft[num].m_y = My;
+			s->ft[num].f_z = Fz;
+		}
+		else if( fs == (SENSOR_AD_BASE_RXDF+h->sensor[HUBO_IMU0].sensNo) ) { // right foot FT
+			uint16_t tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Ax = (double)tmp/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double Ay = (double)tmp/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Gz = (double)tmp/100.0;
+
+			int num = 0;
+			s->imu[num].a_x = Ax;
+			s->imu[num].a_y = Ay;
+			s->imu[num].a_z = Gz;
+		}
+		else if( fs == (SENSOR_AD_BASE_RXDF+h->sensor[HUBO_IMU1].sensNo) ) { // right foot FT
+			uint16_t tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Ax = (double)tmp/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double Ay = (double)tmp/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Gz = (double)tmp/100.0;
+
+			int num = 1;
+			s->imu[num].a_x = Ax;
+			s->imu[num].a_y = Ay;
+			s->imu[num].a_z = Gz;
+		}
+		else if( fs == (SENSOR_AD_BASE_RXDF+h->sensor[HUBO_IMU2].sensNo) ) { // right foot FT
+			uint16_t tmp = 0;
+			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
+			double Ax = (double)tmp/100.0;		// moment in Nm
+			
+			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
+			double Ay = (double)tmp/100.0;		// moment in Nm
+
+			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
+			double Gz = (double)tmp/100.0;
+
+			int num = 2;
+			s->imu[num].a_x = Ax;
+			s->imu[num].a_y = Ay;
+			s->imu[num].a_z = Gz;
+		}
+	}
+	return 0;
+}
 int main(int argc, char **argv) {
 
 	// Parse user input
