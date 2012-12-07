@@ -937,6 +937,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	} 
 
 	else if( (fs >= SENSOR_FT_BASE_RXDF) & (fs < (SENSOR_FT_BASE_RXDF+0x20))) {
+        if (hubo_debug) fprintf(stderr,"Got sensor range ID %d\n",fs);
 		if( fs == (SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_R_FOOT].boardNo) ) { // right foot FT
 			uint16_t tmp = 0;
 			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];

@@ -252,7 +252,7 @@ int main() {
             H_init.cmd[0] = HUBO_ZERO_FT;
             H_init.cmd[1] = name2sensor(getArg(buf,1),&H_param);
             int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
-            printf("%s - Initialize \n",getArg(buf,1));
+            printf("%s - Null  \n",getArg(buf,1));
         }
         /* Quit */
         else if (strcmp(buf0,"quit")==0)
