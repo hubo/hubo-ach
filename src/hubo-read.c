@@ -221,9 +221,9 @@ void huboLoop() {
 */
 		fprintf(stdout, "FT Values:\n\t"
                                 "Right Foot: mx:%g \t my:%g \t fz:%g\n\t"
-                                "Left Foot: mx:%g \t my:%g \t fz:%g\n\t"
+                                "Left Foot:  mx:%g \t my:%g \t fz:%g\n\t"
                                 "Right Hand: mx:%g \t my:%g \t fz:%g\n\t"
-                                "Left Hand: mx:%g \t my:%g \t fz:%g\n",
+                                "Left Hand:  mx:%g \t my:%g \t fz:%g\n",
                                 H_state.ft[0].m_x, H_state.ft[0].m_y, H_state.ft[0].f_z,
                                 H_state.ft[1].m_x, H_state.ft[1].m_y, H_state.ft[1].f_z,
                                 H_state.ft[2].m_x, H_state.ft[2].m_y, H_state.ft[2].f_z,
@@ -234,6 +234,13 @@ void huboLoop() {
 				H_state.imu.angle_x, H_state.imu.angle_y,
 				H_state.imu.w_x, H_state.imu.w_y);
 
+		fprintf(stdout, "Accel Values:\n\t"
+				"Right Foot: x:%g \t y:%g \t z:%g\n\t"
+				"Left Foot:  x:%g \t y:%g \t z:%g\n\t",
+				H_state.imu.a_foot_x[0], H_state.imu.a_foot_y[0],
+				H_state.imu.a_foot_z[0],
+				H_state.imu.a_foot_x[1], H_state.imu.a_foot_y[1],
+				H_state.imu.a_foot_z[1]);
                 t.tv_nsec+=interval;
                 tsnorm(&t);
         }

@@ -131,7 +131,7 @@ void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 // void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f); // TODO: Schedule for removal
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
-void hGetFT(int board, struct can_frame *f);
+void hGetFT(int board, struct can_frame *f, int can);
 void fGetFT(int board, struct can_frame *f);
 void getFTAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void fGetAcc(int board, struct can_frame *f);
@@ -471,10 +471,10 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	}
 }
 
-void hGetFT(int board, struct can_frame *f)
+void hGetFT(int board, struct can_frame *f, int can)
 {
 	fGetFT(board,f);
-	sendCan(hubo_socket[LOWER_CAN],f);
+	sendCan(hubo_socket[can],f);
 }
 
 void fGetFT(int board, struct can_frame *f)
@@ -492,20 +492,20 @@ void fGetFT(int board, struct can_frame *f)
 
 void getFTAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 {
-	hGetFT(SBNO_RIGHT_FOOT_FT, f);
+	hGetFT(SBNO_RIGHT_FOOT_FT, f, LOWER_CAN);
 	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
 
-	hGetFT(SBNO_LEFT_FOOT_FT, f);
+	hGetFT(SBNO_LEFT_FOOT_FT, f, LOWER_CAN);
 	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
 	
-	hGetFT(SBNO_RIGHT_HAND_FT, f);
-	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+	hGetFT(SBNO_RIGHT_HAND_FT, f, UPPER_CAN);
+	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
 	
-	hGetFT(SBNO_LEFT_HAND_FT, f);
-	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+	hGetFT(SBNO_LEFT_HAND_FT, f, UPPER_CAN);
+	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
 }
 
@@ -560,26 +560,26 @@ void fGetIMU(int board, struct can_frame *f)
 void hGetIMU(int board, struct can_frame *f)
 {
 	fGetIMU(board,f);
-	sendCan(hubo_socket[UPPER_CAN],f);
+	sendCan(hubo_socket[LOWER_CAN],f);
 }
 
 void getIMUAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 {
-	hGetIMU(SBNO_IMU_2, f);
-	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+	hGetIMU(SBNO_IMU_0, f);
+	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
 
-/*	// I have been told that there is only one IMU,
+	// I have been told that there is only one IMU,
 	// so the rest of these are probably worthless.
 
 	hGetIMU(SBNO_IMU_1, f);
-	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
 
 	hGetIMU(SBNO_IMU_2, f);
-	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+	readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);
-*/
+
 }
 
 /* THIS APPEARS TO BE OUTDATED. TODO: Schedule for removal
@@ -1820,77 +1820,75 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	int fs = (int)f->can_id;
 	
 	/* Force-Torque Readings */
-	if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs < H_SENSOR_FT_MAX_RXDF) )
+	if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs <= H_SENSOR_FT_MAX_RXDF) )
 	{
 		int num = fs - H_SENSOR_FT_BASE_RXDF;
 		int val;
 		switch (num)
 		{
-			case 1:
+			case SBNO_RIGHT_FOOT_FT:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->ft[HUBO_FT_R_FOOT].m_x = val/100.0;
+				s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
 			
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->ft[HUBO_FT_R_FOOT].m_y = val/100.0;
+				s->ft[HUBO_FT_R_FOOT].m_y = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->ft[HUBO_FT_R_FOOT].f_z = val/10.0;
+				s->ft[HUBO_FT_R_FOOT].f_z = ((double)(val))/10.0;
 				break;
-			case 2:
+			case SBNO_LEFT_FOOT_FT:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->ft[HUBO_FT_L_FOOT].m_x = val/100.0;
+				s->ft[HUBO_FT_L_FOOT].m_x = ((double)(val))/100.0;
 				
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->ft[HUBO_FT_L_FOOT].m_y = val/100.0;
+				s->ft[HUBO_FT_L_FOOT].m_y = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->ft[HUBO_FT_L_FOOT].f_z = val/10.0;
+				s->ft[HUBO_FT_L_FOOT].f_z = ((double)(val))/10.0;
 				break;
-			case 6:
+			case SBNO_RIGHT_HAND_FT:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->ft[HUBO_FT_R_HAND].m_x = val/100.0;
+				s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
 				
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->ft[HUBO_FT_R_HAND].m_y = val/100.0;
+				s->ft[HUBO_FT_R_HAND].m_y = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->ft[HUBO_FT_R_HAND].f_z = val/10.0;
-				
+				s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
 				break;
-			case 7:
+			case SBNO_LEFT_HAND_FT:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->ft[HUBO_FT_L_HAND].m_x = val/100.0;
+				s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
 				
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->ft[HUBO_FT_L_HAND].m_y = val/100.0;
+				s->ft[HUBO_FT_L_HAND].m_y = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->ft[HUBO_FT_L_HAND].f_z = val/10.0;
-
+				s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
 				break;
 			default:
 				fprintf(stderr, "Invalid value for FT Sensor: %d\n\t"
@@ -1901,6 +1899,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				
 		
 	}
+	/* IMU Readings */
 	else if( (fs >= H_SENSOR_IMU_BASE_RXDF) && (fs <= H_SENSOR_IMU_MAX_RXDF) )
 	{
 		int num = fs - H_SENSOR_IMU_BASE_RXDF;
@@ -1909,62 +1908,64 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 
 		switch (num)
 		{
-			case 1:
+			case SBNO_RIGHT_FOOT_FT:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->imu.a_foot_x[RIGHT] = val/100.0;
+				s->imu.a_foot_x[RIGHT] = ((double)(val))/100.0;
 				
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->imu.a_foot_y[RIGHT] = val/100.0;
+				s->imu.a_foot_y[RIGHT] = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->imu.a_foot_z[RIGHT] = val/100.0*9.8; // The sensor scales this by 9.8.
+				s->imu.a_foot_z[RIGHT] = ((double)(val))/100.0*9.8;
+									// The sensor scales this by 9.8.
 									// I think that's rather silly.
 				break;
-			case 2:
+			case SBNO_LEFT_FOOT_FT:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->imu.a_foot_x[LEFT] = val/100.0;
+				s->imu.a_foot_x[LEFT] = ((double)(val))/100.0;
 				
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->imu.a_foot_y[LEFT] = val/100.0;
+				s->imu.a_foot_y[LEFT] = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->imu.a_foot_z[LEFT] = val/100.0*9.8;	// The sensor scales this by 9.8.
+				s->imu.a_foot_z[LEFT] = ((double)(val))/100.0*9.8;
+									// The sensor scales this by 9.8.
 									// I think that's rather silly.
 				break;
-			case 3:
-			case 4:
-			case 5:
+			case SBNO_IMU_0:
+			case SBNO_IMU_1:
+			case SBNO_IMU_2:
 				val=0;
 				val = (val<<8) | f->data[0];
 				val = (val<<8) | f->data[1];
-				s->imu.angle_x = val/100.0;
+				s->imu.angle_x = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[2];
 				val = (val<<8) | f->data[3];
-				s->imu.angle_y = val/100.0;
+				s->imu.angle_y = ((double)(val))/100.0;
 				
 				val=0;
 				val = (val<<8) | f->data[4];
 				val = (val<<8) | f->data[5];
-				s->imu.w_x = val/100.0;
+				s->imu.w_x = ((double)(val))/100.0;
 
 				val=0;
 				val = (val<<8) | f->data[6];
 				val = (val<<8) | f->data[7];
-				s->imu.w_y = val/100.0;
+				s->imu.w_y = ((double)(val))/100.0;
 
 				fprintf(stdout, "Reading IMU data\n");
 				

@@ -6,12 +6,12 @@
 #define		UPPER_CAN		1
 
 #define		SBNO_RIGHT_FOOT_FT	1
-#define		SBNO_LEFT_FOOT_FT	2
-#define		SBNO_IMU_0		3
-#define		SBNO_IMU_1		4
-#define		SBNO_IMU_2		5
-#define		SBNO_RIGHT_HAND_FT	6
-#define		SBNO_LEFT_HAND_FT	7
+#define		SBNO_LEFT_FOOT_FT	SBNO_RIGHT_FOOT_FT+1
+#define		SBNO_IMU_0		SBNO_RIGHT_FOOT_FT+2
+#define		SBNO_IMU_1		SBNO_RIGHT_FOOT_FT+3
+#define		SBNO_IMU_2		SBNO_RIGHT_FOOT_FT+4
+#define		SBNO_RIGHT_HAND_FT	SBNO_RIGHT_FOOT_FT+5
+#define		SBNO_LEFT_HAND_FT	SBNO_RIGHT_FOOT_FT+6
 
 #define		HUBO_JOINT_COUNT	42		///> The max number of joints
 #define 	HUBO_JMC_COUNT		0x26		///> The max number of JMCs
