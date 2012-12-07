@@ -401,6 +401,7 @@ INT:
                 case HUBO_FT_R_FOOT:
                 case HUBO_FT_L_FOOT:
                     //T
+                    printf("Sensor # %d\n",i);
                     hGetFT(i, h, f);
                     readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                     decodeFrame(s, h, f);
@@ -687,9 +688,9 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 
-void hGetFT(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
-    fGetFT( jnt,0x12, h, f);
-	sendCan(hubo_socket[h->sensor[jnt].can], f);
+void hGetFT(int sensNo, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
+    fGetFT( sensNo,0x12, h, f);
+	sendCan(hubo_socket[h->sensor[sensNo].can], f);
 }
 
 void hSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime) {
