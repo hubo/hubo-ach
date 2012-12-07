@@ -262,6 +262,7 @@ void huboLoop(struct hubo_param *H_param) {
 		
 		/* Get all Encoder data */
 		getEncAllSlow(&H_state, H_param, &frame); 
+		getSensorAllSlow(&H_state, H_param, &frame); 
 
 		/* Get all Current data */
 //		getCurrentAllSlow(&H_state, &H_param, &frame);
@@ -401,7 +402,6 @@ INT:
                 case HUBO_FT_R_FOOT:
                 case HUBO_FT_L_FOOT:
                     //T
-                    printf("Sensor # %d\n",i);
                     hGetFT(i, h, f);
                     readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                     decodeFrame(s, h, f);
