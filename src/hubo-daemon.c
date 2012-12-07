@@ -755,7 +755,7 @@ void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_s
 	}
 	for(i = 0; i < HUBO_SENSOR_COUNT; i++) {
 		if(h->sensor[i].active == true) {
-			hInitializeSensorBoard(i, r, h, f);
+			hInitializeSensorBoard(h->sensor[i].boardNo, r, h, f);
 		}
 	}
 
