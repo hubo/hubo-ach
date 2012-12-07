@@ -377,6 +377,7 @@ int name2sensor(char* name, struct hubo_param *h) {
         int iout = -1;
         for( i = 0; i < HUBO_SENSOR_COUNT ; i++ ) {
             char *sens = h->sensor[i].name;
+            printf("i = %i, name = %s\n", i,sens);
             if (strcmp(name, sens) == 0) {
                 iout = i;}
         }
