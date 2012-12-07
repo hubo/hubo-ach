@@ -386,42 +386,38 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
     printf("Getting sensors...\n");
 	///> Requests all sensor data and saves to state
-	char c[HUBO_SENSOR_COUNT];
-	memset( &c, 0, sizeof(c));
-	int sensNo = 0;
-	int i = 0;
-	int canChan = 0;
-	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
-	for( i = 0; i < HUBO_SENSOR_COUNT; i++ ) {
-INT:
-        sensNo = h->sensor[i].sensNo; 
-        if((0 == c[sensNo]) & (canChan == h->sensor[i].can)){	// check to see if already asked that motor controller
-            switch (h->sensor[i].sensNo){
-                case HUBO_FT_R_HAND:
-                case HUBO_FT_L_HAND:
-                case HUBO_FT_R_FOOT:
-                case HUBO_FT_L_FOOT:
-                    printf("Polling sensor %d\n",i);
-                    hGetFT(i, h, f);
-                    readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-                    decodeFrame(s, h, f);
-                    break;
+    char c[7];
+    memset( &c, 0, sizeof(c));
+    int sensNo = 0;
+    int i = 0;
+    int canChan = 0;
+    for( i = 0; i < 7; i++ ) {
+        sensNo = h->sensor[i].sensNo;
+        canChan = h->sensor[i].can;
+        switch (sensNo){
+            case HUBO_FT_R_HAND:
+            case HUBO_FT_L_HAND:
+            case HUBO_FT_R_FOOT:
+            case HUBO_FT_L_FOOT:
+                printf("Polling sensor %d\n",i);
+                hGetFT(sensNo, h, f);
+                readCan(hubo_socket[canChan], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                decodeFrame(s, h, f);
+                break;
 
-                case HUBO_IMU0:
-                case HUBO_IMU1:
-                case HUBO_IMU2:
-                    //TODO: read IMU
-                    /*hGetIMUValue(i, h, f);*/
-                    /*readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);*/
-                    /*decodeFrame(s, h, f);*/
-                    break;
-                default:
-                    break;
-            }
-            c[sensNo] = 1;
-
+            case HUBO_IMU0:
+            case HUBO_IMU1:
+            case HUBO_IMU2:
+                //TODO: read IMU
+                /*hGetIMUValue(i, h, f);*/
+                /*readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);*/
+                /*decodeFrame(s, h, f);*/
+                break;
+            default:
+                break;
         }
-    }}	
+
+    }
 }
 
 
@@ -561,6 +557,7 @@ fGetFT(int ft, uint16_t FT_Return_Type, struct hubo_param *h, struct can_frame *
 	f->data[1]	= FT_Return_Type;
 	//sprintf(f->data, "%s", data);
 	f->can_dlc = 2; //= strlen( data );	// Set DLC
+    printf("Formed GetFT CAN packet\n");
 }
   
 
@@ -689,6 +686,7 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 }
 
 void hGetFT(int sensNo, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
+    printf("Entering hGetFT\n");
     fGetFT( sensNo,0x12, h, f);
 	sendCan(hubo_socket[h->sensor[sensNo].can], f);
 }

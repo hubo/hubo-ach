@@ -117,6 +117,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	CMSG esd_frame;
 	// id
 	esd_frame.id = f->can_id;
+    if (f->can_id) printf("Byte0=%c\n",esd_frame.data[0]);
 	// len
 	esd_frame.len = f->can_dlc;
 	// data
