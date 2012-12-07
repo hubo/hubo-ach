@@ -255,6 +255,7 @@ int main() {
 
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
                 printf("%s - Null, id = %d \n",getArg(buf,1),H_init.cmd[1]);
+                printf("FT0 should be %sn",H_param.sensor[0].name);
             }
             else
                 fprintf(stderr,"Name %s not found!\n",getArg(buf,1));
