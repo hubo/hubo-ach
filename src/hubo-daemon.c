@@ -740,9 +740,9 @@ void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct 
 
 
 void hInitializeSensorBoard(int snr, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
-	fIniFT(snr, r, h, f);
-	sendCan(hubo_socket[h->sensNo[snr].can], f);
-	readCan(hubo_socket[h->sensNo[snr].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read
+	fIniFT(snr, h, f);
+	sendCan(hubo_socket[h->sensor[snr].can], f);
+	readCan(hubo_socket[h->sensor[snr].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read
 }
 
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
@@ -754,7 +754,7 @@ void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_s
 		}
 	}
 	for(i = 0; i < HUBO_SENSOR_COUNT; i++) {
-		if(s->sensNo[i].active == true) {
+		if(h->sensor[i].active == true) {
 			hInitializeSensorBoard(i, r, h, f);
 		}
 	}
