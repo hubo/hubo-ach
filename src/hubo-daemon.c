@@ -129,6 +129,7 @@ double enc2rad(int jnt, int enc, struct hubo_param *h);
 void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
@@ -136,6 +137,7 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 
+void hGetFT(int jnt, struct hubo_param *h, struct can_frame *f);
 // ach message type
 //typedef struct hubo h[1];
 
@@ -384,7 +386,45 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	}}	
 }
 
+void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+	///> Requests all sensor data and saves to state
+	char c[HUBO_SENSOR_COUNT];
+	memset( &c, 0, sizeof(c));
+	int sensNo = 0;
+	int i = 0;
+	int canChan = 0;
+	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
+	for( i = 0; i < HUBO_SENSOR_COUNT; i++ ) {
+INT:
+        sensNo = h->sensor[i].sensNo; 
+        if((0 == c[sensNo]) & (canChan == h->sensor[i].can)){	// check to see if already asked that motor controller
+            switch (h->sensor[i].sensNo){
+                case HUBO_FT_R_HAND:
+                case HUBO_FT_L_HAND:
+                case HUBO_FT_R_FOOT:
+                case HUBO_FT_L_FOOT:
+                    //T
+                    hGetFT(i, h, f);
+                    readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                    decodeFrame(s, h, f);
+                    break;
 
+                case HUBO_IMU0:
+                case HUBO_IMU1:
+                case HUBO_IMU2:
+                    //TODO: read IMU
+                    /*hGetIMUValue(i, h, f);*/
+                    /*readCan(hubo_socket[h->sensor[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);*/
+                    /*decodeFrame(s, h, f);*/
+                    break;
+                default:
+                    break;
+            }
+            c[sensNo] = 1;
+
+        }
+    }}	
+}
 
 
 void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
@@ -418,8 +458,6 @@ void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 
 }
 
-
-
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	///> Requests all motor currents and records to hubo_state
 	char c[HUBO_JMC_COUNT];
@@ -441,15 +479,6 @@ void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fr
 	}}	
 
 }
-
-
-
-
-
-
-
-
-
 
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
 	// set encoder from reference
@@ -527,7 +556,7 @@ fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
   
 
 fGetFT(int ft, uint16_t FT_Return_Type, struct hubo_param *h, struct can_frame *f) {
-///< Request FT Sensors
+///< Request FT Sensor data based on return type
 	f->can_id 	= SEND_SENSOR_TXDF;	// Set ID
 	__u8 data[2];
 	f->data[0] 	= h->sensor[ft].boardNo;
@@ -661,6 +690,10 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 
+void hGetFT(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
+    fGetFT( jnt,0x12, h, f);
+	sendCan(hubo_socket[h->sensor[jnt].can], f);
+}
 
 void hSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime) {
 	fSetBeep(jnt, r, h, f, beepTime);
