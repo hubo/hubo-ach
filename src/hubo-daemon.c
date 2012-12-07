@@ -381,18 +381,18 @@ void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fra
     hGetFT(0,h, f);
     int i=0;
     for (i = 0; i <2 ; ++i){
-        if (hubo_debug) fprintf(stderr,"FS_OLD = %d\t",f->can_id);
+        if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
         readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        if (hubo_debug) fprintf(stderr,"FS = %d\n",f->can_id);
+        if (hubo_debug) printf("FS = %d\n",f->can_id);
         decodeFrame(s, h, f);
     }
 
     //printf("Request CAN Channel  %d\n",1);
     hGetFT(1, h, f);
     for (i = 0; i <2 ; ++i){
-        if (hubo_debug) fprintf(stderr,"FS_OLD = %d\t",f->can_id);
+        if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
         readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        if (hubo_debug) fprintf(stderr,"FS = %d\n",f->can_id);
+        if (hubo_debug) printf("FS = %d\n",f->can_id);
         decodeFrame(s, h, f);
     }
 }
@@ -674,7 +674,7 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 }
 
 void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
-    if (hubo_debug) fprintf(stderr,"Entering hGetFT\n");
+    if (hubo_debug) printf("Entering hGetFT\n");
     if (chan == 0){
         fGetFT( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
@@ -841,7 +841,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					break;
 				case HUBO_ZERO_FT:
                     //cmd[1] should be sensor number?
-                    if (hubo_debug) fprintf(stderr,"Got HUBO_ZERO_FT");
+                    if (hubo_debug) printf("Got HUBO_ZERO_FT");
 					hNullFT(c->cmd[1],r,h,s,f);
 					break;
 				default:
@@ -857,7 +857,6 @@ double enc2rad(int jnt, int enc, struct hubo_param *h) {
 	struct hubo_joint_param *p = &h->joint[jnt];
         return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*M_PI);
 }
-
 
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	int fs = (int)f->can_id;
@@ -938,7 +937,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	} 
 
 	else if( (fs >= SENSOR_FT_BASE_RXDF) & (fs < (SENSOR_FT_BASE_RXDF+0x20))) {
-        if (hubo_debug) fprintf(stderr,"Got sensor range ID %d\n",fs);
+        if (hubo_debug) printf("Got sensor range ID %d\n",fs);
 		if( fs == (SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_R_FOOT].boardNo) ) { // right foot FT
 			uint16_t tmp = 0;
 			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
