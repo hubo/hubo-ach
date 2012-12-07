@@ -674,7 +674,7 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 }
 
 void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
-    printf("Entering hGetFT\n");
+    if (hubo_debug) fprintf(stderr,"Entering hGetFT\n");
     if (chan == 0){
         fGetFT( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
@@ -841,6 +841,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					break;
 				case HUBO_ZERO_FT:
                     //cmd[1] should be sensor number?
+                    if (hubo_debug) fprintf(stderr,"Got HUBO_ZERO_FT");
 					hNullFT(c->cmd[1],r,h,s,f);
 					break;
 				default:
