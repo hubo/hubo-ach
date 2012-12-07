@@ -94,6 +94,7 @@ char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "get RF3", "get RF4", "get RF5", "get LF1", "get LF2", "get LF3",
                 "get LF4", "get LF5"};
  */
+int name2sensor(char* name, struct hubo_param *h);
 
 int main() {
         printf("\n");
@@ -247,9 +248,16 @@ int main() {
                 printf("%s - Initialize All\n",getArg(buf,1));
 		tsleep = 8;
         }
+        else if (strcmp(buf0,"nullft")==0){
+            H_init.cmd[0] = HUBO_ZERO_FT;
+            H_init.cmd[1] = name2sensor(getArg(buf,1),&H_param);
+            int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+            printf("%s - Initialize \n",getArg(buf,1));
+        }
         /* Quit */
         else if (strcmp(buf0,"quit")==0)
                 break;
+        
         if (buf[0]!=0)
         add_history(buf);
 	sleep(tsleep);	// sleep for tsleep sec
@@ -358,6 +366,17 @@ int name2mot(char* name, struct hubo_param *h) {
 }
 
 
+int name2sensor(char* name, struct hubo_param *h) {
+        /* Returns the number of the requested joint */
+        int i = 0;
+        int iout = -1;
+        for( i = 0; i < HUBO_SENSOR_COUNT ; i++ ) {
+            char *sens = h->sensor[i].name;
+            if (strcmp(name, sens) == 0) {
+                iout = i;}
+        }
+	return iout;
+}
 
 static char** my_completion( const char * text , int start,  int end) {
         char **matches;

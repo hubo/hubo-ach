@@ -282,13 +282,6 @@ void huboLoop(struct hubo_param *H_param) {
 }
 
 
-
-
-
-
-
-
-
 static inline void tsnorm(struct timespec *ts){
 
 //	clock_nanosleep( NSEC_PER_SEC, TIMER_ABSTIME, ts, NULL);
@@ -388,15 +381,19 @@ void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fra
     hGetFT(0,h, f);
     int i=0;
     for (i = 0; i <2 ; ++i){
-        readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT*2);
-        decodeFrameSensor(s, h, f);
+        if (hubo_debug) fprintf(stderr,"FS_OLD = %d\t",f->can_id);
+        readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
+        if (hubo_debug) fprintf(stderr,"FS = %d\n",f->can_id);
+        decodeFrame(s, h, f);
     }
 
     //printf("Request CAN Channel  %d\n",1);
     hGetFT(1, h, f);
     for (i = 0; i <2 ; ++i){
-        readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT*2);
-        decodeFrameSensor(s, h, f);
+        if (hubo_debug) fprintf(stderr,"FS_OLD = %d\t",f->can_id);
+        readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
+        if (hubo_debug) fprintf(stderr,"FS = %d\n",f->can_id);
+        decodeFrame(s, h, f);
     }
 }
 
@@ -464,6 +461,7 @@ unsigned long signConvention(long _input) {
 	if (_input < 0) return (unsigned long)( ((-_input)&0x007FFFFF) | (1<<23) );
 	else return (unsigned long)_input;
 }
+
 void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
@@ -529,7 +527,7 @@ fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
 }
   
 
-fGetFT(char b0,char b1, struct hubo_param *h, struct can_frame *f) {
+fGetFT(char b0, char b1, struct hubo_param *h, struct can_frame *f) {
 ///< Request FT Sensor data based on return type
 	f->can_id 	= SEND_SENSOR_TXDF;	// Set ID
 	__u8 data[2];
@@ -540,6 +538,16 @@ fGetFT(char b0,char b1, struct hubo_param *h, struct can_frame *f) {
     //printf("Formed GetFT CAN packet\n");
 }
   
+void fNullFT(int ft, int mode, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+f->can_id 	= CMD_TXDF;
+	__u8 data[3];
+    //Use controller number, which is 0x2F + the 1-indexed sensor Receive number
+    //note that ft is the index corresponding to the ACH state
+	f->data[0] = 0x2F + h->sensor[ft].boardNo;
+    f->data[1] = NullCMD;
+    f->data[2] = mode;
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
+}
 
 // 5
 void fResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
@@ -749,6 +757,11 @@ void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_s
 
 }
 
+void hNullFT(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+    fNullFT(jnt, 0x00, r, h, f);
+    sendCan(hubo_socket[h->sensor[jnt].can], f);
+}
+
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 //	setEncRef(jnt,r, h);
 	fSetEncRef(jnt, r, h, f);
@@ -780,6 +793,7 @@ void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, stru
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 	s->joint[jnt].zeroed == true;		// need to add a can read back to confirm it was zeroed
 }
+
 void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
 //	printf("hubo-ach - interface 2012-08-18\n");
@@ -825,7 +839,10 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 				case HUBO_GOTO_HOME:
 					hGotoLimitAndGoOffset(c->cmd[1],r,h,s,f);
 					break;
-		//		case HUBO_GOTO_REF:
+				case HUBO_ZERO_FT:
+                    //cmd[1] should be sensor number?
+					hNullFT(c->cmd[1],r,h,s,f);
+					break;
 				default:
 					break;
 			}

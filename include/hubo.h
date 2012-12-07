@@ -129,7 +129,8 @@ typedef enum {
 	HUBO_JMC_BEEP		= 6,	///> make beep val[0] = beep time in sec
 	HUBO_GOTO_HOME		= 7,	///> go home position
 	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
-	HUBO_JMC_INI_ALL	= 9	///> Initilize all JMC boards
+	HUBO_JMC_INI_ALL	= 9,	///> Initilize all JMC boards
+    HUBO_ZERO_FT    = 10        ///> Null the given FT sensor
 } hubo_console_t;
 
 typedef enum {
