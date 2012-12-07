@@ -115,7 +115,6 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 void hInitilizeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
 void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
@@ -376,7 +375,7 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		jmc = h->joint[i].jmc;
 		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
-			hGetEncValue(i, h, f);
+            hGetEncValue(i, h, f);
 			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
 			decodeFrame(s, h, f);
 			c[jmc] = 1;
@@ -755,10 +754,10 @@ void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_s
 			hInitializeBoard(i, r, h, f);
 		}
 	}
-	for(i = 0; i < HUBO_SENSOR_COUNT; i++) {
-		if(h->sensor[i].active == true) {
-			hInitializeSensorBoard(i, r, h, f);
-		}
+
+	int j = 0;
+	for(j = 0; j < 7; j++) {
+        hInitializeSensorBoard(j, r, h, f);
 	}
 
 }
@@ -770,17 +769,6 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
-void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
-// --std=c99
-		printf("2\n");
-	int i = 0;
-	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-		if(s->joint[i].active) {
-			hInitializeBoard(i, r, h, f);
-			printf("%i\n",i);
-		}
-	}
-}
 
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff) {
 	if(onOff == 1) { // turn on FET
