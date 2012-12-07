@@ -384,16 +384,17 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 
 void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
     ///> Requests all sensor data and saves to state
-    if (hubo_debug) printf("Request CAN Channel  %d\n",0);
+    printf("Request CAN Channel  %d\n",0);
     hGetFT(0,h, f);
-    for (int i = 0; i <4 ; ++i){
+    int i=0;
+    for (i = 0; i <4 ; ++i){
         readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
         decodeFrame(s, h, f);
     }
 
-    if (hubo_debug) printf("Request CAN Channel  %d\n",1);
+    printf("Request CAN Channel  %d\n",1);
     hGetFT(1, h, f);
-    for (int i = 0; i <4 ; ++i){
+    for (i = 0; i <4 ; ++i){
         readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
         decodeFrame(s, h, f);
     }
@@ -664,7 +665,7 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 
-void hGetFT(int chan,char b1, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
+void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
     printf("Entering hGetFT\n");
     if (chan == 0){
         fGetFT( 0xFF, 0x03, h, f);
@@ -860,7 +861,6 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
 				s->joint[jnt].cur = current;
 				s->joint[jnt].tmp = temp;
-
 				
 			}
 		}
