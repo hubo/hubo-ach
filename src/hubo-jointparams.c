@@ -54,6 +54,14 @@ void setupSensorDefaults(struct hubo_param* H) {
 	H->sensor[HUBO_IMU2].boardNo = 5;
 
 
+	H->sensor[HUBO_FT_R_FOOT].can = 0;
+	H->sensor[HUBO_FT_L_FOOT].can = 0;
+	H->sensor[HUBO_FT_R_HAND].can = 1;
+	H->sensor[HUBO_FT_L_HAND].can = 1;
+	H->sensor[HUBO_IMU0].can = 1;
+	H->sensor[HUBO_IMU1].can = 1;
+	H->sensor[HUBO_IMU2].can = 1;
+
 	H->sensor[HUBO_FT_R_FOOT].sensNo = HUBO_FT_R_FOOT;
 	H->sensor[HUBO_FT_L_FOOT].sensNo = HUBO_FT_L_FOOT;
 	H->sensor[HUBO_FT_R_HAND].sensNo = HUBO_FT_R_HAND;

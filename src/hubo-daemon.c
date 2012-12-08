@@ -387,21 +387,23 @@ void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fra
     //printf("Request CAN Channel  %d\n",0);
     hGetFT(0,h, f);
     int i=0;
-    for (i = 0; i <6 ; ++i){
-        if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
+    for (i = 0; i <4 ; ++i){
+        //if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
         readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        if (hubo_debug) printf("FS = %d\n",f->can_id);
+        //if (hubo_debug) printf("FS = %d\n",f->can_id);
         decodeFrame(s, h, f);
     }
 
     //printf("Request CAN Channel  %d\n",1);
+    /*
     hGetFT(1, h, f);
     for (i = 0; i <4 ; ++i){
-        if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
+        //if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
         readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        if (hubo_debug) printf("FS = %d\n",f->can_id);
+        //if (hubo_debug) printf("FS = %d\n",f->can_id);
         decodeFrame(s, h, f);
     }
+    */
 }
 
 
@@ -683,14 +685,16 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
     if (hubo_debug) printf("Entering hGetFT\n");
     if (chan == 0){
-        fGetFT( 0xFF, 0x02, h, f);
+        fGetFT( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
-        //fGetFT( 0x03, 0x00, h, f);
-        //sendCan(hubo_socket[chan], f);
+        fGetFT( 0xFF, 0x22, h, f);
+        sendCan(hubo_socket[chan], f);
     }
 
     else if (chan == 1){
-        fGetFT( 0xFF, 0x02, h, f);
+        fGetFT( 0xFF, 0x12, h, f);
+        sendCan(hubo_socket[chan], f);
+        fGetFT( 0xFF, 0x22, h, f);
         sendCan(hubo_socket[chan], f);
     }
 }
