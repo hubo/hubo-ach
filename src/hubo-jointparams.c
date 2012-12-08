@@ -247,7 +247,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 		printf("%s\t%hhu\t%hhu\n", H->joint[i].name, H_state->joint[i].active, H_state->joint[i].zeroed);
 	} 
 */	
-	//setupSensorDefaults(H_param);
+	setupSensorDefaults(H_param);
 	return 0;	// return without errors
 }
 
