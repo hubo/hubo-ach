@@ -1555,10 +1555,8 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-			fprintf(stdout, "Checking if active Number: %d\n", i);
 		if(s->joint[i].active == true) {
 			hGotoLimitAndGoOffset(i, r, h, s, f);
-			fprintf(stdout, "Homed Joint Number: %d\n", i);
 		}
 	}
 }
@@ -1906,7 +1904,6 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 
 //		if ( status != 0 & status != ACH_OK & status != ACH_MISSED_FRAME ) {
 //			break; }
-			fprintf(stdout, "Received ach command: (%d) : (%d)\n", (int)c->type, (int)D_GOTO_HOME_ALL);
 			switch (c->type)
 			{
 				case D_JMC_INITIALIZE_ALL:
@@ -2154,8 +2151,6 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 
 				val = (f->data[7]<<8) | f->data[6];
 				s->imu.w_y = ((double)(val))/100.0;
-
-				fprintf(stdout, "Reading IMU data\n");
 				
 				break;
 			default:
