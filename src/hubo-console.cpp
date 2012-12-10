@@ -78,6 +78,7 @@ int name2mot(char*s, struct hubo_param *h);
 double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p);
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
@@ -173,6 +174,11 @@ int main() {
 		tsleep = 5;
 		
         }
+	else if (strcmp(buf0,"startup")==0) {
+		hubo_startup_all(&H_param, &H_cmd, buf);
+		printf("Starting up Hubo\n");
+		tsleep = 5;
+	}
         else if (strcmp(buf0,"ctrl")==0) {
                 int onOrOff = atof(getArg(buf,2));
                 if(onOrOff == 0 | onOrOff == 1) {
@@ -274,6 +280,16 @@ void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state) {
         // posix rt signal can give signal number and an interger
 }
 
+void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
+
+	c->type = D_SENSOR_STARTUP;
+	int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c));
+
+	sleep( 1 );
+
+	c->type = D_GOTO_HOME_ALL;
+	r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c));
+}
 
 char* getArg(string s, int argNum) {
 //	printf("\n dan test\n");

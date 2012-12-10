@@ -303,6 +303,7 @@ void hubo_assert( int result, const char * msg )
 
 void hubo_verbose( const char *verb )
 {
+	int verbose = 1; //TODO: Do this correctly
 	if( verbose==1 )
 		fprintf(stdout, "%s\n", verb); // TODO: Put a time stamp in here
 

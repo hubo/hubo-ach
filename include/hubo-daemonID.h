@@ -22,6 +22,13 @@ typedef enum {
 	// type			||	Description
 	D_BLANK			= 0,	///> Null value
 
+
+
+	D_SENSOR_STARTUP	,///> Starts up and nulls all sensor values
+			/*		joint: Any joint number on the board
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
 	D_JMC_INITIALIZE	,///> Initilize jmc
 			/*		joint: Any joint number on the board
 					param: N/A
@@ -51,6 +58,31 @@ typedef enum {
 					iValues: N/A
 					dValues: N/A	*/
 	D_NULL_FT_ACC_SENSOR_ALL,///> Send null requests to all ft and accel sensors
+			/*		joint: N/A
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_IMU_SENSOR	,///> Send null request to specific IMU sensor
+			/*		joint: N/A
+					param: IMU sensor board
+						D_IMU_SENSOR_0, D_IMU_SENSOR_1
+						D_IMU_SENSOR_2
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_IMU_SENSOR_ALL	,///> Send null requests to all IMU sensors
+			/*		joint: N/A
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
+	D_INIT_FT_ACC_SENSOR	,///> Send init request to FT/Acc sensor
+			/*		joint: N/A
+					param: FT/Accelerometer board
+						D_R_FOOT_FT, D_L_FOOT_FT,
+	//These two options are redundant	D_R_FOOT_ACC, D_L_FOOT_ACC,
+						D_R_HAND_FT, D_L_HAND_FT
+	//Note: Acc and FT must		iValues: N/A
+	// always both be initialized	dValues: N/A	*/
+	D_INIT_FT_ACC_SENSOR_ALL,///> Send null requests to all IMU sensors
 			/*		joint: N/A
 					param: N/A
 					iValues: N/A
@@ -298,7 +330,11 @@ typedef enum {
 	D_L_HAND_FT		,	///> Left hand force-torque sensor
 
 	D_R_FOOT_ACC		,	///> Right foot accelerometer
-	D_L_FOOT_ACC			///> Left foot accelerometer
+	D_L_FOOT_ACC		,	///> Left foot accelerometer
+
+	D_IMU_SENSOR_0		,	///> Parameter to indicate IMU sensor 0
+	D_IMU_SENSOR_1		,	///> Parameter to indicate IMU sensor 1
+	D_IMU_SENSOR_2			///> Parameter to indicate IMU sensor 2
 
 } hubo_d_param_t;
 
