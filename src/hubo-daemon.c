@@ -135,7 +135,12 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hNullSensor(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void fNullSensor(int jnt, int mode, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f);
+void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
 double decodeFT(uint8_t data0, uint8_t data1);
+
 // ach message type
 //typedef struct hubo h[1];
 
@@ -308,6 +313,7 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*M_PI);
 }
 */
+
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
 	int c[HUBO_JMC_COUNT];
@@ -385,25 +391,20 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
     ///> Requests all sensor data and saves to state
     //printf("Request CAN Channel  %d\n",0);
-    hGetFT(0,h, f);
+    hGetSensor(0,h, f);
     int i=0;
+    //TODO: Figure out exactly how many CAN packets we expect and adjust the loop length.
     for (i = 0; i <4 ; ++i){
-        //if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
         readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        //if (hubo_debug) printf("FS = %d\n",f->can_id);
         decodeFrame(s, h, f);
     }
 
     //printf("Request CAN Channel  %d\n",1);
-    /*
-    hGetFT(1, h, f);
+    hGetSensor(1, h, f);
     for (i = 0; i <4 ; ++i){
-        //if (hubo_debug) printf("FS_OLD = %d\t",f->can_id);
         readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
-        //if (hubo_debug) printf("FS = %d\n",f->can_id);
         decodeFrame(s, h, f);
     }
-    */
 }
 
 
@@ -524,35 +525,37 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 }
 
 // FT sensor
-fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
+void fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
 ///< Initialize Sensor board
+//FIXME: "Initializing" actualy resets all values to default, and is disabled until a safe way is designed.
+/*
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
 	f->data[0] 	= h->sensor[ft].canID;
-	f->data[1]	= 0xFA;
+	f->data[1]	= 0x;
 	f->data[2] 	= 0xAA;
 	//sprintf(f->data, "%s", data);
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
+*/
 }
   
 
-fGetFT(char b0, char b1, struct hubo_param *h, struct can_frame *f) {
+void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f) {
 ///< Request FT Sensor data based on return type
 	f->can_id 	= SEND_SENSOR_TXDF;	// Set ID
-	__u8 data[2];
+    const uint8_t dlc = 2;
+	__u8 data[dlc];
 	f->data[0] 	= b0;
 	f->data[1]	= b1;
-	//sprintf(f->data, "%s", data);
-	f->can_dlc = 2; //= strlen( data );	// Set DLC
-    //printf("Formed GetFT CAN packet\n");
+	f->can_dlc = dlc; 
 }
   
-void fNullFT(int ft, int mode, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void fNullSensor(int jnt, int mode, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 f->can_id 	= CMD_TXDF;
 	__u8 data[3];
     //Use controller number, which is 0x2F + the 1-indexed sensor Receive number
-    //note that ft is the index corresponding to the ACH state
-	f->data[0] = 0x2F + h->sensor[ft].boardNo;
+    //note that jnt is the index corresponding to the ACH state
+	f->data[0] = 0x2F + h->sensor[jnt].boardNo;
     f->data[1] = NullCMD;
     f->data[2] = mode;
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
@@ -682,19 +685,18 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 
-void hGetFT(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
-    if (hubo_debug) printf("Entering hGetFT\n");
+void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
+    
     if (chan == 0){
-        fGetFT( 0xFF, 0x12, h, f);
+        fGetSensor( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
-        fGetFT( 0xFF, 0x22, h, f);
+        fGetSensor( 0xFF, 0x22, h, f);
         sendCan(hubo_socket[chan], f);
     }
-
     else if (chan == 1){
-        fGetFT( 0xFF, 0x12, h, f);
+        fGetSensor( 0xFF, 0x12, h, f);
         sendCan(hubo_socket[chan], f);
-        fGetFT( 0xFF, 0x22, h, f);
+        fGetSensor( 0xFF, 0x22, h, f);
         sendCan(hubo_socket[chan], f);
     }
 }
@@ -740,37 +742,48 @@ void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct h
 }
 
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+    /*
 	fInitializeBoard(jnt, r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 	readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read
+    */
 }
 
 
 void hInitializeSensorBoard(int snr, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+    /*
 	if (hubo_debug) printf("Initializing sensor board %d\n",snr);
 	fIniFT(snr, h, f);
 	sendCan(hubo_socket[h->sensor[snr].can], f);
 	readCan(hubo_socket[h->sensor[snr].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read
+    */
 }
 
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Initilizes all boards
+    /*
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 		if(s->joint[i].active == true) {
 			hInitializeBoard(i, r, h, f);
 		}
 	}
+    */
 
-	int j = 0;
-	for(j = 0; j < 7; j++) {
-        hInitializeSensorBoard(j, r, h, f);
-	}
+	/*int j = 0;*/
+	/*for(j = 0; j < 7; j++) {*/
+        /*hInitializeSensorBoard(j, r, h, f);*/
+	/*}*/
 
 }
 
-void hNullFT(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
-    fNullFT(jnt, 0x00, r, h, f);
+void hNullSensor(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+    //TODO: Automated check for type of sensor
+
+    if (strncmp(h->sensor[jnt].name,"IMU",3))
+        fNullSensor(jnt, 0x00, r, h, f);
+    else if (strncmp(h->sensor[jnt].name,"FT",2))
+        fNullSensor(jnt, 0x02, r, h, f);
     sendCan(hubo_socket[h->sensor[jnt].can], f);
 }
 
@@ -851,10 +864,10 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 				case HUBO_GOTO_HOME:
 					hGotoLimitAndGoOffset(c->cmd[1],r,h,s,f);
 					break;
-				case HUBO_ZERO_FT:
+				case HUBO_ZERO_SENSOR:
                     //cmd[1] should be sensor number?
-                    if (hubo_debug) printf("Got HUBO_ZERO_FT");
-					hNullFT(c->cmd[1],r,h,s,f);
+                    if (hubo_debug) printf("Got HUBO_SENSOR");
+					hNullSensor(c->cmd[1],r,h,s,f);
 					break;
 				default:
 					break;
@@ -967,13 +980,13 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 			case 0x42:
 				num=HUBO_FT_L_FOOT;
 				break;
-			case 0x53:
+			case 0x51:
 				num=HUBO_IMU0;
 				break;
-			case 0x54:
+			case 0x52:
 				num=HUBO_IMU1;
 				break;
-			case 0x55:
+			case 0x53:
 				num=HUBO_IMU2;
 				break;
 			case 0x46:

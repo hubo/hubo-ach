@@ -250,7 +250,7 @@ int main() {
         else if (strcmp(buf0,"nullft")==0){
             int ft = name2sensor(getArg(buf,1),&H_param);
             if (ft>=0){
-                H_init.cmd[0] = HUBO_ZERO_FT;
+                H_init.cmd[0] = HUBO_ZERO_SENSOR;
                 H_init.cmd[1] = (char)ft;
 
                 int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );

@@ -130,7 +130,7 @@ typedef enum {
 	HUBO_GOTO_HOME		= 7,	///> go home position
 	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
 	HUBO_JMC_INI_ALL	= 9,	///> Initilize all JMC boards
-    HUBO_ZERO_FT    = 10        ///> Null the given FT sensor
+    HUBO_ZERO_SENSOR    = 10       ///> Null the given FT sensor
 } hubo_console_t;
 
 typedef enum {
