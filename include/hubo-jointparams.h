@@ -1,3 +1,4 @@
+#pragma once
 // sets all the joint parameters for Hubo in a 
 // hubo_param struct which is define  hubo.h. See ./include/hubo.h
 int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state);
