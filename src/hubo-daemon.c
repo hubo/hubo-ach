@@ -394,14 +394,16 @@ void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fra
     hGetSensor(0,h, f);
     int i=0;
     //TODO: Figure out exactly how many CAN packets we expect and adjust the loop length.
-    for (i = 0; i <4 ; ++i){
+    //KLUDGE: 5 packets at least (1 each FT, IMU)
+    for (i = 0; i <5 ; ++i){
         readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
         decodeFrame(s, h, f);
     }
 
     //printf("Request CAN Channel  %d\n",1);
     hGetSensor(1, h, f);
-    for (i = 0; i <4 ; ++i){
+    //KLUDGE: Know 2 packets come in on upper body CAN
+    for (i = 0; i <2 ; ++i){
         readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
         decodeFrame(s, h, f);
     }
@@ -688,15 +690,13 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
     
     if (chan == 0){
-        fGetSensor( 0xFF, 0x12, h, f);
+        fGetSensor( 0xFF, 0x03, h, f);
         sendCan(hubo_socket[chan], f);
-        fGetSensor( 0xFF, 0x22, h, f);
+        fGetSensor( 0x03, 0x00, h, f);
         sendCan(hubo_socket[chan], f);
     }
     else if (chan == 1){
-        fGetSensor( 0xFF, 0x12, h, f);
-        sendCan(hubo_socket[chan], f);
-        fGetSensor( 0xFF, 0x22, h, f);
+        fGetSensor( 0xFF, 0x00, h, f);
         sendCan(hubo_socket[chan], f);
     }
 }
@@ -783,7 +783,7 @@ void hNullSensor(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_
     if (strncmp(h->sensor[jnt].name,"IMU",3))
         fNullSensor(jnt, 0x00, r, h, f);
     else if (strncmp(h->sensor[jnt].name,"FT",2))
-        fNullSensor(jnt, 0x02, r, h, f);
+        fNullSensor(jnt, 0x00, r, h, f);
     sendCan(hubo_socket[h->sensor[jnt].can], f);
 }
 
@@ -981,13 +981,13 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				num=HUBO_FT_L_FOOT;
 				break;
 			case 0x51:
-				num=HUBO_IMU0;
+				num=HUBO_IMU0-HUBO_IMU0;
 				break;
 			case 0x52:
-				num=HUBO_IMU1;
+				num=HUBO_IMU1-HUBO_IMU0;
 				break;
 			case 0x53:
-				num=HUBO_IMU2;
+				num=HUBO_IMU2-HUBO_IMU0;
 				break;
 			case 0x46:
 				num=HUBO_FT_R_HAND;
