@@ -135,8 +135,8 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void hNullSensor(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void fNullSensor(int jnt, int mode, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void hNullSensor(int jnt, uint8_t mode, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void fNullSensor(int jnt, uint8_t mode, struct hubo_param *h, struct can_frame *f);
 void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f);
 void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
@@ -552,7 +552,7 @@ void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f) {
 	f->can_dlc = dlc; 
 }
   
-void fNullSensor(int jnt, int mode, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+void fNullSensor(int jnt, uint8_t mode,  struct hubo_param *h, struct can_frame *f) {
 f->can_id 	= CMD_TXDF;
 	__u8 data[3];
     //Use controller number, which is 0x2F + the 1-indexed sensor Receive number
@@ -777,13 +777,8 @@ void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_s
 
 }
 
-void hNullSensor(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
-    //TODO: Automated check for type of sensor
-
-    if (strncmp(h->sensor[jnt].name,"IMU",3))
-        fNullSensor(jnt, 0x00, r, h, f);
-    else if (strncmp(h->sensor[jnt].name,"FT",2))
-        fNullSensor(jnt, 0x00, r, h, f);
+void hNullSensor(int jnt, uint8_t mode, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+    fNullSensor(jnt, mode, h, f);
     sendCan(hubo_socket[h->sensor[jnt].can], f);
 }
 
@@ -865,9 +860,12 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hGotoLimitAndGoOffset(c->cmd[1],r,h,s,f);
 					break;
 				case HUBO_ZERO_SENSOR:
-                    //cmd[1] should be sensor number?
-                    if (hubo_debug) printf("Got HUBO_SENSOR");
-					hNullSensor(c->cmd[1],r,h,s,f);
+                    //TODO: Add constants for mode flags
+					hNullSensor(c->cmd[1],0x00,h,s,f);
+					break;
+				case HUBO_ZERO_ACC:
+                    //TODO: Add constants for mode flags
+					hNullSensor(c->cmd[1],0x04,h,s,f);
 					break;
 				default:
 					break;
