@@ -117,6 +117,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	CMSG esd_frame;
 	// id
 	esd_frame.id = f->can_id;
+    if (f->can_id==0x02) printf("Get sensor %d\n",esd_frame.data[0]);
 	// len
 	esd_frame.len = f->can_dlc;
 	// data

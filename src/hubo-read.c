@@ -246,6 +246,7 @@ void huboLoop() {
 			H_state.ft[i].f_z);
 
 		i = HUBO_IMU0;
+        //TODO: Add in Z gyro? Is it useful?
 		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
 			H_param.sensor[i].name,
 			H_state.imu[0].a_x,
@@ -260,11 +261,12 @@ void huboLoop() {
 			H_state.imu[1].a_z);
 
 		i = HUBO_IMU2;
-		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
+		printf("%s: Ax = %f \t \t Ay = %f \t Wx = %f \t Wy = %f \n",
 			H_param.sensor[i].name,
 			H_state.imu[2].a_x,
 			H_state.imu[2].a_y,
-			H_state.imu[2].a_z);
+			H_state.imu[2].w_x,
+			H_state.imu[2].w_y);
 	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 
 

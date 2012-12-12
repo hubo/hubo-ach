@@ -46,7 +46,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/mman.h>
 
 // for hubo
-#include "../../hubo-ach/include/hubo.h"
+#include "hubo.h"
 
 // for ach
 #include <errno.h>
