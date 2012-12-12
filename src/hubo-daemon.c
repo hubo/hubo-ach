@@ -115,7 +115,6 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 void hInitilizeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
-void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
 void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
@@ -129,12 +128,18 @@ double enc2rad(int jnt, int enc, struct hubo_param *h);
 void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hZeroSensor(int jnt, uint8_t mode, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void fZeroSensor(int jnt, uint8_t mode, struct hubo_param *h, struct can_frame *f);
+void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f);
+void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
+double doubleFromBytePair(uint8_t data0, uint8_t data1);
 
 // ach message type
 //typedef struct hubo h[1];
@@ -149,6 +154,7 @@ int hubo_debug = 0;
 /* time for the ref not to be sent while a joint is being moved */
 //double hubo_noRefTime[HUBO_JOINT_NUM];
 double hubo_noRefTimeAll = 0.0;
+
 
 void huboLoop(struct hubo_param *H_param) {
 	int i = 0;  // iterator
@@ -184,6 +190,10 @@ void huboLoop(struct hubo_param *H_param) {
 	int interval = 10000000; // 100 hz (0.01 sec)
 //	int interval = 5000000; // 200 hz (0.005 sec)
 //	int interval = 2000000; // 500 hz (0.002 sec)
+	
+//Test area
+	printf("decode check %f %f %f",doubleFromBytePair(0x00,0xFF),doubleFromBytePair(0xFF,0xFF),doubleFromBytePair(0xFF,0x00));
+
 
 	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
 	printf("T = %1.3f sec\n",T);
@@ -202,6 +212,8 @@ void huboLoop(struct hubo_param *H_param) {
 	frame.can_dlc = strlen( frame.data );
 
 	int a = 0;
+	
+	setupSensorDefaults(&H_param);
 
 	printf("Start Hubo Loop\n");
 //	while(1) {
@@ -259,7 +271,8 @@ void huboLoop(struct hubo_param *H_param) {
 		}
 		
 		/* Get all Encoder data */
-		getEncAllSlow(&H_state, H_param, &frame); 
+		//getEncAllSlow(&H_state, H_param, &frame); 
+		getSensorAllSlow(&H_state, H_param, &frame); 
 
 		/* Get all Current data */
 //		getCurrentAllSlow(&H_state, &H_param, &frame);
@@ -281,13 +294,6 @@ void huboLoop(struct hubo_param *H_param) {
 }
 
 
-
-
-
-
-
-
-
 static inline void tsnorm(struct timespec *ts){
 
 //	clock_nanosleep( NSEC_PER_SEC, TIMER_ABSTIME, ts, NULL);
@@ -307,6 +313,7 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*M_PI);
 }
 */
+
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
 	int c[HUBO_JMC_COUNT];
@@ -327,9 +334,6 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 		}
 	}	
 }
-
-
-
 
 void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
@@ -376,7 +380,7 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		jmc = h->joint[i].jmc;
 		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
-			hGetEncValue(i, h, f);
+            hGetEncValue(i, h, f);
 			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
 			decodeFrame(s, h, f);
 			c[jmc] = 1;
@@ -384,7 +388,26 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	}}	
 }
 
+void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+    ///> Requests all sensor data and saves to state
+    //printf("Request CAN Channel  %d\n",0);
+    hGetSensor(0,h, f);
+    int i=0;
+    //TODO: Figure out exactly how many CAN packets we expect and adjust the loop length.
+    //KLUDGE: 5 packets at least (1 each FT, IMU)
+    for (i = 0; i <5 ; ++i){
+        readCan(hubo_socket[0], f, HUBO_CAN_TIMEOUT_DEFAULT);
+        decodeFrame(s, h, f);
+    }
 
+    //printf("Request CAN Channel  %d\n",1);
+    hGetSensor(1, h, f);
+    //KLUDGE: Know 2 packets come in on upper body CAN
+    for (i = 0; i <2 ; ++i){
+        readCan(hubo_socket[1], f, HUBO_CAN_TIMEOUT_DEFAULT);
+        decodeFrame(s, h, f);
+    }
+}
 
 
 void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
@@ -418,8 +441,6 @@ void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 
 }
 
-
-
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	///> Requests all motor currents and records to hubo_state
 	char c[HUBO_JMC_COUNT];
@@ -442,15 +463,6 @@ void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fr
 
 }
 
-
-
-
-
-
-
-
-
-
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
 	// set encoder from reference
 	struct hubo_joint_param *p = &h->joint[jnt];
@@ -461,6 +473,7 @@ unsigned long signConvention(long _input) {
 	if (_input < 0) return (unsigned long)( ((-_input)&0x007FFFFF) | (1<<23) );
 	else return (unsigned long)_input;
 }
+
 void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
@@ -514,28 +527,41 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 }
 
 // FT sensor
-fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
-///< INI FT Sensors
+void fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
+///< Initialize Sensor board
+//FIXME: "Initializing" actualy resets all values to default, and is disabled until a safe way is designed.
+/*
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
 	f->data[0] 	= h->sensor[ft].canID;
-	f->data[1]	= 0xFA;
+	f->data[1]	= 0x;
 	f->data[2] 	= 0xAA;
 	//sprintf(f->data, "%s", data);
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
+*/
 }
   
 
-fGetFT(int ft, uint16_t FT_Return_Type, struct hubo_param *h, struct can_frame *f) {
-///< Request FT Sensors
+void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f) {
+///< Request FT Sensor data based on return type
 	f->can_id 	= SEND_SENSOR_TXDF;	// Set ID
-	__u8 data[2];
-	f->data[0] 	= h->sensor[ft].boardNo;
-	f->data[1]	= FT_Return_Type;
-	//sprintf(f->data, "%s", data);
-	f->can_dlc = 2; //= strlen( data );	// Set DLC
+    const uint8_t dlc = 2;
+	__u8 data[dlc];
+	f->data[0] 	= b0;
+	f->data[1]	= b1;
+	f->can_dlc = dlc; 
 }
   
+void fZeroSensor(int jnt, uint8_t mode,  struct hubo_param *h, struct can_frame *f) {
+f->can_id 	= CMD_TXDF;
+	__u8 data[3];
+    //Use controller number, which is 0x2F + the 1-indexed sensor Receive number
+    //note that jnt is the index corresponding to the ACH state
+	f->data[0] = 0x2F + h->sensor[jnt].boardNo;
+    f->data[1] = NullCMD;
+    f->data[2] = mode;
+	f->can_dlc = 3; //= strlen( data );	// Set DLC
+}
 
 // 5
 void fResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
@@ -661,6 +687,19 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 
+void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
+    
+    if (chan == 0){
+        fGetSensor( 0xFF, 0x03, h, f);
+        sendCan(hubo_socket[chan], f);
+        fGetSensor( 0x03, 0x00, h, f);
+        sendCan(hubo_socket[chan], f);
+    }
+    else if (chan == 1){
+        fGetSensor( 0xFF, 0x00, h, f);
+        sendCan(hubo_socket[chan], f);
+    }
+}
 
 void hSetBeep(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, double beepTime) {
 	fSetBeep(jnt, r, h, f, beepTime);
@@ -703,21 +742,44 @@ void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct h
 }
 
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+    /*
 	fInitializeBoard(jnt, r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
-	//readCan(hubo_socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
-	readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read and 4 sec timeout
+	readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read
+    */
 }
 
 
+void hInitializeSensorBoard(int snr, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+    /*
+	if (hubo_debug) printf("Initializing sensor board %d\n",snr);
+	fIniFT(snr, h, f);
+	sendCan(hubo_socket[h->sensor[snr].can], f);
+	readCan(hubo_socket[h->sensor[snr].can], f, HUBO_CAN_TIMEOUT_DEFAULT*100);	// 8 bytes to read
+    */
+}
+
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Initilizes all boards
+    /*
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 		if(s->joint[i].active == true) {
 			hInitializeBoard(i, r, h, f);
 		}
 	}
+    */
+
+	/*int j = 0;*/
+	/*for(j = 0; j < 7; j++) {*/
+        /*hInitializeSensorBoard(j, r, h, f);*/
+	/*}*/
+
+}
+
+void hZeroSensor(int jnt, uint8_t mode, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+    fZeroSensor(jnt, mode, h, f);
+    sendCan(hubo_socket[h->sensor[jnt].can], f);
 }
 
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
@@ -727,17 +789,6 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
-void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
-// --std=c99
-		printf("2\n");
-	int i = 0;
-	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-		if(s->joint[i].active) {
-			hInitializeBoard(i, r, h, f);
-			printf("%i\n",i);
-		}
-	}
-}
 
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff) {
 	if(onOff == 1) { // turn on FET
@@ -762,6 +813,7 @@ void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, stru
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 	s->joint[jnt].zeroed == true;		// need to add a can read back to confirm it was zeroed
 }
+
 void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
 //	printf("hubo-ach - interface 2012-08-18\n");
@@ -807,7 +859,14 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 				case HUBO_GOTO_HOME:
 					hGotoLimitAndGoOffset(c->cmd[1],r,h,s,f);
 					break;
-		//		case HUBO_GOTO_REF:
+				case HUBO_ZERO_SENSOR:
+                    //TODO: Add constants for mode flags
+					hZeroSensor(c->cmd[1],0x00,h,s,f);
+					break;
+				case HUBO_ZERO_ACC:
+                    //TODO: Add constants for mode flags
+					hZeroSensor(c->cmd[1],0x04,h,s,f);
+					break;
 				default:
 					break;
 			}
@@ -822,6 +881,13 @@ double enc2rad(int jnt, int enc, struct hubo_param *h) {
         return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*M_PI);
 }
 
+double doubleFromBytePair(uint8_t data0, uint8_t data1){
+	unsigned int tmp = 0;
+	
+	tmp |= (( ((uint16_t)data0) << 8 ) & 0xFFFF); 
+	tmp |= (( ((uint16_t)data1)  ) & 0x00FF); 
+	return (double) (int16_t)tmp;
+}
 
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 	int fs = (int)f->can_id;
@@ -843,7 +909,6 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
 				s->joint[jnt].cur = current;
 				s->joint[jnt].tmp = temp;
-
 				
 			}
 		}
@@ -903,120 +968,79 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	} 
 
 	else if( (fs >= SENSOR_FT_BASE_RXDF) & (fs < (SENSOR_FT_BASE_RXDF+0x20))) {
-		if( fs == (SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_R_FOOT].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Mx = (double)tmp/100.0;		// moment in Nm
+        if (hubo_debug) printf("Got sensor range ID %d\n",fs);
+		int num = -1;
+        switch (fs){
+            //TODO: remove hard coded mess here.
+            case 0x41:
+                num=HUBO_FT_R_FOOT;
+                decodeFTFrame(num,s,f);
+                break;
+            case 0x42:
+                num=HUBO_FT_L_FOOT;
+                decodeFTFrame(num,s,f);
+                break;
+            case 0x51:
+                //KLUDGE: conversion from IMU Sensor number to IMU index 
+                // The ID of the sensor packets is NOT 0x50+SBNO, or these would be 0x53-0x55
+                num=HUBO_IMU0-HUBO_IMU0;
+                decodeADFrame(num,s,f);
+                break;
+            case 0x52:
+                num=HUBO_IMU1-HUBO_IMU0;
+                decodeADFrame(num,s,f);
+                break;
+            case 0x53:
+                //Note that torso IMU returns Pitch/Roll Acc. and Gyro
+                num=HUBO_IMU2-HUBO_IMU0;
+                decodeIMUFrame(num,s,f);
+                break;
+            case 0x46:
+                // Wrist FT Sensors resume here
+                num=HUBO_FT_R_HAND;
+                decodeFTFrame(num,s,f);
+                break;
+            case 0x47:
+                num=HUBO_FT_L_HAND;
+                decodeFTFrame(num,s,f);
+                break;
+        }
 			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double My = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Fz = (double)tmp/10.0;
-
-			int num = HUBO_FT_R_FOOT;
-			s->ft[num].m_x = Mx;
-			s->ft[num].m_y = My;
-			s->ft[num].f_z = Fz;
-		}
-		else if( fs == (SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_L_FOOT].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Mx = (double)tmp/100.0;		// moment in Nm
-			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double My = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Fz = (double)tmp/10.0;
-
-			int num = HUBO_FT_L_FOOT;
-			s->ft[num].m_x = Mx;
-			s->ft[num].m_y = My;
-			s->ft[num].f_z = Fz;
-		}
-		else if( fs == (SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_R_HAND].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Mx = (double)tmp/100.0;		// moment in Nm
-			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double My = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Fz = (double)tmp/10.0;
-
-			int num = HUBO_FT_R_HAND;
-			s->ft[num].m_x = Mx;
-			s->ft[num].m_y = My;
-			s->ft[num].f_z = Fz;
-		}
-		else if( fs == (SENSOR_FT_BASE_RXDF+h->sensor[HUBO_FT_L_HAND].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Mx = (double)tmp/100.0;		// moment in Nm
-			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double My = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Fz = (double)tmp/10.0;
-
-			int num = HUBO_FT_L_HAND;
-			s->ft[num].m_x = Mx;
-			s->ft[num].m_y = My;
-			s->ft[num].f_z = Fz;
-		}
-		else if( fs == (SENSOR_AD_BASE_RXDF+h->sensor[HUBO_IMU0].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Ax = (double)tmp/100.0;		// moment in Nm
-			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double Ay = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Gz = (double)tmp/100.0;
-
-			int num = 0;
-			s->imu[num].a_x = Ax;
-			s->imu[num].a_y = Ay;
-			s->imu[num].a_z = Gz;
-		}
-		else if( fs == (SENSOR_AD_BASE_RXDF+h->sensor[HUBO_IMU1].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Ax = (double)tmp/100.0;		// moment in Nm
-			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double Ay = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Gz = (double)tmp/100.0;
-
-			int num = 1;
-			s->imu[num].a_x = Ax;
-			s->imu[num].a_y = Ay;
-			s->imu[num].a_z = Gz;
-		}
-		else if( fs == (SENSOR_AD_BASE_RXDF+h->sensor[HUBO_IMU2].boardNo) ) { // right foot FT
-			uint16_t tmp = 0;
-			tmp = ( ((uint16_t)f->data[1]) << 8 ) | (uint16_t)f->data[0];
-			double Ax = (double)tmp/100.0;		// moment in Nm
-			
-			tmp = ( ((uint16_t)f->data[3]) << 8 ) | (uint16_t)f->data[2];
-			double Ay = (double)tmp/100.0;		// moment in Nm
-
-			tmp = ( ((uint16_t)f->data[5]) << 8 ) | (uint16_t)f->data[4];
-			double Gz = (double)tmp/100.0;
-
-			int num = 2;
-			s->imu[num].a_x = Ax;
-			s->imu[num].a_y = Ay;
-			s->imu[num].a_z = Gz;
-		}
 	}
 	return 0;
+}
+
+void decodeFTFrame(int num, struct hubo_state *s, struct can_frame *f){
+
+    double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
+    double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
+    double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
+    s->ft[num].m_x = Mx;
+    s->ft[num].m_y = My;
+    s->ft[num].f_z = Fz;
+}
+
+void decodeADFrame(int num, struct hubo_state *s, struct can_frame *f){
+
+    double Ax = doubleFromBytePair(f->data[1],f->data[0])/100.0;		
+    double Ay = doubleFromBytePair(f->data[3],f->data[2])/100.0;		
+    double Az = doubleFromBytePair(f->data[5],f->data[4])/100.0;		
+    s->imu[num].a_x = Ax;
+    s->imu[num].a_y = Ay;
+    s->imu[num].a_z = Az;
+}
+
+void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
+
+    double Ra = doubleFromBytePair(f->data[1],f->data[0])/100.0;		
+    double Pa = doubleFromBytePair(f->data[3],f->data[2])/100.0;		
+    double Rr = doubleFromBytePair(f->data[5],f->data[4])/100.0;		
+    double Pr = doubleFromBytePair(f->data[5],f->data[6])/100.0;
+    //TODO: Check that "Roll" and "Pitch" names make sense
+    s->imu[num].a_x = Ra;
+    s->imu[num].a_y = Pa;
+    s->imu[num].w_x = Rr;
+    s->imu[num].w_y = Pr;
 }
 
 
