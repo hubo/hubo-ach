@@ -225,20 +225,23 @@ void huboLoop() {
 			tmp = 0.0;
 			for(j = 0; j < buffLength; j++) { tmp = tmp + H_ref_filter_buff[j].ref[i]; }
 
-			H_ref_filter_buff2[N2].ref[i] = tmp/(double)buffLength;
-			H_ref.ref[i] = tmp/(double)buffLength;
+			if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+			    (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) {
+				H_ref.ref[i] = H_ref_buff.ref[i];
+			}
+			else {
+				H_ref_filter_buff2[N2].ref[i] = tmp/(double)buffLength;
+				H_ref.ref[i] = tmp/(double)buffLength;
 		
-			tmp = 0.0;	
-			for(j = 0; j < buffLength2; j++) { tmp = tmp + H_ref_filter_buff2[j].ref[i]; }
-
-
-//			H_ref.ref[i] = tmp/(double)buffLength2;
+				tmp = 0.0;	
+				for(j = 0; j < buffLength2; j++) { tmp = tmp + H_ref_filter_buff2[j].ref[i]; }
 			
-			if( N < (buffLength) ) { N = N + 1; }
-			else {N = 0;}
+				if( N < (buffLength) ) { N = N + 1; }
+				else {N = 0;}
 
-			if( N2 < (buffLength2) ) { N2 = N2 + 1; }
-			else {N2 = 0;}
+				if( N2 < (buffLength2) ) { N2 = N2 + 1; }
+				else {N2 = 0;}
+			}
 		}
 // ------------------------------------------------------------------------------
 // ---------------[ DO NOT EDIT BELOW THIS LINE]---------------------------------

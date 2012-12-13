@@ -478,7 +478,7 @@ unsigned long signConvention(long _input) {
 void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
-	__u8 data[6];
+	__u8 data[8];
 	uint16_t jmc = h->joint[jnt].jmc;
 	if(h->joint[jnt].numMot == 2) {
 		__u8 m0 = h->driver[jmc].jmc[0];
@@ -545,7 +545,7 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		}
 
 		if( (jnt == RF1) | (jnt == LF1) ){
-
+		f->can_id = 0x01;
 		f->data[0] = getFingerInt(r->ref[fing[0]]);
 		f->data[1] = getFingerInt(r->ref[fing[1]]);
 		f->data[2] = getFingerInt(r->ref[fing[2]]);
