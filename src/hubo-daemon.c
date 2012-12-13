@@ -140,6 +140,7 @@ void fZeroSensor(int jnt, uint8_t mode, struct hubo_param *h, struct can_frame *
 void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f);
 void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
+uint8_t getFingerInt(double n);
 
 // ach message type
 //typedef struct hubo h[1];
@@ -500,6 +501,7 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		if(r->ref[m1] < 0.0) {
 			f->data[5] = f->data[5] | 0x80;
 		}
+		f->can_dlc = 6; //= strlen( data );	// Set DLC
 	}
 	else if(h->joint[jnt].numMot == 1) {
 		__u8 m0 = h->driver[jmc].jmc[0];
@@ -522,8 +524,53 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		if(r->ref[m1] < 0.0) {
 			f->data[5] = f->data[5] | 0x80;
 		}
+		f->can_dlc = 6; //= strlen( data );	// Set DLC
 	}
-	f->can_dlc = 6; //= strlen( data );	// Set DLC
+        else if(h->joint[jnt].numMot == 5) { // Fingers
+
+		int fing[5];
+		if(jnt == RF1) { 
+			fing[0] = RF1;
+			fing[1] = RF2;
+			fing[2] = RF3;
+			fing[3] = RF4;
+			fing[4] = RF5;
+		}
+		else if(jnt == LF1) { 
+			fing[0] = RF1;
+			fing[1] = RF2;
+			fing[2] = RF3;
+			fing[3] = RF4;
+			fing[4] = RF5;
+		}
+
+		if( (jnt == RF1) | (jnt == LF1) ){
+
+		f->data[0] = getFingerInt(r->ref[fing[0]]);
+		f->data[1] = getFingerInt(r->ref[fing[1]]);
+		f->data[2] = getFingerInt(r->ref[fing[2]]);
+		f->data[3] = getFingerInt(r->ref[fing[3]]);
+		f->data[4] = getFingerInt(r->ref[fing[4]]);
+		
+		f->can_dlc = 5;
+
+		}
+        }
+
+}
+
+uint8_t getFingerInt(double n){
+///> takes a values between -1 and 1 and returns the proper can unsigned value to go into the can packet
+
+	uint8_t t = 0;
+	int N = (int)(n*15.0);		// scale
+	N = abs(N);			// absolute value
+	if(N > 0x0F){ N = 0x0F; }		// saturation
+	
+	t = (uint8_t)N;			// convert to uint8
+	if(n < 0){ t = t | 0x10; }
+
+	return t;
 }
 
 // FT sensor
