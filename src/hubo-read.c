@@ -162,8 +162,10 @@ void huboLoop() {
 
         // time info
         struct timespec t;
+        struct timespec t2;
         //int interval = 500000000; // 2hz (0.5 sec)
-        int interval = 100000000; // 10hz (0.1 sec)
+//        int interval = 100000000; // 10hz (0.1 sec)
+        int interval = 50000000; // 20hz (0.2 sec)
         //int interval = 10000000; // 100 hz (0.01 sec)
         //int interval = 5000000; // 200 hz (0.005 sec)
         //int interval = 2000000; // 500 hz (0.002 sec)
@@ -206,10 +208,14 @@ void huboLoop() {
 		printf("\033[2J");
 		int i = 0;
 		int jnt = 0;
+
+        	clock_gettime( 0,&t2);
+		printf("t = %i.%09i\n",t2.tv_sec,t2.tv_nsec);
 		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 			jnt = i;
 			if(H_param.joint[jnt].name[0] != 0){
-			printf("%s: Ref = %f \t \t Enc = %f \t Cur = %f \t Tmp = %f\n",
+			printf("%-4s: Ref = %-12f Enc = %-12f Cur = %-12f Tmp = %-12f\n",
+			//printf("%-20s: Ref = %-20f \t \t Enc = %-20f \t Cur = %f \t Tmp = %f\n",
 				H_param.joint[jnt].name,
 				H_ref.ref[jnt], 
 				H_state.joint[jnt].pos, 
@@ -218,28 +224,28 @@ void huboLoop() {
 		}}
 
 		i = HUBO_FT_R_FOOT;
-		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
 			H_state.ft[i].f_z);
 
 		i = HUBO_FT_L_FOOT;
-		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
 			H_state.ft[i].f_z);
 		
 		i = HUBO_FT_R_HAND;
-		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
 			H_state.ft[i].f_z);
 
 		i = HUBO_FT_L_HAND;
-		printf("%s: Mx = %f \t \t My = %f \t Fz = %f\n",
+		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
@@ -247,21 +253,21 @@ void huboLoop() {
 
 		i = HUBO_IMU0;
         //TODO: Add in Z gyro? Is it useful?
-		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
+		printf("%-4s: Ax = %-12f Ay = %-12f Az = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.imu[0].a_x,
 			H_state.imu[0].a_y,
 			H_state.imu[0].a_z);
 
 		i = HUBO_IMU1;
-		printf("%s: Ax = %f \t \t Ay = %f \t Az = %f\n",
+		printf("%-4s: Ax = %-12f Ay = %-12f Az = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.imu[1].a_x,
 			H_state.imu[1].a_y,
 			H_state.imu[1].a_z);
 
 		i = HUBO_IMU2;
-		printf("%s: Ax = %f \t \t Ay = %f \t Wx = %f \t Wy = %f \n",
+		printf("%-4s: Ax = %-12f Ay = %-12f Wx = %-12f Wy = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.imu[2].a_x,
 			H_state.imu[2].a_y,

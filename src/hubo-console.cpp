@@ -83,7 +83,7 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 double hubo_set(char*s, struct hubo_ref *h, struct hubo_param *p);
-char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
+char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
                 "get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR",
@@ -259,6 +259,29 @@ int main() {
             else
                 fprintf(stderr,"Name %s not found!\n",getArg(buf,1));
         }
+	else if (strcmp(buf0,"iniSensors")==0){
+	    for( int ft = 0; ft < HUBO_SENSOR_COUNT; ft++){
+            	if (ft>=0){  //zero
+                	H_init.cmd[0] = HUBO_ZERO_SENSOR;
+        	        H_init.cmd[1] = (char)ft;
+
+	                int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+               		printf("%s - Null, id = %d \n",getArg(buf,1),H_init.cmd[1]);
+
+//			sleep(1)i;	// sleep for tsleep sec
+			usleep(250000);
+            	}
+
+	            if (ft>=0){ //zeroacc
+        	        H_init.cmd[0] = HUBO_ZERO_ACC;
+               		H_init.cmd[1] = (char)ft;
+
+	                int r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+        	        printf("%s - Null, id = %d \n",getArg(buf,1),H_init.cmd[1]);
+			usleep(250000);
+            }
+	    }
+	}
         else if (strcmp(buf0,"zeroacc")==0){
             int ft = name2sensor(getArg(buf,1),&H_param);
             if (ft>=0){

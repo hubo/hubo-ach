@@ -187,8 +187,8 @@ void huboLoop(struct hubo_param *H_param) {
 /* period */
 //	int interval = 500000000; // 2hz (0.5 sec)
 //	int interval = 20000000; // 50 hz (0.02 sec)
-	int interval = 10000000; // 100 hz (0.01 sec)
-//	int interval = 5000000; // 200 hz (0.005 sec)
+//	int interval = 10000000; // 100 hz (0.01 sec)
+	int interval = 5000000; // 200 hz (0.005 sec)
 //	int interval = 2000000; // 500 hz (0.002 sec)
 	
 //Test area
@@ -271,7 +271,7 @@ void huboLoop(struct hubo_param *H_param) {
 		}
 		
 		/* Get all Encoder data */
-		//getEncAllSlow(&H_state, H_param, &frame); 
+		getEncAllSlow(&H_state, H_param, &frame); 
 		getSensorAllSlow(&H_state, H_param, &frame); 
 
 		/* Get all Current data */

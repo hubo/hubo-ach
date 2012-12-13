@@ -207,8 +207,8 @@ struct hubo_state {
 
 struct hubo_init_cmd {
 	/* values for console commands */
-	double val[3];
-	uint16_t cmd[3];
+	double val[8];
+	uint16_t cmd[8];
 };
 
 struct jmcDriver{

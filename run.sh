@@ -91,11 +91,15 @@ StartHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 		
-		sudo ach -1 -C hubo-ref -m 10 -n 3000
-		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
-		sudo ach -1 -C hubo-state -m 10 -n 3000
-		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
+#		sudo ach -1 -C hubo-ref -m 10 -n 3000
+#		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
+#		sudo ach -1 -C hubo-state -m 10 -n 3000
+#		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 		
+		ach -1 -C hubo-ref -m 10 -n 3000
+		ach -1 -C hubo-ref-filter -m 10 -n 3000
+		ach -1 -C hubo-state -m 10 -n 3000
+		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
 		DAEMON_ARGS=''
 		for IN_ARG in $@
