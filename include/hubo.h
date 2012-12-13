@@ -130,8 +130,8 @@ typedef enum {
 	HUBO_GOTO_HOME		= 7,	///> go home position
 	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
 	HUBO_JMC_INI_ALL	= 9,	///> Initilize all JMC boards
-    HUBO_ZERO_SENSOR    = 10,       ///> Zero out the given FT sensor
-    HUBO_ZERO_ACC    = 11       ///> Zero out the given Accelerometer
+	HUBO_ZERO_SENSOR    	= 10,   ///> Zero out the given FT sensor
+	HUBO_ZERO_ACC    	= 11    ///> Zero out the given Accelerometer
 } hubo_console_t;
 
 typedef enum {
@@ -186,12 +186,12 @@ struct hubo_ft {
 };
 
 struct hubo_imu {
-	double w_x;    ///< rotational velocity in x (rad/s)
-	double w_y;    ///< rotational velocity in y (rad/s)
-	double w_z;    ///< rotational velocity in z (rad/s)
-	double a_x;    ///< linear acceleration in x (m/s/s)
-	double a_y;    ///< linear acceleration in y (m/s/s)
-	double a_z;    ///< linear acceleration in z (m/s/s)
+	double w_x;    ///< IMU: rotational velocity in x (rad/s)
+	double w_y;    ///< IMU: rotational velocity in y (rad/s)
+//	double w_z;    ///< rotational velocity in z (rad/s)
+	double a_x;    ///< IMU/ACC: Angle in X (rad); 
+	double a_y;    ///< IMU/ACC: Angle in Y (rad); 
+	double a_z;    ///< ACC: Gforce in z (G)
 };
 
 struct hubo_ref {

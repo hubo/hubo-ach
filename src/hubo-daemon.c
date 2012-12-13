@@ -545,14 +545,17 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		}
 
 		if( (jnt == RF1) | (jnt == LF1) ){
-		f->can_id = 0x01;
-		f->data[0] = getFingerInt(r->ref[fing[0]]);
-		f->data[1] = getFingerInt(r->ref[fing[1]]);
-		f->data[2] = getFingerInt(r->ref[fing[2]]);
-		f->data[3] = getFingerInt(r->ref[fing[3]]);
-		f->data[4] = getFingerInt(r->ref[fing[4]]);
+			f->can_id = 0x01;
+			f->data[0] = (uint8_t)h->joint[jnt].jmc;
+			f->data[1] = (uint8_t)0x0D;
+			f->data[2] = (uint8_t)0x01;
+			f->data[0] = getFingerInt(r->ref[fing[0]]);
+			f->data[1] = getFingerInt(r->ref[fing[1]]);
+			f->data[2] = getFingerInt(r->ref[fing[2]]);
+			f->data[3] = getFingerInt(r->ref[fing[3]]);
+			f->data[4] = getFingerInt(r->ref[fing[4]]);
 		
-		f->can_dlc = 5;
+			f->can_dlc = 8;
 
 		}
         }
@@ -563,12 +566,14 @@ uint8_t getFingerInt(double n){
 ///> takes a values between -1 and 1 and returns the proper can unsigned value to go into the can packet
 
 	uint8_t t = 0;
-	int N = (int)(n*15.0);		// scale
+	if( n < -1) { n = -1.0; }
+	if( n >  1) { n =  1.0; }
+	int N = (int)(n*100.0);		// scale
 	N = abs(N);			// absolute value
-	if(N > 0x0F){ N = 0x0F; }		// saturation
-	
-	t = (uint8_t)N;			// convert to uint8
-	if(n < 0){ t = t | 0x10; }
+	if( N > 100 ){ N = 100; }	// saturation 
+		
+	t = ((uint8_t)N) & 0x7F;			// convert to uint8
+	if(n < 0){ t = t | 0x80; }
 
 	return t;
 }
@@ -737,8 +742,10 @@ void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///>
 void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting a single FT board's scaled data
     
     if (chan == 0){
-        fGetSensor( 0xFF, 0x03, h, f);
+       // fGetSensor( 0xFF, 0x03, h, f);
+        fGetSensor( 0xFF, 0x02, h, f);
         sendCan(hubo_socket[chan], f);
+       //fGetSensor( 0x03, 0x00, h, f);
         fGetSensor( 0x03, 0x00, h, f);
         sendCan(hubo_socket[chan], f);
     }
@@ -1071,7 +1078,7 @@ void decodeADFrame(int num, struct hubo_state *s, struct can_frame *f){
 
     double Ax = doubleFromBytePair(f->data[1],f->data[0])/100.0;		
     double Ay = doubleFromBytePair(f->data[3],f->data[2])/100.0;		
-    double Az = doubleFromBytePair(f->data[5],f->data[4])/100.0;		
+    double Az = doubleFromBytePair(f->data[5],f->data[4])/750.0;		
     s->imu[num].a_x = Ax;
     s->imu[num].a_y = Ay;
     s->imu[num].a_z = Az;
