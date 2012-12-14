@@ -327,9 +327,13 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 			jmc = h->joint[i].jmc+1;
 			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
-				hSetEncRef(i, r, h, f);
-				c[jmc] = 1;
-//				if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
+				if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) | 
+				    (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+				else {
+					hSetEncRef(i, r, h, f);
+					c[jmc] = 1;
+//					if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
+				}
 			}
 
 		}
@@ -537,27 +541,27 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 			fing[4] = RF5;
 		}
 		else if(jnt == LF1) { 
-			fing[0] = RF1;
-			fing[1] = RF2;
-			fing[2] = RF3;
-			fing[3] = RF4;
-			fing[4] = RF5;
+			fing[0] = LF1;
+			fing[1] = LF2;
+			fing[2] = LF3;
+			fing[3] = LF4;
+			fing[4] = LF5;
 		}
 
-		if( (jnt == RF1) | (jnt == LF1) ){
+	//	if( (jnt == RF1) | (jnt == LF1) ){
 			f->can_id = 0x01;
 			f->data[0] = (uint8_t)h->joint[jnt].jmc;
 			f->data[1] = (uint8_t)0x0D;
 			f->data[2] = (uint8_t)0x01;
-			f->data[0] = getFingerInt(r->ref[fing[0]]);
-			f->data[1] = getFingerInt(r->ref[fing[1]]);
-			f->data[2] = getFingerInt(r->ref[fing[2]]);
-			f->data[3] = getFingerInt(r->ref[fing[3]]);
-			f->data[4] = getFingerInt(r->ref[fing[4]]);
+			f->data[3] = getFingerInt(r->ref[fing[0]]);
+			f->data[4] = getFingerInt(r->ref[fing[1]]);
+			f->data[5] = getFingerInt(r->ref[fing[2]]);
+			f->data[6] = getFingerInt(r->ref[fing[3]]);
+			f->data[7] = getFingerInt(r->ref[fing[4]]);
 		
 			f->can_dlc = 8;
 
-		}
+	//	}
         }
 
 }
