@@ -25,6 +25,27 @@ Install ACH
 (3) `sudo apt-get install libach0 libach-dev`
 (4) `sudo apt-get install ach-utils`
 
+Functionality:
+==============
+    Feedforward:
+                - set position reference (rad)
+
+    Feedback: 
+                - get encoder position (rad)
+                - get IMU x angle (rad)
+                - get IMU y angle (rad)
+                - get IMU Vx velos(rad/sec)
+                - get IMU Vy velos(rad/sec)
+                - get FT Mx moment (Nm)
+                - get FT My moment (Nm)
+                - get FT Fz force (N)
+                - get foot angle from acc Ax (rad)
+                - get foot angle from acc Ay (rad)
+                - get foot G-force acc Az (G)
+
+    Motor Control:
+                - home motors
+                - reset to defaults
 
 hubo-ach-console
 ================
