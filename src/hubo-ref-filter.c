@@ -141,8 +141,8 @@ void huboLoop() {
 	int N = 0;  // counter 1
 	int N2 = 0; // counter 2
 
-	printf("buffLength = %i\n",buffLength);
-	printf("buffLength2 = %i\n",buffLength2);
+	//printf("buffLength = %i\n",buffLength);
+	///printf("buffLength2 = %i\n",buffLength2);
 
 
         size_t fs;
@@ -200,7 +200,7 @@ void huboLoop() {
         clock_gettime( 0,&t);
 
 	double tmp = 0.0;
-	printf("here1\n");
+	//printf("here1\n");
         while(1) {
                 // wait until next shot
                 clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);

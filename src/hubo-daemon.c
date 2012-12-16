@@ -90,6 +90,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Timing info
 #define NSEC_PER_SEC    1000000000
 
+#define slowLoopSplit   5		// slow loop is X times slower then 
+
 #define hubo_home_noRef_delay 6.0	// delay before trajectories can be sent while homeing in sec
 
 
@@ -155,8 +157,8 @@ int hubo_debug = 0;
 /* time for the ref not to be sent while a joint is being moved */
 //double hubo_noRefTime[HUBO_JOINT_NUM];
 double hubo_noRefTimeAll = 0.0;
-
-
+int slowLoop  = 0;
+int slowLoopi = 0;
 void huboLoop(struct hubo_param *H_param) {
 	int i = 0;  // iterator
 	// get initial values for hubo
@@ -189,7 +191,8 @@ void huboLoop(struct hubo_param *H_param) {
 //	int interval = 500000000; // 2hz (0.5 sec)
 //	int interval = 20000000; // 50 hz (0.02 sec)
 //	int interval = 10000000; // 100 hz (0.01 sec)
-	int interval = 5000000; // 200 hz (0.005 sec)
+//	int interval = 5000000; // 200 hz (0.005 sec)
+	int interval = 4000000; // 250 hz (0.004 sec)
 //	int interval = 2000000; // 500 hz (0.002 sec)
 	
 //Test area
@@ -327,8 +330,22 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 			jmc = h->joint[i].jmc+1;
 			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
+
+				if( slowLoopi < slowLoopSplit ) {
+					slowLoop = 1;
+					slowLoopi = 0;
+				}
+				else {
+					slowLoop = 0;
+					slowLoopi = slowLoopi+1;
+				}
+
 				if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) | 
 				    (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+			//	else if( ((i == RF1) | (i == LF1)) & slowLoop == 1) {
+			//		hSetEncRef(i, r, h, f);
+			//		c[jmc] = 1;
+			//	}
 				else {
 					hSetEncRef(i, r, h, f);
 					c[jmc] = 1;
@@ -574,6 +591,7 @@ uint8_t getFingerInt(double n){
 	if( n >  1) { n =  1.0; }
 	int N = (int)(n*100.0);		// scale
 	N = abs(N);			// absolute value
+	//if( N > 100 ){ N = 100; }	// saturation 
 	if( N > 100 ){ N = 100; }	// saturation 
 		
 	t = ((uint8_t)N) & 0x7F;			// convert to uint8

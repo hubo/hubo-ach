@@ -177,7 +177,7 @@ struct hubo_joint_state {
 	double tmp;	///< temperature (dec C)
 	uint8_t active; 	///< checks if the joint is active or not
 	uint8_t zeroed;		///< checks to see if the motor is zeroed
-};
+}hubo_joint_state_t;
 
 struct hubo_ft {
 	double m_x;	///< Moment in X (Mx) in Nm
@@ -197,13 +197,13 @@ struct hubo_imu {
 struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	struct timespec time;           ///< time message sent
-};
+}hubo_ref_t;
 
 struct hubo_state {
 	struct hubo_imu imu[3];	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
-};
+}hubo_state_t;
 
 struct hubo_init_cmd {
 	/* values for console commands */
