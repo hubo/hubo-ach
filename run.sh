@@ -25,6 +25,14 @@ DAEMON_DIR='/etc/hubo-daemon'
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
 
+MakeAch()
+{
+
+	ach -1 -C hubo-ref -m 10 -n 3000
+	ach -1 -C hubo-ref-filter -m 10 -n 3000
+	ach -1 -C hubo-state -m 10 -n 3000
+	ach -1 -C hubo-init-cmd -m 10 -n 3000
+}
 
 StopHubo()
 {
@@ -96,10 +104,11 @@ StartHubo()
 #		sudo ach -1 -C hubo-state -m 10 -n 3000
 #		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 		
-		ach -1 -C hubo-ref -m 10 -n 3000
-		ach -1 -C hubo-ref-filter -m 10 -n 3000
-		ach -1 -C hubo-state -m 10 -n 3000
-		ach -1 -C hubo-init-cmd -m 10 -n 3000
+		MakeAch
+#		ach -1 -C hubo-ref -m 10 -n 3000
+#		ach -1 -C hubo-ref-filter -m 10 -n 3000
+#		ach -1 -C hubo-state -m 10 -n 3000
+#		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
 		DAEMON_ARGS=''
 		for IN_ARG in $@
@@ -154,11 +163,11 @@ VirtualHubo()
 		sudo ip link add type vcan
 		sudo ifconfig vcan3 up	
 
-		
-		ach -1 -C hubo-ref -m 10 -n 3000
-		ach -1 -C hubo-ref-filter -m 10 -n 3000
-		ach -1 -C hubo-state -m 10 -n 3000
-		ach -1 -C hubo-init-cmd -m 10 -n 3000
+		MakeAch		
+#		ach -1 -C hubo-ref -m 10 -n 3000
+#		ach -1 -C hubo-ref-filter -m 10 -n 3000
+#		ach -1 -C hubo-state -m 10 -n 3000
+#		ach -1 -C hubo-init-cmd -m 10 -n 3000
 	
 		sudo ./hubo-daemon -v
 		sudo ./hubo-console
@@ -194,9 +203,12 @@ DebugHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 	
-		sudo ach -1 -C hubo-ref -m 10 -n 3000
-		sudo ach -1 -C hubo-state -m 10 -n 3000
-		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
+
+		MakeAch
+
+#		sudo ach -1 -C hubo-ref -m 10 -n 3000
+#		sudo ach -1 -C hubo-state -m 10 -n 3000
+#		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 	
 		sudo ./hubo-daemon -d $1
 		sleep 1
