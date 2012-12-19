@@ -353,7 +353,7 @@ void huboLoop(struct hubo_param *H_param) {
 		B[13] = B0[13] + fascale*dtfy;
 		B[14] = B0[14] + fascale*dtfz;
 		
-		B[0] = tfull[0];	B[4] = tfull[4];	B[8] = tfull[8];
+/*		B[0] = tfull[0];	B[4] = tfull[4];	B[8] = tfull[8];
 		B[1] = tfull[1];	B[5] = tfull[5];	B[9] = tfull[9];
 		B[2] = tfull[2];	B[6] = tfull[6];	B[10] = tfull[10];
 		B[3] = 0;		B[7] = 0;		B[11] = 0;
@@ -367,7 +367,7 @@ void huboLoop(struct hubo_param *H_param) {
 			}
 			printf("\n");
 		}
-		printf("__________________________________\n");
+		printf("__________________________________\n");*/
 		
 		inverseKine( B, qinv );
 
