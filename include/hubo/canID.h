@@ -429,11 +429,17 @@
 #define H_GET_GYRO_TEMP		0x13
 
 
-
-
-
-
-
+// Parameter requests
+#define H_REQ_PARAMS		0x24
+#define H_GET_PARAM_A		1
+#define H_GET_PARAM_B		2
+#define H_GET_PARAM_C		3
+#define H_GET_PARAM_D		4
+#define H_GET_PARAM_E		5
+#define H_GET_PARAM_F		6
+#define H_GET_PARAM_G		20
+#define H_GET_PARAM_H		21
+#define H_GET_PARAM_I		22
 
 
 

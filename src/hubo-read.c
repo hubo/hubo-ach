@@ -197,9 +197,9 @@ void huboLoop() {
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
-		printf("\033[2J");
+//		printf("\033[2J");
 		int i = 0;
-		int jnt = 0;
+		int jnt = REB;
 /*		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 			jnt = i;
 			//if(H_param.joint[jnt].name[0] != 0){
@@ -212,13 +212,24 @@ void huboLoop() {
 				H_state.joint[jnt].cur,
 		}}
 */
-	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
+//		printf("REB: Cur = %f \t  State = %f \t Ref = %f\n",H_state.joint[jnt].cur, H_state.joint[jnt].pos, H_ref.ref[jnt]);	
 /*
 		printf("Right Foot: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[HUBO_FT_R_FOOT].m_x, H_state.ft[0].m_y, H_state.ft[0].f_z);
 		printf("Left Foot: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[1].m_x, H_state.ft[1].m_y, H_state.ft[1].f_z);
 		printf("Right Hand: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[2].m_x, H_state.ft[2].m_y, H_state.ft[2].f_z);
 		printf("Left Hand: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[2].m_x, H_state.ft[3].m_y, H_state.ft[3].f_z);
 */
+
+		printf("[RSP]%f \t [RSR]%f \t [RSY]%f \t [REB]%f \t [RWY]%f \t [RWP]%f\n",
+				H_state.joint[RSP].pos,
+				H_state.joint[RSR].pos,
+				H_state.joint[RSY].pos,
+				H_state.joint[REB].pos,
+				H_state.joint[RWY].pos,
+				H_state.joint[RWP].pos );
+
+
+/*
 		fprintf(stdout, "FT Values:\n\t"
                                 "Right Foot: mx:%g \t my:%g \t fz:%g\n\t"
                                 "Left Foot:  mx:%g \t my:%g \t fz:%g\n\t"
@@ -242,7 +253,7 @@ void huboLoop() {
 				H_state.imu.a_foot_x[1], H_state.imu.a_foot_y[1],
 				H_state.imu.a_foot_z[1]);
                 t.tv_nsec+=interval;
-                tsnorm(&t);
+                tsnorm(&t);*/
         }
 
 

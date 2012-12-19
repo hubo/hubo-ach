@@ -88,9 +88,9 @@ StartHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 		
-		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000
-		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
 		
 
 		DAEMON_ARGS=''
@@ -139,9 +139,10 @@ VirtualHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 		
-		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000
-		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
 		
 		sudo ./hubo-daemon -v
 		sudo ./hubo-console
@@ -177,9 +178,10 @@ DebugHubo()
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
 	
-		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000
-		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000
+		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
 	
 		sudo ./hubo-daemon -d $1
 		sleep 1

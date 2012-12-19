@@ -138,99 +138,116 @@ int main() {
         rl_attempted_completion_function = my_completion;
         printf("\n");
         while((buf = readline(">> hubo-ach: "))!=NULL) {
-        //enable auto-complete
-        rl_bind_key('\t',rl_complete);
+		//enable auto-complete
+		rl_bind_key('\t',rl_complete);
 
-//	printf("cmd [%s]\n",buf);
-//	printf(">> ");
-        printf("   ");
+	//	printf("cmd [%s]\n",buf);
+	//	printf(">> ");
+		printf("   ");
 
-        /* get update after every command */
-        hubo_update(&H_ref, &H_state);
-	
-	int tsleep = 0;
-        char* buf0 = getArg(buf, 0);
-        //printf(buf0);
-
-        if (strcmp(buf0,"update")==0) {
-                hubo_update(&H_ref, &H_state);
-                printf("--->Hubo Information Updated\n");
-        }
-        else if (strcmp(buf0,"get")==0) {
-                double jRef = hubo_get(buf,&H_ref, &H_param);
-                char* tmp = getArg(buf,1);
-                printf(">> %s = %f rad \n",tmp,jRef);
-        }
-        else if (strcmp(buf0,"beep")==0) {
-                hubo_jmc_beep(&H_param, &H_cmd, buf);
-        }
-        else if (strcmp(buf0,"home")==0) {
-                hubo_jmc_home(&H_param, &H_cmd, buf);
-                printf("%s - Home \n",getArg(buf,1));
-        }
-        else if (strcmp(buf0,"homeAll")==0) {
-                hubo_jmc_home_all(&H_param, &H_cmd, buf);
-                printf("%s - Home All \n",getArg(buf,1));
-		tsleep = 5;
+		/* get update after every command */
+		hubo_update(&H_ref, &H_state);
 		
-        }
-	else if (strcmp(buf0,"startup")==0) {
-		hubo_startup_all(&H_param, &H_cmd, buf);
-		printf("Starting up Hubo\n");
-		tsleep = 5;
-	}
-        else if (strcmp(buf0,"ctrl")==0) {
-                int onOrOff = atof(getArg(buf,2));
-                if(onOrOff == 0 | onOrOff == 1) {
-                        H_cmd.type = D_CTRL_SWITCH;
-                        H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-			if(onOrOff==1)			// 1 = on, 0 = 0ff
-                        	H_cmd.param[0] = D_ENABLE;
-			else if(onOrOff==0)
-				H_cmd.param[0] = D_DISABLE;	
-			r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-			if(onOrOff == 0) {
-                                printf("%s - Turning Off CTRL\n",getArg(buf,1));}
-                        else {
-                                printf("%s - Turning On CTRL\n",getArg(buf,1));}
-                }
+		int tsleep = 0;
+		char* buf0 = getArg(buf, 0);
+		//printf(buf0);
 
-        }
-        else if (strcmp(buf0,"fet")==0) {
-                int onOrOff = atof(getArg(buf,2));
-                if(onOrOff == 0 | onOrOff == 1) {
-                        H_cmd.type = D_FET_SWITCH;
-                        H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-			if(onOrOff==1)
-				H_cmd.param[0] = D_ENABLE;
-			else if(onOrOff==0)
-				H_cmd.param[0] = D_DISABLE;
-                        int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-                        if(onOrOff == 0) {
-                                printf("%s - Turning Off FET\n",getArg(buf,1));}
-                        else {
-                                printf("%s - Turning On FET\n",getArg(buf,1));}
-                }
-        }
-        else if (strcmp(buf0,"initialize")==0) {
-                H_cmd.type = D_JMC_INITIALIZE;
-                H_cmd.joint = name2mot(getArg(buf,1),&H_param);	// set motor num
-                //C.val[0] = atof(getArg(buf,2));
-                int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-		printf("%s - Initialize \n",getArg(buf,1));
-        }
-        else if (strcmp(buf0,"initializeAll")==0) {
-                H_cmd.type = D_JMC_INITIALIZE_ALL;
-                int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-                printf("%s - Initialize All\n",getArg(buf,1));
-		tsleep = 8;
-        }
-        /* Quit */
-        else if (strcmp(buf0,"quit")==0)
-                break;
-        if (buf[0]!=0)
-        add_history(buf);
-	sleep(tsleep);	// sleep for tsleep sec
+		if (strcmp(buf0,"update")==0) {
+			hubo_update(&H_ref, &H_state);
+			printf("--->Hubo Information Updated\n");
+		}
+		else if (strcmp(buf0,"get")==0) {
+			double jRef = hubo_get(buf,&H_ref, &H_param);
+			char* tmp = getArg(buf,1);
+			printf(">> %s = %f rad \n",tmp,jRef);
+		}
+		else if (strcmp(buf0,"beep")==0) {
+			hubo_jmc_beep(&H_param, &H_cmd, buf);
+		}
+		else if (strcmp(buf0,"home")==0) {
+			hubo_jmc_home(&H_param, &H_cmd, buf);
+			printf("%s - Home \n",getArg(buf,1));
+		}
+		else if (strcmp(buf0,"homeAll")==0) {
+			hubo_jmc_home_all(&H_param, &H_cmd, buf);
+			printf("%s - Home All \n",getArg(buf,1));
+			tsleep = 5;
+			
+		}
+		else if (strcmp(buf0,"startup")==0) {
+			hubo_startup_all(&H_param, &H_cmd, buf);
+			printf("Starting up Hubo\n");
+			tsleep = 5;
+		}
+		else if (strcmp(buf0,"ctrl")==0) {
+			int onOrOff = atof(getArg(buf,2));
+			if(onOrOff == 0 | onOrOff == 1) {
+				H_cmd.type = D_CTRL_SWITCH;
+				H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+				if(onOrOff==1)			// 1 = on, 0 = 0ff
+					H_cmd.param[0] = D_ENABLE;
+				else if(onOrOff==0)
+					H_cmd.param[0] = D_DISABLE;	
+				r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+				if(onOrOff == 0) {
+					printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+				else {
+					printf("%s - Turning On CTRL\n",getArg(buf,1));}
+			}
+
+		}
+		else if (strcmp(buf0,"fet")==0) {
+			int onOrOff = atof(getArg(buf,2));
+			if(onOrOff == 0 | onOrOff == 1) {
+				H_cmd.type = D_FET_SWITCH;
+				H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+				if(onOrOff==1)
+					H_cmd.param[0] = D_ENABLE;
+				else if(onOrOff==0)
+					H_cmd.param[0] = D_DISABLE;
+				int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+				if(onOrOff == 0) {
+					printf("%s - Turning Off FET\n",getArg(buf,1));}
+				else {
+					printf("%s - Turning On FET\n",getArg(buf,1));}
+			}
+		}
+		else if (strcmp(buf0,"initialize")==0) {
+			H_cmd.type = D_JMC_INITIALIZE;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);	// set motor num
+			//C.val[0] = atof(getArg(buf,2));
+			int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			printf("%s - Initialize \n",getArg(buf,1));
+		}
+		else if (strcmp(buf0,"initializeAll")==0) {
+			H_cmd.type = D_JMC_INITIALIZE_ALL;
+			int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			printf("%s - Initialize All\n",getArg(buf,1));
+			tsleep = 8;
+		}
+/*		else if (strcmp(buf0,"control")==0) {
+			H_cmd.type = D_CTRL_MODE;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);
+			if(strcmp(getArg(buf,2),"pos")==0) {
+				H_cmd.param[0] = D_POSITION;
+				H_ref.ref[H_cmd.joint] = H_state.joint[H_cmd.joint].pos;
+			}
+			else if(strcmp(getArg(buf,2),"cur")==0) {
+				H_cmd.param[0] = D_CURRENT;
+				H_ref.ref[H_cmd.joint] = 0;
+			}
+			else
+				continue;
+			int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+			printf("%s - Switching Control Mode\n",getArg(buf,1));
+		}*/
+		/* Quit */
+		else if (strcmp(buf0,"quit")==0)
+			break;
+		if (buf[0]!=0)
+		add_history(buf);
+		sleep(tsleep);	// sleep for tsleep sec
         }
         free(buf);
         return 0;

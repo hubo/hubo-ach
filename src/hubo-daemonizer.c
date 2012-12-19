@@ -255,7 +255,7 @@ void hubo_daemonize()
 	// Pre-fault our stack
 	stack_prefault();
 
-	syslog( LOG_NOTICE, "Daemonization finished" );
+	syslog( LOG_NOTICE, "Daemonization finished - Process Beginning" );
 
 }
 

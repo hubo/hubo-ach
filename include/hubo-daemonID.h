@@ -275,17 +275,20 @@ typedef enum {
 			Return type: */
 	D_SET_AND_GET_BOARD_INFO,///> Set board CAN rate and get board info
 			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
+					param: 		[0] Whether or not to ignore iValues[0]
+						D_UPDATE or D_IGNORE
 					iValues:	[0] = CAN rate (in msec)
 								Default: 5ms
 					dValues: N/A	*/
 			
 	D_GET_BOARD_PARAMS	///> Get the JMC's board parameters
-			/* INCOMPLETE	joint: Any joint number on the board
-					param: N/A
+			/* INCOMPLETE	joint: Target joint number
+					param: 		[0] = Type of parameters
+						D_PARAM_MOTOR, D_PARAM_HOME, D_PARAM_LIMITS
+						D_PARAM_CURRENT, D_PARAM_F, D_PARAM_CAN
+						D_PARAM_ERROR
 					iValues: N/A
 					dValues: N/A	*/	
-
 
 	
 } hubo_d_cmd_t;

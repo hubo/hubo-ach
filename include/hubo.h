@@ -65,8 +65,8 @@
 #define		LAR		24		//	Left Ankle Roll
 
 #define		RSP		11		//	Right Shoulder Pitch
-#define		RSR		12		//	Right Shoulder Pitch
-#define		RSY		13		//	Right Shoulder Roll
+#define		RSR		12		//	Right Shoulder Roll
+#define		RSY		13		//	Right Shoulder Yaw
 #define		REB		14		//	Right Elbow Pitch
 #define		RWY		15		// right wrist yaw
 #define		RWR		16		// right wrist roll
@@ -190,6 +190,7 @@ struct hubo_board_msg {
 
 struct hubo_jmc_state {
 	double temp;	///< temperature (dec C)
+//	hubo_d_param_t ctrlMode;
 	// TODO: Add more things, such as whether an alarm is on
 	//	 or whether motor control / FETs are on
 };

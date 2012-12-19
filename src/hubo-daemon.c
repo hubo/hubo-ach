@@ -113,6 +113,7 @@ void fDisableFeedbackController(int jnt, struct hubo_param *h, struct can_frame 
 void fGotoLimitAndGoOffset(int jnt, struct hubo_param *h, struct can_frame *f);
 void hInitilizeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void hSetCurRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
@@ -121,7 +122,7 @@ void hFeedbackControllerOnOff(int jnt, struct hubo_param *h, struct can_frame *f
 void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
+int getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, struct hubo_param *h);
@@ -174,13 +175,12 @@ void fOpenLoopPWM_3CH(int jnt, struct hubo_param *h, struct can_frame *f,
 void fOpenLoopPWM_5CH(int jnt, struct hubo_param *h, struct can_frame *f,
 			int dir0, int dt0, int dir1, int dt1, int dir2, int dt2,
 			int dir3, int dt3, int dir4, int dt4);
-void hSetControlMode(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t mode);
+void hSetControlMode(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f, hubo_d_param_t mode);
 void fSetControlMode(int jnt, struct hubo_param *h, struct can_frame *f, int mode);
 void hSetAlarm(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t sound);
 void fSetAlarm(int jnt, struct hubo_param *h, struct can_frame *f, int sound);
 void hSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone);
 void fSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone);
-void fGetBoardParameters(int jnt, struct hubo_param *h, struct can_frame *f, int parm);
 void hSetHomeSearchParams( struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f );
 void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, int limit,
 				unsigned int dir, unsigned int offset);
@@ -205,6 +205,16 @@ void hSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inpu
 			int tempError);
 void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
 			int tempError);
+void fGetBoardParamA( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamB( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamC( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamD( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamE( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamF( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamG( int jnt, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamH( int jnt, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f );
+void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f );
 
 
 uint8_t getJMC( struct hubo_param *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; }
@@ -243,8 +253,13 @@ void huboLoop(struct hubo_param *H_param) {
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_cmd,  0, sizeof(H_cmd));
 	memset( &H_state, 0, sizeof(H_state));
+
+//	for(int i=0; i<HUBO_JMC_COUNT; i++)
+//		H_state.driver[i].ctrlMode = D_POSITION;
 	//memset(&hubo_noRef, 0, sizeof(hubo_noRef));
 
+
+	// TODO: Fix this
 	size_t fs;
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) { fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r)); }
@@ -414,7 +429,15 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 			jmc = h->joint[i].jmc+1;
 			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
-				hSetEncRef(i, r, h, f);
+//				if( s->driver[h->joint[i].jmc].ctrlMode == D_POSITION)
+					hSetEncRef(i, r, h, f);
+/*				else if( s->driver[h->joint[i].jmc].ctrlMode == D_CURRENT)
+					hSetCurRef(i, r, h, f);
+				else
+					fprintf(stderr, "Invalid control mode (%d) listed in state for jmc #%d\n\t"
+							"Must be D_POSITION (%d) or D_CURRENT (%d)",
+							(int)s->driver[h->joint[i].jmc].ctrlMode, h->joint[i].jmc,
+							(int)D_POSITION, (int)D_CURRENT);*/
 				c[jmc] = 1;
 //				if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
 			}
@@ -662,44 +685,89 @@ void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fr
 
 
 
-uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
+int getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h) {
 	// set encoder from reference
 	struct hubo_joint_param *p = &h->joint[jnt];
-	return (uint32_t)((double)p->driven/(double)p->drive*(double)p->harmonic*(double)p->enc*(double)r->ref[jnt]/2.0/M_PI);
+	return (int32_t)((double)p->driven/(double)p->drive*(double)p->harmonic*(double)p->enc*(double)r->ref[jnt]/2.0/M_PI);
+}
+
+int getCurRef(int jnt, struct hubo_ref *r, struct hubo_param *h) {
+	
+	if( h->joint[jnt].numMot == 5 )
+		return r->ref[jnt]/0.01;
+	else
+		return r->ref[jnt]/0.05;
 }
 
 unsigned long signConvention(long _input) {
 	if (_input < 0) return (unsigned long)( ((-_input)&0x007FFFFF) | (1<<23) );
 	else return (unsigned long)_input;
 }
-void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+
+void fSetCurRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f)
+{
+	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
+
+	uint16_t jmc = h->joint[jnt].jmc;
+
+	if(h->joint[jnt].numMot <= 2)
+	{
+		
+		int m0 = h->driver[jmc].joints[0];
+		int m1;
+		
+		unsigned long pos0 = signConvention(getCurRef(m0, r, h));
+		f->data[0] =    int_to_bytes(pos0,1);
+		f->data[1] = 	int_to_bytes(pos0,2);
+		f->data[2] = 	int_to_bytes(pos0,3);
+
+		if(h->joint[jnt].numMot == 1)
+			m1 = m0; // If there is not a second joint, use the ref of the first
+		else
+			m1 = h->driver[jmc].joints[1];
+
+		unsigned long pos1 = signConvention(getCurRef(m1, r, h));
+
+		f->data[3] =    int_to_bytes(pos1,1);
+		f->data[4] = 	int_to_bytes(pos1,2);
+		f->data[5] = 	int_to_bytes(pos1,3);
+
+		f->can_dlc = 6; //= strlen( data );	// Set DLC
+
+	}
+
+
+}
+
+void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f)
+{
 	// set ref
 	f->can_id 	= REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
 	__u8 data[6];
 	uint16_t jmc = h->joint[jnt].jmc;
-	if(h->joint[jnt].numMot == 2) {
-		__u8 m0 = h->driver[jmc].joints[0];
-		__u8 m1 = h->driver[jmc].joints[1];
-//		printf("m0 = %i, m1= %i \n",m0, m1);
-
-
+	if(h->joint[jnt].numMot <= 2) {
+		int m0 = h->driver[jmc].joints[0];
+		int m1;
+		
 		unsigned long pos0 = signConvention((int)getEncRef(m0, r, h));
-		unsigned long pos1 = signConvention((int)getEncRef(m1, r, h));
-		f->data[0] =    (uint8_t)(pos0		& 0x000000FF);
-		f->data[1] = 	(uint8_t)((pos0>>8) 	& 0x000000FF);
-		f->data[2] = 	(uint8_t)((pos0>>16)	& 0x000000FF);
-		f->data[3] =    (uint8_t)(pos1 		& 0x000000FF);
-		f->data[4] = 	(uint8_t)((pos1>>8) 	& 0x000000FF);
-		f->data[5] = 	(uint8_t)((pos1>>16)	& 0x000000FF);
+		f->data[0] =    int_to_bytes(pos0,1);
+		f->data[1] = 	int_to_bytes(pos0,2);
+		f->data[2] = 	int_to_bytes(pos0,3);
 
-		if(r->ref[m0] < 0.0) {
-			f->data[2] = f->data[2] | 0x80;
-		}
-		if(r->ref[m1] < 0.0) {
-			f->data[5] = f->data[5] | 0x80;
-		}
+		if(h->joint[jnt].numMot == 1)
+			m1 = m0; // If there is not a second joint, use the ref of the first
+		else
+			m1 = h->driver[jmc].joints[1];
+
+		unsigned long pos1 = signConvention((int)getEncRef(m1, r, h));
+
+		f->data[3] =    int_to_bytes(pos1,1);
+		f->data[4] = 	int_to_bytes(pos1,2);
+		f->data[5] = 	int_to_bytes(pos1,3);
+
+		f->can_dlc = 6; //= strlen( data );	// Set DLC
 	}
-	else if(h->joint[jnt].numMot == 1) {
+/*	else if(h->joint[jnt].numMot == 1) {
 		__u8 m0 = h->driver[jmc].joints[0];
 		__u8 m1 = h->driver[jmc].joints[0];
 //		printf("m0 = %i, m1= %i \n",m0, m1);
@@ -720,11 +788,56 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		if(r->ref[m1] < 0.0) {
 			f->data[5] = f->data[5] | 0x80;
 		}
-	}
-	f->can_dlc = 6; //= strlen( data );	// Set DLC
+		unsigned long pos0 = signConvention((int)getEncRef(m0, r, h));
+		unsigned long pos1 = signConvention((int)getEncRef(m1, r, h));
+		f->data[0] =    int_to_bytes(pos0,1);
+		f->data[1] = 	int_to_bytes(pos0,2);
+		f->data[2] = 	int_to_bytes(pos0,3);
+		f->data[3] =    int_to_bytes(pos1,1);
+		f->data[4] = 	int_to_bytes(pos1,2);
+		f->data[5] = 	int_to_bytes(pos1,3);
+	}*/
 }
 
+/*
+void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f)
+{
+	f->can_id	= REF_BASE_TXDF + h->joint[jnt].jmc;
+	int jmc = h->joint[jnt].jmc;
 
+	if( h->joint[jnt].numMot <= 2 )
+	{
+		int m0 = h->driver[jmc].joints[0];
+		
+		int32_t pos0 = getEncRef(m0, r, h);
+
+		f->data[0] =	(uint8_t)int_to_bytes((int)pos0,1);
+		f->data[1] =	(uint8_t)int_to_bytes((int)pos0,2);
+		f->data[2] = 	(uint8_t)int_to_bytes((int)pos0,3);
+		
+		if( h->joint[jnt].numMot==1 )
+		{
+			f->data[4] = 0;
+			f->data[5] = 0;
+			f->data[6] = 0;
+		}
+		else
+		{
+			int m1 = h->driver[jmc].joints[1];
+			int32_t pos1 = getEncRef(m1, r, h);
+
+			f->data[4] =	(uint8_t)int_to_bytes((int)pos1,1);
+			f->data[5] =	(uint8_t)int_to_bytes((int)pos1,2);
+			f->data[6] =	(uint8_t)int_to_bytes((int)pos1,3);
+		}
+
+		f->can_dlc = 6;
+	}
+
+
+
+}
+*/
 void hSetPosGain(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f)
 {
 	int jnt = c->joint;
@@ -1032,17 +1145,19 @@ void fOpenLoopPWM_5CH(int jnt, struct hubo_param *h, struct can_frame *f,
 	f->can_dlc	= 8;
 }
 
-void hSetControlMode(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t mode)
+void hSetControlMode(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f, hubo_d_param_t mode)
 {
 	switch (mode)
 	{
 		case D_POSITION:
 			fSetControlMode(jnt, h, f, 0); // 0 > Position control
 			sendCan(getSocket(h,jnt),f);
+//			s->driver[h->joint[jnt].jmc].ctrlMode = D_POSITION;
 			break;
 		case D_CURRENT:
 			fSetControlMode(jnt, h, f, 1); // 1 > Current control
 			sendCan(getSocket(h,jnt),f);
+//			s->driver[h->joint[jnt].jmc].ctrlMode = D_CURRENT;
 			break;
 		default:
 			fprintf(stderr,"Invalid Control Mode: %d\n\t"
@@ -1156,19 +1271,6 @@ void fSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzo
 
 	f->can_dlc	= 3;
 }
-
-void fGetBoardParameters(int jnt, struct hubo_param *h, struct can_frame *f, int parm)
-{
-	f->can_id	= CMD_TXDF;
-	
-	__u8 data[3];
-	f->data[0]	= getJMC(h,jnt);
-	f->data[1]	= H_GET_PARAMETERS;
-	f->data[2]	= (uint8_t)parm;
-
-	f->can_dlc	= 3;
-}
-
 
 void hSetHomeSearchParams( struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f )
 {
@@ -1544,12 +1646,16 @@ void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inpu
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 				struct can_frame *f)
 {
+//	hMotorDriverOnOff( jnt, h, f, D_DISABLE ); // TODO: find good way of dealing with current control switching
+//	hSetControlMode( jnt, h, s, f, D_POSITION );
+
 	fGotoLimitAndGoOffset(jnt, h, f);
 	sendCan( getSocket(h,jnt), f );
 	r->ref[jnt] = 0;
 	s->joint[jnt].zeroed = true;
 
 	hubo_noRefTimeAll = hubo_home_noRef_delay;
+
 }
 
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
@@ -1595,6 +1701,13 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
+void hSetCurRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f) {
+//	setEncRef(jnt,r, h);
+	fSetCurRef(jnt, r, h, f);
+	sendCan(getSocket(h,jnt), f);
+//	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
+}
+
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 // --std=c99
 		printf("2\n");
@@ -1607,7 +1720,8 @@ void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, str
 	}
 }
 
-void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff) {
+void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff)
+{
 	if(onOff == D_ENABLE) { // turn on FET
 		fEnableMotorDriver(jnt, h, f);
 		sendCan(getSocket(h,jnt), f); 
@@ -1622,7 +1736,8 @@ void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_
 				D_ENABLE, D_DISABLE);
 }
 
-void fEnableMotorDriver(int jnt, struct hubo_param *h, struct can_frame *f) {
+void fEnableMotorDriver(int jnt, struct hubo_param *h, struct can_frame *f)
+{
 	f->can_id 	= CMD_TXDF;
 
 	__u8 data[3];
@@ -1884,6 +1999,172 @@ void hInitAllSensors( struct can_frame *f )
 	hNullAllIMUSensors( f );
 }
 
+void fGetBoardParamA( int jnt, int offset, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= (uint8_t)(h->joint[jnt].motNo*6 + H_GET_PARAM_A + offset);
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamB( int jnt, int offset, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= (uint8_t)(h->joint[jnt].motNo*6 + H_GET_PARAM_B + offset);
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamC( int jnt, int offset, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= (uint8_t)(h->joint[jnt].motNo*6 + H_GET_PARAM_C + offset);
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamD( int jnt, int offset, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= (uint8_t)(h->joint[jnt].motNo*6 + H_GET_PARAM_D + offset);
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamE( int jnt, int offset, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= (uint8_t)(h->joint[jnt].motNo*6 + H_GET_PARAM_E + offset);
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamF( int jnt, int offset, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= (uint8_t)(h->joint[jnt].motNo*6 + H_GET_PARAM_F + offset);
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamG( int jnt, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= H_GET_PARAM_G;
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamH( int jnt, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= H_GET_PARAM_H;
+	
+	f->can_dlc	= 3;
+}
+
+void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f )
+{
+	f->can_id 	= CMD_TXDF;
+
+	f->data[0] 	= getJMC(h,jnt);
+	f->data[1] 	= H_REQ_PARAMS;
+	f->data[2] 	= H_GET_PARAM_I;
+	
+	f->can_dlc	= 3;
+}
+
+void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f )
+{
+	int offset = 0;
+	if(h->joint[jnt].motNo >= 3)
+		offset = 5;
+
+	switch (param)
+	{
+		case D_PARAM_MOTOR:
+
+			fGetBoardParamA( jnt, offset, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+			break;
+
+		case D_PARAM_HOME:
+
+			fGetBoardParamB( jnt, offset, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+
+			fGetBoardParamC( jnt, offset, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+			break;
+
+		case D_PARAM_LIMITS:
+
+			fGetBoardParamD( jnt, offset, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+
+			fGetBoardParamH( jnt, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+			break;
+
+		case D_PARAM_CURRENT:
+
+			fGetBoardParamE( jnt, offset, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+			break;
+
+		case D_PARAM_F:
+
+			fGetBoardParamF( jnt, offset, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+			break;
+
+		case D_PARAM_CAN:
+			
+			fGetBoardParamG( jnt, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+			break;
+		
+		case D_PARAM_ERROR:
+
+			fGetBoardParamI( jnt, h, f );
+			sendCan(getSocket(h,jnt), f);
+			//TODO: Read and decode
+	}
+}
+
+
 void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f)
 {
 	/* gui for controling basic features of the hubo  */
@@ -1949,7 +2230,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hFeedbackControllerOnOff( c->joint, h, f, D_DISABLE);
 					break;
 				case D_CTRL_MODE:
-					hSetControlMode( c->joint, h, f, c->param[0] );
+					hSetControlMode( c->joint, h, s, f, c->param[0] );
 					break;
 				case D_SET_DEAD_ZONE:
 					hSetDeadZone( c->joint, h, f, c->iValues[0] );
@@ -2015,7 +2296,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hInitAllSensors( f );
 					break;
 //				case D_GET_BOARD_PARAMS:
-//					hGetBoardParams( c, h, f ); // TODO: Do this.
+//					hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //					break;
 				case 0:
 					break;
@@ -2046,6 +2327,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 		switch (num)
 		{
 			case SBNO_RIGHT_FOOT_FT:
+				
 				val = (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
 			
@@ -2057,19 +2339,19 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 				break;
 
 			case SBNO_LEFT_FOOT_FT:
-				val=0;
+				
 				val =  (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_L_FOOT].m_x = ((double)(val))/100.0;
 				
-				val=0;
 				val =  (f->data[3]<<8) | f->data[2];
 				s->ft[HUBO_FT_L_FOOT].m_y = ((double)(val))/100.0;
 
-				val=0;
 				val =  (f->data[5]<<8) | f->data[4];
 				s->ft[HUBO_FT_L_FOOT].f_z = ((double)(val))/10.0;
 				break;
+
 			case SBNO_RIGHT_HAND_FT:
+
 				val =  (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
 				
@@ -2083,6 +2365,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 
 				break;
 			case SBNO_LEFT_HAND_FT:
+
 				val =  (f->data[1]<<8) | f->data[0];
 				s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
 				
@@ -2114,6 +2397,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 		switch (num)
 		{
 			case SBNO_RIGHT_FOOT_FT:
+
 				val = (f->data[1]<<8) | f->data[0];
 				s->imu.a_foot_x[RIGHT] = ((double)(val))/100.0;
 				
@@ -2126,6 +2410,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 									// I think that's rather silly.
 				break;
 			case SBNO_LEFT_FOOT_FT:
+				
 				val = (f->data[1]<<8) | f->data[0];
 				s->imu.a_foot_x[LEFT] = ((double)(val))/100.0;
 				
@@ -2383,7 +2668,7 @@ int main(int argc, char **argv) {
 
 uint8_t int_to_bytes(int d, int index)
 {
-	return (uint8_t)( ( d >> ((index-1)*8) ) & 255);
+	return (uint8_t)( ( d >> ((index-1)*8) ) & 0xFF);
 	//return (uint8_t)(d%((int)(pow(256,index)))/((int)(pow(256,index-1))));
 }
 
