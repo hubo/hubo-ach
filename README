@@ -22,7 +22,7 @@ Install ACH
   precise, etc.)
 
 (2) `sudo apt-get update`
-(3) `sudo apt-get install libach0 libach-dev`
+(3) `sudo apt-get install libach1 libach-dev`
 (4) `sudo apt-get install ach-utils`
 
 Functionality:
