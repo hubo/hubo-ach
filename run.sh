@@ -142,15 +142,24 @@ VirtualHubo()
 	;;
 	
 	*)
-		sudo ifconfig can0 up
-		sudo ifconfig can1 up
-		sudo ifconfig can2 up
-		sudo ifconfig can3 up
+		sudo rmmod vcan
+		sudo modprobe vcan
+
+		sudo ip link add type vcan
+		sudo ifconfig vcan0 up
+		sudo ip link add type vcan
+		sudo ifconfig vcan1 up
+		sudo ip link add type vcan
+		sudo ifconfig vcan2 up
+		sudo ip link add type vcan
+		sudo ifconfig vcan3 up	
+
 		
-		sudo ach -1 -C hubo-ref -m 10 -n 3000
-		sudo ach -1 -C hubo-state -m 10 -n 3000
-		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
-		
+		ach -1 -C hubo-ref -m 10 -n 3000
+		ach -1 -C hubo-ref-filter -m 10 -n 3000
+		ach -1 -C hubo-state -m 10 -n 3000
+		ach -1 -C hubo-init-cmd -m 10 -n 3000
+	
 		sudo ./hubo-daemon -v
 		sudo ./hubo-console
 	;;
