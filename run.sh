@@ -34,6 +34,19 @@ MakeAch()
 	ach -1 -C hubo-init-cmd -m 10 -n 3000
 }
 
+Kill()
+{
+
+	sudo kill -9 $(pidof hubo*)
+}
+
+KillAll()
+{
+	KillHubo
+	Kill
+	sudo rm /dev/shm/achshm-hubo*
+}
+
 StopHubo()
 {
 	case "$1" in
@@ -448,17 +461,19 @@ RestartHelp()
 ShowUsage()
 {
 	echo
-	echo 'start   : Start all channels and processes'
-	echo 'stop    : Close all channels and processes'
-	echo 'restart : Restart all channels and processes'
-	echo 'kill    : Emergency kill the daemon process'
-	echo "log     : Print out Hubo's latest log"
-	echo 'savelog : Save latest log to specified file'
-	echo "param   : Sets Hubo's params from given file"
-	echo "default : Sets Hubo's params to default values"
-	echo 'debug   : Run the daemon in debug mode'
-	echo 'virtual : Run the daemon without using CAN'
-	echo 'config  : Do a first-time setup'
+	echo 'start         : Start all channels and processes'
+	echo 'stop          : Close all channels and processes'
+	echo 'restart       : Restart all channels and processes'
+	echo 'kill          : Emergency kill the daemon process'
+	echo 'killprocess   : Kill all processes starting with hubo'
+	echo 'killall       : Killprocess and rm all achshm-hubo ACH channels'
+	echo "log           : Print out Hubo's latest log"
+	echo 'savelog       : Save latest log to specified file'
+	echo "param         : Sets Hubo's params from given file"
+	echo "default       : Sets Hubo's params to default values"
+	echo 'debug         : Run the daemon in debug mode'
+	echo 'virtual       : Run the daemon without using CAN'
+	echo 'config        : Do a first-time setup'
 	echo
 	echo 'Type help after any of the above commands for'
 	echo '   a more detailed description'
@@ -478,6 +493,16 @@ case "$1" in
 # Close all channels and processes
 	'stop' )
 		StopHubo $2
+	;;
+
+# Kill all hubo processies
+	'killprocess' )
+		Kill
+	;;
+
+# Kill all hubo processies and remove ach
+	'killall' )
+		KillAll
 	;;
 
 # Close and then reopen all channels and processes
