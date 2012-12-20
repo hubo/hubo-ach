@@ -144,6 +144,84 @@ void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
 uint8_t getFingerInt(double n);
 
+/* Gains */
+void hSetPosGain(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fSetPosGain0(int jnt, struct hubo_param *h, struct can_frame *f, int Kp, int Ki, int Kd);
+void fSetPosGain1(int jnt, struct hubo_param *h, struct can_frame *f, int Kp, int Ki, int Kd);
+void hSetCurGain(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fSetCurGain0(int jnt, struct hubo_param *h, struct can_frame *f, int Kp, int Ki, int Kd);
+void fSetCurGain1(int jnt, struct hubo_param *h, struct can_frame *f, int Kp, int Ki, int Kd);
+void hOpenLoopPWM(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fOpenLoopPWM_2CH(int jnt, struct hubo_param *h, struct can_frame *f,
+			int dir0, int duty0, int dir1, int duty1);
+void fOpenLoopPWM_3CH(int jnt, struct hubo_param *h, struct can_frame *f,
+			int dir0, int dt0, int dir1, int dt1, int dir2, int dt2);
+void fOpenLoopPWM_5CH(int jnt, struct hubo_param *h, struct can_frame *f,
+			int dir0, int dt0, int dir1, int dt1, int dir2, int dt2,
+			int dir3, int dt3, int dir4, int dt4);
+void hSetControlMode(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f, hubo_d_param_t mode);
+void fSetControlMode(int jnt, struct hubo_param *h, struct can_frame *f, int mode);
+void hSetAlarm(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t sound);
+void fSetAlarm(int jnt, struct hubo_param *h, struct can_frame *f, int sound);
+void hSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone);
+void fSetDeadZone(int jnt, struct hubo_param *h, struct can_frame *f, int deadzone);
+void hSetHomeSearchParams( struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f );
+void fSetHomeSearchParams(int jnt, struct hubo_param *h, struct can_frame *f, int limit,
+				unsigned int dir, unsigned int offset);
+void hSetEncoderResolution(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fSetEncoderResolution(int jnt, struct hubo_param *h, struct can_frame *f, int res);
+void hSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAcc, int maxVel);
+void fSetMaxAccVel(int jnt, struct hubo_param *h, struct can_frame *f, int maxAcc, int maxVel);
+void hSetLowerPosLimit(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fSetLowerPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int enable, int update, int limit);
+void hSetUpperPosLimit(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fSetUpperPosLimit(int jnt, struct hubo_param *h, struct can_frame *f, int enable, int update, int limit);
+void hSetHomeAccVel(struct hubo_board_cmd *c, struct hubo_param *h, struct can_frame *f);
+void fSetHomeAccVel(int jnt, struct hubo_param *h, struct can_frame *f, float mAcc, int mVelS,
+			int mVelP, int mode, int mDuty);
+void hSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int gain0, int gain1, double dur);
+void fSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int gain0, int gain1, int duration);
+void hSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate);
+void fSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate);
+void fSetJamPwmLimits(int jnt, struct hubo_param *h, struct can_frame *f, int jamLimit, int pwmLimit,
+			int lim_detection_duty, int jam_detection_duty );
+void hSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
+			int tempError);
+void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inputDiffErr, int maxError,
+			int tempError);
+void fGetBoardParamA( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamB( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamC( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamD( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamE( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamF( int jnt, int offset, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamG( int jnt, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamH( int jnt, struct hubo_param *h, struct can_frame *f );
+void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f );
+void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f );
+
+
+uint8_t getJMC( struct hubo_param *h, int jnt );
+uint8_t getCAN( struct hubo_param *h, int jnt );
+hubo_can_t getSocket( struct hubo_param *h, int jnt );
+
+
+uint8_t int_to_bytes(int d, int index);
+uint8_t duty_to_byte(int dir, int duty);
+
+
+
+
+
+int verbose;
+int debug;
+
+
+
+
+
+
+
 // ach message type
 //typedef struct hubo h[1];
 
@@ -618,7 +696,8 @@ void fIniFT(int ft, struct hubo_param *h, struct can_frame *f) {
 
 void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f) {
 ///< Request FT Sensor data based on return type
-	f->can_id 	= SEND_SENSOR_TXDF;	// Set ID
+	//f->can_id 	= SEND_SENSOR_TXDF;	// Set ID
+	f->can_id 	= REQ_SENSOR_TXDF;	// Set ID
     const uint8_t dlc = 2;
 	__u8 data[dlc];
 	f->data[0] 	= b0;
@@ -632,7 +711,8 @@ f->can_id 	= CMD_TXDF;
     //Use controller number, which is 0x2F + the 1-indexed sensor Receive number
     //note that jnt is the index corresponding to the ACH state
 	f->data[0] = 0x2F + h->sensor[jnt].boardNo;
-    f->data[1] = NullCMD;
+    //f->data[1] = NullCMD;
+    f->data[1] = H_REQ_NULL;
     f->data[2] = mode;
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
 }
@@ -652,7 +732,8 @@ void fResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, stru
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[3];
 	f->data[0] 	= h->joint[jnt].jmc;
-	f->data[1]		= EncZero;
+	//f->data[1]		= EncZero;
+	f->data[1]		= H_SET_ENC_ZERO;
 	f->data[2] 	= h->joint[jnt].motNo;
 	//sprintf(f->data, "%s", data);
 	f->can_dlc = 3; //= strlen( data );	// Set DLC
@@ -663,7 +744,8 @@ void fGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) {
 	f->can_id 	= CMD_TXDF;	// Set ID
 	__u8 data[2];
 	f->data[0] 	= h->joint[jnt].jmc;
-	f->data[1]		= SendCurrent;
+	//f->data[1]		= SendCurrent;
+	f->data[1]		= H_GET_CURRENT;
 	f->can_dlc = 2; //= strlen( data );	// Set DLC
 }
 
@@ -746,7 +828,8 @@ void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> mak
 	f->can_id       = CMD_TXDF;     // Set ID
 	 __u8 data[3];
 	f->data[0]      = h->joint[jnt].jmc;
-	f->data[1]              = SendEncoder;
+	//f->data[1]              = SendEncoder;
+	f->data[1]              = H_GET_ENCODER;
 	f->data[2]              = 0x00;
 	f->can_dlc = 3; //= strlen( data );     // Set DLC
 }
@@ -969,8 +1052,8 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	int fs = (int)f->can_id;
 	
 	/* Current and Temp */
-	if( (fs >= SETTING_BASE_RXDF) & (fs < (SETTING_BASE_RXDF+0x60))) {
-		int jmc = fs-SETTING_BASE_RXDF;		// find the jmc value
+	if( (fs >= H_CURRENT_BASE_RXDF) & (fs < (H_CURRENT_BASE_RXDF+H_ENC_BASE_RXDF))) {
+		int jmc = fs-H_CURRENT_BASE_RXDF; // find the jmc value
 		int i = 0;
 		int jnt0 = h->driver[jmc].jmc[0];     // jmc number
 		int motNo = h->joint[jnt0].numMot;     // motor number   
@@ -992,8 +1075,8 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 
 	}
 	/* Return Motor Position */
-	else if( (fs >= ENC_BASE_RXDF) & (fs < CUR_BASE_RXDF) ) {
-		int jmc = fs-ENC_BASE_RXDF;
+	else if( (fs >= H_ENC_BASE_RXDF) & (fs < H_CUR_BASE_RXDF) ) {
+		int jmc = fs-H_ENC_BASE_RXDF;
 		int i = 0;
 		int jnt0 = h->driver[jmc].jmc[0];     // jmc number
 		int motNo = h->joint[jnt0].numMot;     // motor number   
@@ -1043,7 +1126,7 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 	
 	} 
 
-	else if( (fs >= SENSOR_FT_BASE_RXDF) & (fs < (SENSOR_FT_BASE_RXDF+0x20))) {
+	else if( (fs >= H_SENSOR_FT_BASE_RXDF) & (fs < (H_SENSOR_FT_BASE_RXDF+0x20))) {
         if (hubo_debug) printf("Got sensor range ID %d\n",fs);
 		int num = -1;
         switch (fs){

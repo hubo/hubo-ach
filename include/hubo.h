@@ -1,6 +1,10 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
+#include <time.h>
 #include "hubo/canId.h"
+#include "hubo-daemonID.h"
 #include <stdint.h>
+
+
 
 //#define true 1;
 //#define false 0;
@@ -203,6 +207,7 @@ struct hubo_state {
 	struct hubo_imu imu[3];	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
+	struct timespec time;           ///< time message sent
 }hubo_state_t;
 
 struct hubo_init_cmd {
@@ -219,6 +224,35 @@ struct hubo_param {
 	struct hubo_joint_param joint[HUBO_JOINT_COUNT];	///< Joint param
 	struct jmcDriver driver[HUBO_JMC_COUNT];		///< Motor driver param
 	struct hubo_sensor_param sensor[HUBO_SENSOR_COUNT];	///< Sensor param
+};
+
+struct hubo_board_msg {
+	hubo_d_msg_t type;		// Type of message. Enumerated in hubo-daemonID.h
+	int board;			// Board number which the message originates from
+	hubo_d_param_t param[8];	// Parameters for the command. Enumerated in hubo-daemonID.h
+	int values[8];			// Content of the message TODO: Figure out if 8 is sufficient
+};
+
+// Structure for sending board commands to the daemon
+struct hubo_board_cmd {
+
+	hubo_d_cmd_t type;		// Type of command. This value is REQUIRED. 
+					// Enumerated in hubo-daemonID.h
+
+	int joint;			// Target joint. If the message is meant for an entire board,
+					// then fill this value with any joint number belonging to that
+					// board. This value is REQUIRED (with a few exceptions).
+
+	hubo_d_param_t param[8];	// Parameters for the command. Enumerated in hubo-daemonID.h
+					// Note: This might or might not be used depending on the 
+					// type of message. TODO: Figure out if 8 is sufficient (or excessive)
+
+	int iValues[8];			// Integer values for the message. This may or may not be used
+					// depending on the type of message. TODO: Figure out of 10 is sufficient
+
+	double dValues[8];		// Double values for the message. This may or may not be used
+					// depending on the type of message. TODO: Figure out of 8 is sufficient
+
 };
 
 extern int hubo_debug;
