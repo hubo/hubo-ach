@@ -9,6 +9,7 @@
 
 // for hubo
 #include "hubo.h"
+#include "hubo/canId.h"
 #include "hubo-jointparams.h"
 
 // for ach

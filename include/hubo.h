@@ -1,5 +1,5 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
-#include "hubo/canId.h"
+//#include "hubo/canId.h"
 #include <stdint.h>
 
 //#define true 1;

@@ -49,6 +49,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // for hubo
 #include "hubo.h"
+#include "hubo/canId.h"
 #include "hubo-daemon.h"
 #include "hubo-jointparams.h"
 

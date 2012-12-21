@@ -132,8 +132,8 @@ StartHubo()
 			fi
 		done
 
-		sudo ./hubo-daemon $DAEMON_ARGS
-		sudo ./hubo-console
+		sudo hubo-daemon $DAEMON_ARGS
+		sudo hubo-console
 	;;
 	esac
 }
@@ -182,8 +182,8 @@ VirtualHubo()
 #		ach -1 -C hubo-state -m 10 -n 3000
 #		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
-		sudo ./hubo-daemon -v
-		sudo ./hubo-console
+		sudo hubo-daemon -v
+		sudo hubo-console
 	;;
 	esac
 }
@@ -223,9 +223,9 @@ DebugHubo()
 #		sudo ach -1 -C hubo-state -m 10 -n 3000
 #		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 
-		sudo ./hubo-daemon -d $1
+		sudo hubo-daemon -d $1
 		sleep 1
-		sudo ./hubo-console
+		sudo hubo-console
 	;;
 	esac
 }
