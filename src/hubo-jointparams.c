@@ -22,12 +22,11 @@
 #include <math.h>
 #include <inttypes.h>
 #include "ach.h"
+#include "config.h"
 
 //set number of parameters per joint in the parameters file
 #define	NUM_OF_PARAMETERS 13
 
-//set file location
-static char *fileLocation = "/etc/hubo-daemon/joint.table";
 
 // ach channels
 ach_channel_t chan_hubo_ref;
@@ -82,8 +81,15 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	FILE *ptr_file;
 
 	// open file for read access and if it fails, return -1
-	if (!(ptr_file=fopen(fileLocation, "r")))
-		return -1;
+	// check /usr/local/etc
+	if( ptr_file=fopen("/usr/local/etc/" PACKAGE_NAME "/jointtab", "r") ) {
+	    ;
+	// check /etc
+	} else if( ptr_file = fopen("/etc/" PACKAGE_NAME "/jointtab", "r") ) {
+	    ;
+	} else {
+	    return -1;
+	}
 
 	// instantiate stucts for getting values from joint.table
 	// file and copying them to

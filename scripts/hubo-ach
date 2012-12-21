@@ -7,14 +7,14 @@ export LD_LIBRARY_PATH=/usr/local/lib:
 
 
 HUBO_BITRATE=0x0014 # 1 Mbit/s
-#HUBO_BITRATE=0x001C #  500 kbit/s
-#HUBO_BITRATE=0x011C #  250 kbit/s
-#HUBO_BITRATE=0x031C #  125 kbit/s
-#HUBO_BITRATE=0x432F #  100 kbit/s
-#HUBO_BITRATE=0x472F #  50 kbit/s
-#HUBO_BITRATE=0x532F #  20 kbit/s
-#HUBO_BITRATE=0x672F #  10 kbit/s
-#HUBO_BITRATE=0x7F7F #  5 kbit/s
+#HUBO_BITRATE=0x001C #	500 kbit/s
+#HUBO_BITRATE=0x011C #	250 kbit/s
+#HUBO_BITRATE=0x031C #	125 kbit/s
+#HUBO_BITRATE=0x432F #	100 kbit/s
+#HUBO_BITRATE=0x472F #	50 kbit/s
+#HUBO_BITRATE=0x532F #	20 kbit/s
+#HUBO_BITRATE=0x672F #	10 kbit/s
+#HUBO_BITRATE=0x7F7F #	5 kbit/s
 
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
@@ -126,7 +126,7 @@ StartHubo()
 		DAEMON_ARGS=''
 		for IN_ARG in $@
 		do
-			if [ $IN_ARG != 'start'  ]
+			if [ $IN_ARG != 'start'          ]
 			then
 				DAEMON_ARGS+=" $IN_ARG"
 			fi
@@ -355,31 +355,34 @@ SaveLog()
 	esac
 }
 
-ConfigHubo()
-{
-	case "$1" in
-	'help')
-		echo
-		echo
-		echo 'This is a first-time setup script'
-		echo 'which creates some directories and'
-		echo 'default files which are needed for'
-		echo 'the hubo-daemon and other tools.'
-		echo
-		echo 'This only needs to be run once'
-		echo 'ever on your computer.'
-		echo
-		echo
-	;;
+# Config file installation should be handled by `make install` or
+# package manager -ntd
 
-	*)
-		sudo mkdir $DAEMON_DIR
-		sudo cp joint.table $DAEMON_DIR/joint.table
-		sudo cp joint.table $DAEMON_DIR/default-joint.table
-		sudo chmod a-w $DAEMON_DIR/default-joint.table
-	;;
-	esac
-}
+# ConfigHubo()
+# {
+#	case "$1" in
+#	'help')
+#		echo
+#		echo
+#		echo 'This is a first-time setup script'
+#		echo 'which creates some directories and'
+#		echo 'default files which are needed for'
+#		echo 'the hubo-daemon and other tools.'
+#		echo
+#		echo 'This only needs to be run once'
+#		echo 'ever on your computer.'
+#		echo
+#		echo
+#	;;
+
+#	*)
+#		sudo mkdir $DAEMON_DIR
+#		sudo cp joint.table $DAEMON_DIR/joint.table
+#		sudo cp joint.table $DAEMON_DIR/default-joint.table
+#		sudo chmod a-w $DAEMON_DIR/default-joint.table
+#	;;
+#	esac
+# }
 
 ParamHubo()
 {
@@ -558,10 +561,12 @@ case "$1" in
 		PrintHuboStatus $2
 	;;
 
+
+# Should be handled by `make install` or package manager -ntd
 # Do a first-time setup for the daemon and scripts
-	'config' )
-		ConfigHubo $2
-	;;
+	# 'config' )
+	#         ConfigHubo $2
+	# ;;
 
 	*)
 		ShowUsage

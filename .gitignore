@@ -30,3 +30,6 @@ hubo-ach-*.tar.gz
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
+/hubo-daemon
+/hubo-read
+/hubo-ref-filter
