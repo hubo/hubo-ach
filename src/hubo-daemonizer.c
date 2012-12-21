@@ -1,4 +1,5 @@
-/* 
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
+/*
 
 	THIS IS A DAEMONIZATION UTILITY SPECIFICALLY FOR HUBO.
 	IT HANDLES ALL FORKING, SCHEDULING PRIORITY, AND LOG REDIRECTION.
@@ -31,12 +32,12 @@
 
 // Make sure that the daemon has the permissions it needs
 #define RUN_AS_USER "root"
-#define LOCKFILE "/var/lock/hubo-daemon" 
+#define LOCKFILE "/var/lock/hubo-daemon"
 
 // Priority
 #define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
-                            as the priority of kernel tasklets
-                            and interrupt handler by default */
+			    as the priority of kernel tasklets
+			    and interrupt handler by default */
 
 
 
@@ -59,7 +60,7 @@ static void hubo_sig_handler(int signum)
 		case SIGCHLD: exit(EXIT_FAILURE); break;
 		case SIGINT:
 		case SIGQUIT:
-		case SIGTERM: hubo_sig_quit=1; break;	
+		case SIGTERM: hubo_sig_quit=1; break;
 	}
 }
 
@@ -100,8 +101,8 @@ void hubo_daemonize()
 			exit(EXIT_FAILURE);
 		}
 	}
-	
-	
+
+
 	// Drop the user if there is one
 	if( getuid()==0 || geteuid()==0 )
 	{
@@ -113,7 +114,7 @@ void hubo_daemonize()
 		}
 	}
 
-	
+
 	// Redirect the expected signals
 	signal( SIGCHLD, hubo_sig_handler );
 //	signal( SIGUSR1, hubo_sig_handler );
@@ -130,7 +131,7 @@ void hubo_daemonize()
 	// First fork
 	child = fork();
 
-	// Quit if a child process could not be made	
+	// Quit if a child process could not be made
 	if( child<0 )
 	{
 		syslog( LOG_ERR, "Unable to fork daemon, code=%d (%s)",
@@ -145,15 +146,15 @@ void hubo_daemonize()
 		// or forcibly quit after 2 seconds elapse
 		alarm(2);
 		pause();
-	
+
 		exit( EXIT_FAILURE );
 	}
-	
+
 	// If child == 0, then we are in the child process
-	
+
 	//Second fork
 	pid = fork(); // pid will now represent the final process ID of the daemon
-	
+
 	// Quit if the final process could not be made
 	if( pid<0 )
 	{
@@ -167,17 +168,17 @@ void hubo_daemonize()
 		// Kill the useless parent
 		parent = getppid();
 		kill( parent, SIGUSR1 );
-		
+
 		// Wait for confirmation from the daemon
 		// or forcibly quit after 2 seconds elapse
 		alarm(2);
 		pause();
 
-		exit( EXIT_FAILURE );	
+		exit( EXIT_FAILURE );
 	}
 
-	// If pid == 0, then we are in the final process	
-	
+	// If pid == 0, then we are in the final process
+
 	// Now we execute as the final process
 	parent = getppid();
 
@@ -189,8 +190,8 @@ void hubo_daemonize()
 	signal( SIGTTIN, SIG_IGN ); // Trying to read from terminal
 	signal( SIGHUP,  SIG_IGN ); // Hangup signal
 
-	signal( SIGUSR1, hubo_sig_handler ); // Return SIGUSR1 to the standard sig handler	
-	
+	signal( SIGUSR1, hubo_sig_handler ); // Return SIGUSR1 to the standard sig handler
+
 	// Change file mode mask
 	umask(0);
 
@@ -203,7 +204,7 @@ void hubo_daemonize()
 		exit(EXIT_FAILURE);
 	}
 
-	
+
 	// Change the current working directory to prevent the currect directory from being locked
 	if( (chdir("/")) < 0 )
 	{
@@ -272,9 +273,9 @@ void hubo_daemon_close()
 }
 
 
-void stack_prefault(void) { 
-        unsigned char dummy[MAX_SAFE_STACK]; 
-        memset( dummy, 0, MAX_SAFE_STACK ); 
+void stack_prefault(void) {
+	unsigned char dummy[MAX_SAFE_STACK];
+	memset( dummy, 0, MAX_SAFE_STACK );
 }
 
 
@@ -286,8 +287,4 @@ void hubo_assert( int result )
 		hubo_daemon_close();
 		exit(EXIT_FAILURE);
 	}
-} 
-
-
-
-
+}

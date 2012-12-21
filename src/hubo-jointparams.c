@@ -1,3 +1,5 @@
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
+
 // standard
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,15 +86,15 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 		return -1;
 
 	// instantiate stucts for getting values from joint.table
-	// file and copying them to 
+	// file and copying them to
 	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing
 	struct jmcDriver tp2;		//jmcDriver struct member for file parsing
 	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
 
 	// initialize all structs with zeros
-	memset(&tp,	 0, sizeof(tp));
-	memset(&tp2,	 0, sizeof(tp2));
-	memset(&s,	 0, sizeof(s));
+	memset(&tp,      0, sizeof(tp));
+	memset(&tp2,     0, sizeof(tp2));
+	memset(&s,       0, sizeof(s));
 	size_t i;
 	size_t j;
 
@@ -105,7 +107,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	}
 
 	// array of joint name values from header file hubo.h
-	uint16_t jointNameValues[] = 
+	uint16_t jointNameValues[] =
 			{WST, NKY, NK1, NK2,
 			LSP, LSR, LSY, LEB, LWY, LWR, LWP,
 			RSP, RSR, RSY, REB, RWY, RWR, RWP,
@@ -115,8 +117,8 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 			LF1, LF2, LF3, LF4, LF5};
 
 	// array of joint name strings (total of 40)
-	char *jointNameStrings[] = 
-			{"WST", "NKY", "NK1", "NK2", 
+	char *jointNameStrings[] =
+			{"WST", "NKY", "NK1", "NK2",
 			 "LSP", "LSR", "LSY", "LEB", "LWY", "LWR", "LWP",
 			 "RSP", "RSR", "RSY", "REB", "RWY", "RWR", "RWP",
 			 "LHY", "LHR", "LHP", "LKN", "LAP", "LAR",
@@ -173,7 +175,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 				&tp.numMot,
 				&s.zeroed) ) // check that all values are found
 			{
-				
+
 				// check to make sure jointName is valid
 				size_t x;
 				for (x = 0; x < sizeof(jointNameStrings)/sizeof(jointNameStrings[0]); x++) {
@@ -197,7 +199,7 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 						tp.jmc = jmcNumbers[y];
 						jmcNameCount = 1;
 						break;
-					}	
+					}
 				}
 
 				// if jmc name is invalid, print error and return -1
@@ -207,9 +209,9 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 				}
 
 				tp.jntNo = i;		// define i to be the joint number
-				tp2.jmc[tp.motNo] = i;	// set jmc driver number	
+				tp2.jmc[tp.motNo] = i;	// set jmc driver number
 
-				// copy contents (all member values) of tp into H_param.joint 
+				// copy contents (all member values) of tp into H_param.joint
 				// substruct which will populate its member variables
 				memcpy(&(H_param->joint[i]), &tp, sizeof(tp));
 				// copy contents of tp.jmc into H_param structs driver substruct
@@ -217,12 +219,12 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 				// copy contents of s into H_state (initializing active and zeroed members)
 				memcpy(&(H_state->joint[i]), &s, sizeof(s));
 			}
-        }
+	}
 
-        fclose(ptr_file);	// close file stream
+	fclose(ptr_file);	// close file stream
 
 	// print the paramter values in H_param for each joint
-/*	printf("jntNo\tname\tmotNo\trefEnc\tdrive\tdriven\tharm\tenc\tdir\tjmc\tcan\tnumMot\n"); 
+/*	printf("jntNo\tname\tmotNo\trefEnc\tdrive\tdriven\tharm\tenc\tdir\tjmc\tcan\tnumMot\n");
 	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf ("%hu\t%s\t%hu\t%u\t%hu\t%hu\t%hu\t%hu\t%hhu\t%hu\t%hhu\t%hhu\n",
 		H_param->joint[i].jntNo,
@@ -237,8 +239,8 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 		H_param->joint[i].jmc,
 		H_param->joint[i].can,
 		H_param->joint[i].numMot);
-        }
-*/	        
+	}
+*/
 	// print values of driver jmc motor numbers in H_param
 /*	for (i = 0; i < HUBO_JMC_COUNT; i++) {
 		printf("%lu\t%hhu\t%hhu\t%hhu\t%hhu\t%hhu\n",
@@ -248,55 +250,55 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 			H_param->driver[i].jmc[2],
 			H_param->driver[i].jmc[3],
 			H_param->driver[i].jmc[4]);
-        }
+	}
 */
 /*	// print values saved in H_state.joint[i].active and H_state.joint[i].zeroed
 	for (i = 0; i < HUBO_JOINT_COUNT; i++) {
 		printf("%s\t%hhu\t%hhu\n", H->joint[i].name, H_state->joint[i].active, H_state->joint[i].zeroed);
-	} 
-*/	
+	}
+*/
 	setupSensorDefaults(H_param);
 	return 0;	// return without errors
 }
 
 void setPosZeros() {
-        // open ach channel
+	// open ach channel
 //        int r = ach_open(&chan_num, "hubo", NULL);
 //        assert( ACH_OK == r );
 
 	// open hubo reference
-        int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-        assert( ACH_OK == r );
+	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+	assert( ACH_OK == r );
 
-        struct hubo_ref H_ref;
-        memset( &H_ref,   0, sizeof(H_ref));
-        size_t fs = 0;
+	struct hubo_ref H_ref;
+	memset( &H_ref,   0, sizeof(H_ref));
+	size_t fs = 0;
 
-        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(H_ref) == fs );
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_ref) == fs );
 
-        size_t i;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-                H_ref.ref[i] = 0.0;
-        }
-        ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+	size_t i;
+	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
+		H_ref.ref[i] = 0.0;
+	}
+	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
 }
 
 void setConsoleFlags() {
 	// initilize control channel
-        int r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
-        assert( ACH_OK == r );
+	int r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
+	assert( ACH_OK == r );
 
-        struct hubo_init_cmd C;
-        memset( &C,   0, sizeof(C));
+	struct hubo_init_cmd C;
+	memset( &C,   0, sizeof(C));
 
-        size_t fs =0;
-        r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
-        assert( sizeof(C) == fs );
-        int i = 0;
-        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-                C.cmd[i] = 0;
-                C.val[i] = 0;
-        }
-        r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
+	size_t fs =0;
+	r = ach_get( &chan_hubo_init_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(C) == fs );
+	int i = 0;
+	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+		C.cmd[i] = 0;
+		C.val[i] = 0;
+	}
+	r = ach_put(&chan_hubo_init_cmd, &C, sizeof(C));
 }

@@ -1,3 +1,4 @@
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 /*
 Copyright (c) 2012, Daniel M. Lofaro
 All rights reserved.
@@ -9,19 +10,19 @@ modification, are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-    * Neither the name of the author nor the names of its contributors may 
-      be used to endorse or promote products derived from this software 
+    * Neither the name of the author nor the names of its contributors may
+      be used to endorse or promote products derived from this software
       without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
-OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
@@ -191,7 +192,7 @@ void setDefaults() {
 	/* Names */
 //	int i = 0;
 //	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-//	 	strncpy(H.joint[i].name , "xxx" , 3);
+//              strncpy(H.joint[i].name , "xxx" , 3);
 //	}
 
 
@@ -202,9 +203,9 @@ void setDefaults() {
 	sprintf(H.sensor[HUBO_IMU0].name , "%s", "IMU0" );
 	sprintf(H.sensor[HUBO_IMU1].name , "%s", "IMU1" );
 	sprintf(H.sensor[HUBO_IMU2].name , "%s", "IMU2" );
-	
+
 	printf("%s\n",H.sensor[0].name);
-	
+
 	setName(&H , RHY , "RHY"  );
 	setName(&H , RHR , "RHR"  );
 	setName(&H , RHP , "RHP"  );
@@ -259,7 +260,7 @@ void setDefaults() {
 	H.sensor[HUBO_IMU1].boardNo = 4;
 	H.sensor[HUBO_IMU2].boardNo = 5;
 
-	
+
 	H.sensor[HUBO_FT_R_FOOT].sensNo = HUBO_FT_R_FOOT;
 	H.sensor[HUBO_FT_L_FOOT].sensNo = HUBO_FT_L_FOOT;
 	H.sensor[HUBO_FT_R_HAND].sensNo = HUBO_FT_R_HAND;
@@ -826,7 +827,7 @@ int main(int argc, char **argv){
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_init,  0, sizeof(H_init));
 	memset( &H_state, 0, sizeof(H_state));
-        memset( &H_param, 0, sizeof(H_param));
+	memset( &H_param, 0, sizeof(H_param));
 
 	size_t fs;
 	// open ach channel
@@ -838,10 +839,10 @@ int main(int argc, char **argv){
 
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
-	
+
 	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME, NULL);
 	assert( ACH_OK == r );
-	
+
 
 	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
 	ach_put(&chan_hubo_init_cmd, &H_init, sizeof(H_init));

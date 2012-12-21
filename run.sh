@@ -70,11 +70,11 @@ StopHubo()
 
 	*)
 		sudo killall -e hubo-daemon
-	
+
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
 		sudo ach -U hubo-init-cmd
-	
+
 		sudo ifconfig can0 down
 		sudo ifconfig can1 down
 		sudo ifconfig can2 down
@@ -111,12 +111,12 @@ StartHubo()
 		sudo ifconfig can1 up
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
-		
+
 #		sudo ach -1 -C hubo-ref -m 10 -n 3000
 #		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		sudo ach -1 -C hubo-state -m 10 -n 3000
 #		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
-		
+
 		MakeAch
 #		ach -1 -C hubo-ref -m 10 -n 3000
 #		ach -1 -C hubo-ref-filter -m 10 -n 3000
@@ -130,8 +130,8 @@ StartHubo()
 			then
 				DAEMON_ARGS+=" $IN_ARG"
 			fi
-		done	
-		
+		done
+
 		sudo ./hubo-daemon $DAEMON_ARGS
 		sudo ./hubo-console
 	;;
@@ -160,9 +160,9 @@ VirtualHubo()
 		echo 'communicate in any way with'
 		echo "Hubo's hardware."
 		echo
-		echo	
+		echo
 	;;
-	
+
 	*)
 		sudo rmmod vcan
 		sudo modprobe vcan
@@ -174,14 +174,14 @@ VirtualHubo()
 		sudo ip link add type vcan
 		sudo ifconfig vcan2 up
 		sudo ip link add type vcan
-		sudo ifconfig vcan3 up	
+		sudo ifconfig vcan3 up
 
-		MakeAch		
+		MakeAch
 #		ach -1 -C hubo-ref -m 10 -n 3000
 #		ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		ach -1 -C hubo-state -m 10 -n 3000
 #		ach -1 -C hubo-init-cmd -m 10 -n 3000
-	
+
 		sudo ./hubo-daemon -v
 		sudo ./hubo-console
 	;;
@@ -215,14 +215,14 @@ DebugHubo()
 		sudo ifconfig can1 up
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
-	
+
 
 		MakeAch
 
 #		sudo ach -1 -C hubo-ref -m 10 -n 3000
 #		sudo ach -1 -C hubo-state -m 10 -n 3000
 #		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
-	
+
 		sudo ./hubo-daemon -d $1
 		sleep 1
 		sudo ./hubo-console
@@ -232,7 +232,7 @@ DebugHubo()
 
 KillHubo()
 {
-	case "$1" in	
+	case "$1" in
 	'help')
 		echo
 		echo
@@ -291,7 +291,7 @@ LogHubo()
 	;;
 
 	*)
-		echo 
+		echo
 		echo "System Log:"
 		tail /var/log/syslog | grep hubo-daemon
 		echo "_______________________________"
@@ -326,7 +326,7 @@ SaveLog()
 		echo
 		echo
 	;;
-	
+
 	'')
 		echo "System Log:" > saved.log
 		tail /var/log/syslog | grep hubo-daemon >> saved.log
@@ -431,7 +431,7 @@ DefaultHubo()
 		echo
 		echo
 	;;
-	
+
 	*)
 		cp -f $DAEMON_DIR/default-joint.table $DAEMON_DIR/joint.table
 	;;
@@ -536,7 +536,7 @@ case "$1" in
 # Set joint motor parameters to default values
 	'default' )
 		DefaultHubo $2
-	;;	
+	;;
 
 # Print out Hubo's logs
 	'log' )
@@ -570,3 +570,9 @@ case "$1" in
 esac
 
 exit 0
+
+# Local Variables:
+#  indent-tabs-mode:t
+#  tab-width: 8
+#  c-basic-offset: 8
+# End:
