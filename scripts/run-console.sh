@@ -1,1 +1,1 @@
-sudo ./hubo-console
+sudo hubo-console
