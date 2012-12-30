@@ -22,8 +22,6 @@
 #include <errno.h>
 #include <pwd.h>
 #include <signal.h>
-#include <string.h>
-#include <errno.h>
 #include "hubo.h"
 #include "hubo-daemon.h"
 
@@ -73,7 +71,7 @@ static void fork_sig_handler(int signum)
 
 void hubo_daemonize()
 {
-	syslog( LOG_NOTICE, "Starting daemonization" );
+    syslog( LOG_NOTICE, "Starting daemonization for CAN" );
 
 
 	// Initialize signal variables
