@@ -1,4 +1,4 @@
-/* 
+/*
 
 	THIS IS A DAEMONIZATION UTILITY SPECIFICALLY FOR HUBO.
 	IT HANDLES ALL FORKING, SCHEDULING PRIORITY, AND LOG REDIRECTION.
@@ -202,18 +202,18 @@ void hubo_daemonize()
 	}
 
 	
-	// Change the current working directory to prevent the currect directory from being locked
+        // Change the current working directory to prevent the current directory from being locked
 	if( (chdir("/")) < 0 )
 	{
-		syslog( LOG_ERR, "Unable to change directory to %s, code=%d (%s)",
-			"/etc/hubo-daemon", errno, strerror(errno) );
+                syslog( LOG_ERR, "Unable to change directory, code=%d (%s)",
+                        errno, strerror(errno) );
 		exit(EXIT_FAILURE);
 	}
 
 
 	// Create files for logging, in case they don't exist already
-	if(	!fopen( "/etc/hubo-daemon/daemon-output", "w" ) ||
-		!fopen( "/etc/hubo-daemon/daemon-error", "w" ) )
+        if(	!fopen( "/var/log/hubo-daemon/daemon-output", "w" ) ||
+                !fopen( "/var/log/hubo-daemon/daemon-error", "w" ) )
 	{
 		syslog( LOG_ERR, "Unable to create log files, code=%d (%s)",
 			errno, strerror(errno) );
@@ -221,8 +221,8 @@ void hubo_daemonize()
 	}
 
 	// Redirect standard files to /dev/hubo-daemon
-	if(	!freopen( "/etc/hubo-daemon/daemon-output", "w", stdout ) ||
-		!freopen( "/etc/hubo-daemon/daemon-error", "w", stderr ) )
+        if(	!freopen( "/var/log/hubo-daemon/daemon-output", "w", stdout ) ||
+                !freopen( "/var/log/hubo-daemon/daemon-error", "w", stderr ) )
 	{
 		syslog( LOG_ERR, "Unable to stream output, code=%d (%s)",
 			errno, strerror(errno) );
@@ -284,7 +284,7 @@ void hubo_assert( int result )
 		hubo_daemon_close();
 		exit(EXIT_FAILURE);
 	}
-} 
+}
 
 /*
 void hubo_assert( int result, const char * msg )

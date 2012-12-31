@@ -29,6 +29,9 @@ int daemon_sig_quit;
 int daemon_sig_usr1;
 int daemon_sig_usr2;
 
+char lockfile[100];
+char gdaemon_name[100];
+
 
 void daemonize(const char *daemon_name);
 void daemon_close();

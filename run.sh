@@ -17,7 +17,7 @@ HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_BOARD_CHAN='hubo-board-cmd'
 
-DAEMON_DIR='/etc/hubo-daemon'
+DAEMON_DIR='/var/log/hubo-daemon'
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1

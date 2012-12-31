@@ -105,6 +105,7 @@
 #define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"   ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
+#define         HUBO_CHAN_CTRL_NAME      "hubo-control"     ///> controller ach channel
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
 
 
@@ -120,6 +121,12 @@ typedef enum {
 	HUBO_FT_R_HAND    = 2, ///< Index of right hand FT
 	HUBO_FT_L_HAND    = 3  ///< Index of left hand FT
 } hubo_ft_index_t;
+
+typedef enum {
+    CTRL_OFF    = 0,
+    CTRL_POS,
+    CTRL_VEL
+} hubo_ctrl_mode_t;
 
 #define RIGHT 0
 #define LEFT 1
@@ -201,6 +208,7 @@ struct hubo_state {
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
 	struct hubo_board_msg msg;
+        double time;
 };
 
 struct hubo_ref {
@@ -228,6 +236,25 @@ struct hubo_board_cmd {
 	double dValues[8];		// Double values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 8 is sufficient
 	
+};
+
+struct hubo_joint_control {
+    double position;
+    double velocity;
+    double acceleration;
+
+    double speed_limit;
+    double accel_limit;
+
+    double pos_min;
+    double pos_max;
+
+    hubo_ctrl_mode_t mode;
+};
+
+struct hubo_control {
+    struct hubo_joint_control joint[HUBO_JOINT_COUNT];
+    int active;
 };
 
 //extern int hubo_debug;
