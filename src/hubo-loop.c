@@ -35,7 +35,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <linux/can/raw.h>
 #include <string.h>
 #include <stdio.h>
-#include <math.h>
 
 // for timer
 #include <time.h>
@@ -49,7 +48,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // for hubo
 #include "hubo.h"
-#include "hubo-jointparams.h"
 
 // for ach
 #include <errno.h>
@@ -110,6 +108,12 @@ int ftime(struct timeb *tp);
 
 
 
+
+
+
+
+
+
 // ach message type
 //typedef struct hubo h[1];
 
@@ -117,9 +121,10 @@ int ftime(struct timeb *tp);
 ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
+ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
-int hubo_debug = 1;
+int hubo_debug = 0;
 
 void huboLoop(struct hubo_param *H_param) {
 	// get initial values for hubo
@@ -147,8 +152,6 @@ void huboLoop(struct hubo_param *H_param) {
 		assert( sizeof(H_state) == fs );
 	 }
 
-	/* Send a message to the CAN bus */
-	struct can_frame frame;
 
 	// time info
 	struct timespec t;
@@ -157,24 +160,14 @@ void huboLoop(struct hubo_param *H_param) {
 	//int interval = 5000000; // 200 hz (0.005 sec)
 	//int interval = 2000000; // 500 hz (0.002 sec)
 
+
+	/* Sampling Period */
+	double T = (double)interval/(double)NSEC_PER_SEC; // (sec)
+
 	// get current time
 	//clock_gettime( CLOCK_MONOTONIC,&t);
 	clock_gettime( 0,&t);
-	struct timeb tp;
-	struct timeb tp_0;
-	struct timeb tp_f;
-	int a = 0;
 
-	/* get initial tme*/
-	ftime(&tp_0);
-	double tt = 0.0;
-	double f = 0.2;		// frequency
-	double T = (double)interval/1000000000.0;
-	double A = 0.3;// 1.0;
-	double dir = -1.0;
-	double t0 = 0.0;
-	double t1 = 0.0;
-	int jnt = WST;
 	while(1) {
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -193,31 +186,20 @@ void huboLoop(struct hubo_param *H_param) {
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
-		double jntDiff = H_state.joint[jnt].pos - H_ref.ref[jnt];
-		printf("\033[2J");
-		printf("%s: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n", H_param->joint[jnt].name, H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);
+// ------------------------------------------------------------------------------
+// ---------------[ DO NOT EDIT AVBOE THIS LINE]---------------------------------
+// ------------------------------------------------------------------------------
 
 
-		ftime(&tp);
-		tp_f.time = tp.time-tp_0.time;
-		tp_f.millitm = tp.millitm-tp_0.millitm;
+			H_ref.ref[RHY] = 0.3;
+			H_ref.ref[LEB] = -0.4;
+			H_ref.ref[RSP] = 0.3;
 
-		tt = (double)tp_f.time+((int16_t)tp_f.millitm)*0.001;
+			double encRSP = h_state.
 
-
-		t1 = t0;
-		t0 = tt;
-		double jntTmp = A*sin(f*2*M_PI*tt);
-		if(jntTmp > 0) {
-			H_ref.ref[jnt] = -dir*jntTmp; }
-		else {
-			H_ref.ref[jnt] = dir*jntTmp; }
-
-
-	//	printf("time = %ld.%d %f\n",tp_f.time,tp_f.millitm,tt);
-//                printf("A = %f\n",H.ref[jnt]);
-		//printf("Diff(t) = %f\n",(t0-t1));
-
+// ------------------------------------------------------------------------------
+// ---------------[ DO NOT EDIT BELOW THIS LINE]---------------------------------
+// ------------------------------------------------------------------------------
 		ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
 		t.tv_nsec+=interval;
 		tsnorm(&t);
@@ -225,6 +207,10 @@ void huboLoop(struct hubo_param *H_param) {
 
 
 }
+
+
+
+
 
 
 void stack_prefault(void) {
@@ -250,10 +236,15 @@ int main(int argc, char **argv) {
 	int vflag = 0;
 	int c;
 
+
+	char* ach_chan = HUBO_CHAN_REF_FILTER_NAME;
 	int i = 1;
 	while(argc > i) {
 		if(strcmp(argv[i], "-d") == 0) {
 			debug = 1;
+		}
+		if(strcmp(argv[i], "-r") == 0) {
+			ach_chan = HUBO_CHAN_REF_NAME;
 		}
 		i++;
 	}
@@ -278,31 +269,31 @@ int main(int argc, char **argv) {
 
 
 	/* open ach channel */
-	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
+	//int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
+	int r = ach_open(&chan_hubo_ref, ach_chan , NULL);
 	assert( ACH_OK == r );
 
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
 	assert( ACH_OK == r );
 
-	// get initial values for hubo
-	struct hubo_ref H_ref;
-	struct hubo_init_cmd H_init;
-	struct hubo_state H_state;
-	struct hubo_param H_param;
-	memset( &H_ref,   0, sizeof(H_ref));
-	memset( &H_init,  0, sizeof(H_init));
-	memset( &H_state, 0, sizeof(H_state));
-	memset( &H_param, 0, sizeof(H_param));
 
-	usleep(250000);
+        // get initial values for hubo
+        struct hubo_ref H_ref;
+        struct hubo_init_cmd H_init;
+        struct hubo_state H_state;
+        struct hubo_param H_param;
+        memset( &H_ref,   0, sizeof(H_ref));
+        memset( &H_init,  0, sizeof(H_init));
+        memset( &H_state, 0, sizeof(H_state));
+        memset( &H_param, 0, sizeof(H_param));
 
-	// set default values for H_ref in ach
-//	setPosZeros();
+        usleep(250000);
 
-	// set default values for Hubo
-	setJointParams(&H_param, &H_state);
+        // set default values for Hubo
+        setJointParams(&H_param, &H_state);
 
-	huboLoop(&H_param);
+        huboLoop(&H_param);
+
 	pause();
 	return 0;
 
