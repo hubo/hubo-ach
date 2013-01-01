@@ -98,6 +98,11 @@ void controlLoop()
 
                 if( ctrl.joint[jnt].mode != CTRL_OFF )
                 {
+                    if( ctrl.joint[jnt].mode == CTRL_POS )
+                    {// This is to make sure the velocity's sign agrees with the desired change in position
+                        dr[jnt] = ctrl.joint[jnt].position - H_ref.ref[jnt];
+                        ctrl.joint[jnt].velocity = sign(dr[jnt])*fabs(ctrl.joint[jnt].velocity);
+                    }
 
                     dV[jnt] = ctrl.joint[jnt].velocity - V0[jnt]; // Check how far we are from desired velocity
                     if( dV[jnt] > fabs(ctrl.joint[jnt].acceleration*dt) ) // Scale it down to be within bounds
@@ -122,9 +127,8 @@ void controlLoop()
                     }
                     else if( ctrl.joint[jnt].mode == CTRL_POS )
                     {
-                        dr[jnt] = ctrl.joint[jnt].position - H_ref.ref[jnt];
 
-                        if( V[jnt] > sqrt(fabs(2.0*ctrl.joint[jnt].acceleration*dr[jnt])) ) // Slow down before reaching goal
+                        if( fabs(V[jnt]) > sqrt(fabs(2.0*ctrl.joint[jnt].acceleration*dr[jnt])) ) // Slow down before reaching goal
                             V[jnt] += -sign(V[jnt])*fabs(ctrl.joint[jnt].acceleration*dt);
 
 
