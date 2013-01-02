@@ -383,7 +383,7 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 			//	}
 				else {
 					//hSetEncRef(i, r, h, f);
-					hSetEncRef2(i, r, h, f);
+					hSetEncRef2(i, s, h, f);
 					c[jmc] = 1;
 //					if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
 				}

@@ -111,7 +111,7 @@
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
-#define         HUBO_REF_FILTER_LENGTH   20            ///> hubo reference filter length
+#define         HUBO_REF_FILTER_LENGTH   80            ///> hubo reference filter length
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
