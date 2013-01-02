@@ -36,15 +36,17 @@ MakeAch()
 
 Kill()
 {
-
+	cd ..
 	sudo kill -9 $(pidof hubo*)
+	cd scripts
 }
 
 KillAll()
 {
-	KillHubo
+        StopHubo $2 
 	Kill
 	sudo rm /dev/shm/achshm-hubo*
+	KillHubo
 }
 
 StopHubo()

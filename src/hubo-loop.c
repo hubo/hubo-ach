@@ -191,11 +191,12 @@ void huboLoop(struct hubo_param *H_param) {
 // ------------------------------------------------------------------------------
 
 
-			H_ref.ref[RHY] = 0.3;
-			H_ref.ref[LEB] = -0.4;
-			H_ref.ref[RSP] = 0.3;
+			H_ref.ref[WST] = 1.0;
+			//H_ref.ref[RHY] = 0.3;
+			//H_ref.ref[LEB] = -0.4;
+			//H_ref.ref[RSP] = 0.3;
 
-			double encRSP = H_state.joint[RSP].pos;
+			//double encRSP = H_state.joint[RSP].pos;
 
 // ------------------------------------------------------------------------------
 // ---------------[ DO NOT EDIT BELOW THIS LINE]---------------------------------

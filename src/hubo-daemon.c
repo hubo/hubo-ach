@@ -144,6 +144,8 @@ void fGetSensor(char b0, char b1, struct hubo_param *h, struct can_frame *f);
 void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
 uint8_t getFingerInt(double n);
+void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f);
+
 
 // ach message type
 //typedef struct hubo h[1];
@@ -164,9 +166,11 @@ void huboLoop(struct hubo_param *H_param) {
 	int i = 0;  // iterator
 	// get initial values for hubo
 	struct hubo_ref H_ref;
+	struct hubo_ref H_ref_filter;
 	struct hubo_init_cmd H_init;
 	struct hubo_state H_state;
 	memset( &H_ref,   0, sizeof(H_ref));
+	memset( &H_ref_filter,   0, sizeof(H_ref_filter));
 	memset( &H_init,  0, sizeof(H_init));
 	memset( &H_state, 0, sizeof(H_state));
 	//memset(&hubo_noRef, 0, sizeof(hubo_noRef));
@@ -181,6 +185,8 @@ void huboLoop(struct hubo_param *H_param) {
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_state) == fs );
+
+//	memcpy(&H_ref_filter, &H_ref, sizeof(H_ref));
 
 	// put back on channels
 	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
@@ -197,7 +203,7 @@ void huboLoop(struct hubo_param *H_param) {
 //	int interval = 2000000; // 500 hz (0.002 sec)
 
 //Test area
-	printf("decode check %f %f %f",doubleFromBytePair(0x00,0xFF),doubleFromBytePair(0xFF,0xFF),doubleFromBytePair(0xFF,0x00));
+//	printf("decode check %f %f %f",doubleFromBytePair(0x00,0xFF),doubleFromBytePair(0xFF,0xFF),doubleFromBytePair(0xFF,0x00));
 
 
 	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
@@ -228,12 +234,6 @@ void huboLoop(struct hubo_param *H_param) {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
-		/*
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-		hubo_assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
-		hubo_assert( ACH_STALE_FRAMES == r || sizeof(H_ref) == fs );
-		*/
-		// hubo_assert( sizeof(H_param) == fs );
 
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
@@ -242,14 +242,6 @@ void huboLoop(struct hubo_param *H_param) {
 			}
 		else{	hubo_assert( sizeof(H_ref) == fs ); }
 
-/*
-		r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-				if(hubo_debug) {
-					printf("CMD r = %s\n",ach_result_to_string(r));}
-				}
-		else{ hubo_assert( sizeof(H_init) == fs ); }
-*/
 
 		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
@@ -260,15 +252,11 @@ void huboLoop(struct hubo_param *H_param) {
 
 		/* read hubo console */
 		huboConsole(&H_ref, H_param, &H_state, &H_init, &frame);
-		/* set reference for zeroed joints only */
-//		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-//			if(H_param.joint[i].zeroed == true) {
-//				hSetEncRef(H_param.joint[i].jntNo, &H_ref, H_param, &frame);
-//			}
-//		}
-
+		
 		/* Set all Ref */
 		if(hubo_noRefTimeAll < T ) {
+                        //refFilterMode(&H_ref, HUBO_REF_FILTER_LENGTH, H_param, &H_state, &H_ref_filter);
+			//setRefAll(&H_ref_filter, H_param, &H_state, &frame);
 			setRefAll(&H_ref, H_param, &H_state, &frame);
 		}
 		else{
@@ -281,10 +269,6 @@ void huboLoop(struct hubo_param *H_param) {
 
 		/* Get all Current data */
 //		getCurrentAllSlow(&H_state, &H_param, &frame);
-
-//		hGetCurrentValue(RSY, &H_param, &frame);
-//		readCan(hubo_socket[H_param.joint[RSY].can], &frame, HUBO_CAN_TIMEOUT_DEFAULT);
-//		decodeFrame(&H_state, &H_param, &frame);
 
 		/* put data back in ACH channel */
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
@@ -318,6 +302,25 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 	return (uint32_t)((double)h->joint[jnt].drive/(double)h->joint[jnt].driven/(double)h->joint[jnt].harmonic/(double)h->joint[jnt].ref*2.0*M_PI);
 }
 */
+
+void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f) {
+  int i = 0;
+  for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+      int c = r->mode[i];
+      switch (c) {
+        case 0: // sets reference directly
+          f->ref[i] = r->ref[i];
+          break;
+        case 1: // sets filter reference
+          f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          break;
+      }
+  }
+
+  for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+    s->joint[i].ref = f->ref[i];
+  }
+}
 
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state

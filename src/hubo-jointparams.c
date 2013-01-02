@@ -97,11 +97,13 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing
 	struct jmcDriver tp2;		//jmcDriver struct member for file parsing
 	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
+	struct hubo_ref r;		//hubo_ref struct for parsing	
 
 	// initialize all structs with zeros
 	memset(&tp,      0, sizeof(tp));
 	memset(&tp2,     0, sizeof(tp2));
 	memset(&s,       0, sizeof(s));
+	memset(&r,       0, sizeof(r));
 	size_t i;
 	size_t j;
 

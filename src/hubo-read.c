@@ -218,7 +218,8 @@ void huboLoop() {
 			printf("%-4s: Ref = %-12f Enc = %-12f Cur = %-12f Tmp = %-12f\n",
 			//printf("%-20s: Ref = %-20f \t \t Enc = %-20f \t Cur = %f \t Tmp = %f\n",
 				H_param.joint[jnt].name,
-				H_ref.ref[jnt],
+				//H_ref.ref[jnt],
+				H_state.joint[jnt].ref,
 				H_state.joint[jnt].pos,
 				H_state.joint[jnt].cur,
 				H_state.joint[jnt].tmp);
