@@ -215,10 +215,11 @@ void huboLoop() {
 		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 			jnt = i;
 			if(H_param.joint[jnt].name[0] != 0){
-			printf("%-4s: Ref = %-12f Enc = %-12f Cur = %-12f Tmp = %-12f\n",
+			printf("%-4s: Cmd = %-12f  Ref = %-12f Enc = %-12f Cur = %-12f Tmp = %-12f\n",
 			//printf("%-20s: Ref = %-20f \t \t Enc = %-20f \t Cur = %f \t Tmp = %f\n",
 				H_param.joint[jnt].name,
 				H_ref.ref[jnt],
+				H_state.joint[jnt].ref,
 				H_state.joint[jnt].pos,
 				H_state.joint[jnt].cur,
 				H_state.joint[jnt].tmp);

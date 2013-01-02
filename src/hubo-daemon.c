@@ -145,6 +145,9 @@ void hGetSensor(int chan, struct hubo_param *h, struct can_frame *f);
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
 uint8_t getFingerInt(double n);
 
+void hSetEncRef2(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f);
+
 // ach message type
 //typedef struct hubo h[1];
 
@@ -164,9 +167,11 @@ void huboLoop(struct hubo_param *H_param) {
 	int i = 0;  // iterator
 	// get initial values for hubo
 	struct hubo_ref H_ref;
+	struct hubo_ref H_ref_filter;
 	struct hubo_init_cmd H_init;
 	struct hubo_state H_state;
 	memset( &H_ref,   0, sizeof(H_ref));
+	memset( &H_ref_filter,   0, sizeof(H_ref_filter));
 	memset( &H_init,  0, sizeof(H_init));
 	memset( &H_state, 0, sizeof(H_state));
 	//memset(&hubo_noRef, 0, sizeof(hubo_noRef));
@@ -269,6 +274,7 @@ void huboLoop(struct hubo_param *H_param) {
 
 		/* Set all Ref */
 		if(hubo_noRefTimeAll < T ) {
+			refFilterMode(&H_ref, HUBO_REF_FILTER_LENGTH, H_param, &H_state, &H_ref_filter);
 			setRefAll(&H_ref, H_param, &H_state, &frame);
 		}
 		else{
@@ -311,6 +317,34 @@ static inline void tsnorm(struct timespec *ts){
 }
 
 
+
+
+
+
+
+
+void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f) {
+  int i = 0;
+  for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+      int c = r->mode[i];
+      switch (c) {
+        case 1: // sets reference directly
+          f->ref[i] = r->ref[i];
+          break;
+        case 0: // sets filter reference
+          f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          break;
+      }
+  }
+
+  for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+    s->joint[i].ref = f->ref[i];
+  }
+}
+
+
+
+
 /*
 uint32_t getEncRef(int jnt, struct hubo *h)
 {
@@ -348,7 +382,8 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 			//		c[jmc] = 1;
 			//	}
 				else {
-					hSetEncRef(i, r, h, f);
+					//hSetEncRef(i, r, h, f);
+					hSetEncRef2(i, r, h, f);
 					c[jmc] = 1;
 //					if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
 				}
@@ -866,6 +901,18 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 //	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
 }
 
+void hSetEncRef2(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+//	setEncRef(jnt,r, h);
+	struct hubo_ref r;
+	memset( &r,   0, sizeof(r));
+	int i = 0;
+	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
+		r.ref[i] = s->joint[i].ref;
+	}	
+	fSetEncRef(jnt, &r, h, f);
+	sendCan(hubo_socket[h->joint[jnt].can], f);
+//	readCan(h->socket[h->joint[jnt].can], f, 4);	// 8 bytes to read and 4 sec timeout
+}
 
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff) {
 	if(onOff == 1) { // turn on FET

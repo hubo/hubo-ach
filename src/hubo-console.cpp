@@ -113,8 +113,10 @@ int main() {
 	assert( ACH_OK == r );
 
 	// open hubo state
-	r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
-	assert( ACH_OK == r );
+	// filter is now ref
+	chan_hubo_ref_filter = chan_hubo_ref;
+//	r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
+//	assert( ACH_OK == r );
 
 	// initialize control channel
 	r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);

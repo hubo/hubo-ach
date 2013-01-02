@@ -111,7 +111,7 @@
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
-
+#define         HUBO_REF_FILTER_LENGTH   20            ///> hubo reference filter length
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
@@ -171,6 +171,7 @@ struct hubo_joint_param {
 //}__attribute__((packed));
 
 struct hubo_joint_state {
+	double ref;	///< reference
 	double pos;     ///< actual position (rad)
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
@@ -196,6 +197,7 @@ struct hubo_imu {
 
 struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
+	int mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
 	struct timespec time;           ///< time message sent
 }hubo_ref_t;
 
