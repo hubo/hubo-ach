@@ -85,7 +85,14 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* ... */
 
 /* Somewhere in your app */
+// Priority
+#define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
+                            as the priority of kernel tasklets
+                            and interrupt handler by default */
 
+#define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
+                                   guaranteed safe to access without
+                                   faulting */
 
 
 // Timing info
@@ -197,8 +204,8 @@ void huboLoop(struct hubo_param *H_param) {
 //	int interval = 500000000; // 2hz (0.5 sec)
 //	int interval = 20000000; // 50 hz (0.02 sec)
 //	int interval = 10000000; // 100 hz (0.01 sec)
-//	int interval = 5000000; // 200 hz (0.005 sec)
-	int interval = 4000000; // 250 hz (0.004 sec)
+	int interval = 5000000; // 200 hz (0.005 sec)
+//	int interval = 4000000; // 250 hz (0.004 sec)
 //	int interval = 2000000; // 500 hz (0.002 sec)
 
 //Test area
@@ -233,30 +240,16 @@ void huboLoop(struct hubo_param *H_param) {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
-		/*
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-		hubo_assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
-		hubo_assert( ACH_STALE_FRAMES == r || sizeof(H_ref) == fs );
-		*/
-		// hubo_assert( sizeof(H_param) == fs );
-
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+		//r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
 		if(ACH_OK != r) {
 				if(hubo_debug) {
 					fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
 			}
 		else{	hubo_assert( sizeof(H_ref) == fs ); }
 
-/*
-		r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-				if(hubo_debug) {
-					printf("CMD r = %s\n",ach_result_to_string(r));}
-				}
-		else{ hubo_assert( sizeof(H_init) == fs ); }
-*/
-
-		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+		//r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
 		if(ACH_OK != r) {
 				if(hubo_debug) {
 					fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
@@ -325,6 +318,7 @@ static inline void tsnorm(struct timespec *ts){
 
 void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f) {
   int i = 0;
+//  double e = 0.0;
   for(i = 0; i < HUBO_JOINT_COUNT; i++) {
       int c = r->mode[i];
       switch (c) {
@@ -332,7 +326,9 @@ void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_
           f->ref[i] = r->ref[i];
           break;
         case 0: // sets filter reference
-          f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          //f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          //e = (r->ref[i] - s->joint[i].pos);
+          f->ref[i] = (s->joint[i].pos * ((double)L) + r->ref[i]) / ((double)L);
           break;
       }
   }
@@ -1189,7 +1185,6 @@ int main(int argc, char **argv) {
 	hubo_daemonize();
 
 
-/*
 	// RT
 	struct sched_param param;
 	// Declare ourself as a real time task
@@ -1209,7 +1204,6 @@ int main(int argc, char **argv) {
 
 	// Pre-fault our stack
 	stack_prefault();
-*/
 
 	// Initialize Hubo Structs
 	struct hubo_ref H_ref;
