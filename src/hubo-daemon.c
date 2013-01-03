@@ -318,17 +318,24 @@ static inline void tsnorm(struct timespec *ts){
 
 void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f) {
   int i = 0;
-//  double e = 0.0;
+  double e = 0.0;
   for(i = 0; i < HUBO_JOINT_COUNT; i++) {
       int c = r->mode[i];
       switch (c) {
         case 1: // sets reference directly
           f->ref[i] = r->ref[i];
           break;
-        case 0: // sets filter reference
+        case 2: // complient mode
+          f->ref[i] = s->joint[i].pos;
+          break;
+        case 3: // slow ref to ref no encoder
+          f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          break;
+        case 0: // sets filter reference encoder feedback
           //f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
-          //e = (r->ref[i] - s->joint[i].pos);
-          f->ref[i] = (s->joint[i].pos * ((double)L) + r->ref[i]) / ((double)L);
+          e = f->ref[i] - s->joint[i].pos;
+          f->ref[i] = (s->joint[i].pos * ((double)L-1.0) + r->ref[i]) / ((double)L) + e;
+          
           break;
       }
   }
