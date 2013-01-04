@@ -328,13 +328,13 @@ void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_
         case 2: // complient mode
           f->ref[i] = s->joint[i].pos;
           break;
-        case 3: // slow ref to ref no encoder
+        case 0: // slow ref to ref no encoder
           f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
           break;
-        case 0: // sets filter reference encoder feedback
+        case 3: // sets filter reference encoder feedback
           //f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
           e = f->ref[i] - s->joint[i].pos;
-          f->ref[i] = (s->joint[i].pos * ((double)L-1.0) + r->ref[i]) / ((double)L) + e;
+          f->ref[i] = (s->joint[i].pos * ((double)L-1.0) + r->ref[i]) / ((double)L);
           
           break;
       }

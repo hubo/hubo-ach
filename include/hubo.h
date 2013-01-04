@@ -111,7 +111,7 @@
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
-#define         HUBO_REF_FILTER_LENGTH   120            ///> hubo reference filter length
+#define         HUBO_REF_FILTER_LENGTH   40            ///> hubo reference filter length
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
@@ -144,6 +144,12 @@ typedef enum {
 	HUBO_IMU2	  = 6  ///< Index of IMU2
 } hubo_sensor_index_t;
 
+typedef enum {
+	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
+	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
+	HUBO_REF_MODE_COMPLIANT     = 2, ///< Complient mode, sets ref to current encoder position. 
+	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
+} hubo_mode_type_t;
 
 struct hubo_sensor_param {
 	char name[5];		///< Name of sensor
