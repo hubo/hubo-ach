@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <pwd.h>
 #include <signal.h>
-
+#include <string.h>
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
                    guaranteed safe to access without
@@ -25,62 +25,18 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-int daemon_sig_quit;
-int daemon_sig_usr1;
-int daemon_sig_usr2;
 
-char lockfile[100];
-char gdaemon_name[100];
 
+extern int daemon_sig_quit;
+extern int daemon_sig_usr1;
+extern int daemon_sig_usr2;
+
+extern char lockfile[100];
+extern char gdaemon_name[100];
 
 void daemonize(const char *daemon_name);
 void daemon_close();
-void daemon_assert( int result ); // Instructs the program to quit gracefully if the result is not true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void daemon_assert( int result, int line ); // Instructs the program to quit gracefully if the result is not true
 
 
 

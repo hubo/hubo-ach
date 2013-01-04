@@ -16,12 +16,51 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_BOARD_CHAN='hubo-board-cmd'
+HUBO_CTRL_CHAN='hubo-control'
 
-DAEMON_DIR='/var/log/hubo-daemon'
+DAEMON_DIR='/etc/hubo-daemon'
+DAEMON_LOG_DIR='/var/log/hubo-daemon'
+GENERIC_DAEMON_LOG_DIR='/var/log/daemon'
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
 
+
+Ach()
+{
+	case "$1" in
+	'help')
+		echo
+		echo
+		echo 'Use this to open and close'
+		echo 'the ach channels.'
+		echo
+		echo 'Adding "close" as an arugment'
+		echo 'will close (instead of'
+		echo 'openning) the channels.'
+		echo
+		echo
+	;;
+
+	'close')
+		
+		sudo ach -U $HUBO_REF_CHAN
+		sudo ach -U $HUBO_STATE_CHAN
+		sudo ach -U $HUBO_BOARD_CHAN
+		sudo ach -U $HUBO_CTRL_CHAN
+
+	;;	
+
+	*)
+
+		sudo ach -1 -C $HUBO_REF_CHAN   -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_CTRL_CHAN  -m 10 -n 3000 -o 666
+
+	;;
+	esac
+}
 
 StopHubo()
 {
@@ -46,11 +85,10 @@ StopHubo()
 
 	*)
 		sudo killall -e hubo-daemon
+		sudo killall -e control-daemon
 	
-		sudo ach -U $HUBO_REF_CHAN
-		sudo ach -U $HUBO_STATE_CHAN
-		sudo ach -U $HUBO_BOARD_CHAN
-	
+		Ach close
+
 		sudo ifconfig can0 down
 		sudo ifconfig can1 down
 		sudo ifconfig can2 down
@@ -87,11 +125,8 @@ StartHubo()
 		sudo ifconfig can1 up
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
-		
-		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
-		
+	
+		Ach
 
 		DAEMON_ARGS=''
 		for IN_ARG in $@
@@ -103,6 +138,7 @@ StartHubo()
 		done	
 		
 		sudo ./hubo-daemon $DAEMON_ARGS
+		sudo ./control-daemon
 		sudo ./hubo-console
 	;;
 	esac
@@ -134,17 +170,15 @@ VirtualHubo()
 	;;
 	
 	*)
-		sudo ifconfig can0 up
-		sudo ifconfig can1 up
-		sudo ifconfig can2 up
-		sudo ifconfig can3 up
+		sudo ifconfig vcan0 up
+		sudo ifconfig vcan1 up
+		sudo ifconfig vcan2 up
+		sudo ifconfig vcan3 up
 		
-		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
-		
+		Ach
+	
 		sudo ./hubo-daemon -v
+		sudo ./control-daemon
 		sudo ./hubo-console
 	;;
 	esac
@@ -177,13 +211,11 @@ DebugHubo()
 		sudo ifconfig can1 up
 		sudo ifconfig can2 up
 		sudo ifconfig can3 up
-	
-		sudo ach -1 -C $HUBO_REF_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
+
+		Ach
 	
 		sudo ./hubo-daemon -d $1
+		sudo ./control-daemon
 		sleep 1
 		sudo ./hubo-console
 	;;
@@ -216,9 +248,11 @@ KillHubo()
 	*)
 		# This forcibly interrupts all hubo-daemon processes
 		sudo killall -e -s SIGKILL hubo-daemon
+		sudo killall -e -s SIGKILL control-daemon
 
 		# This forcibly unlocks hubo-daemon
 		sudo rm /var/lock/hubo-daemon
+		sudo rm /var/lock/control-daemon
 	;;
 	esac
 }
@@ -257,12 +291,13 @@ LogHubo()
 		echo "_______________________________"
 		echo
 		echo "Hubo Output:"
-		cat $DAEMON_DIR/daemon-output
+		cat $DAEMON_LOG_DIR/daemon-output
 		echo "_______________________________"
 		echo
 		echo "Hubo Errors:"
-		cat $DAEMON_DIR/daemon-error
+		cat $DAEMON_LOG_DIR/daemon-error
 		echo
+#TODO: Print out the logs of ALL daemons
 	;;
 	esac
 }
@@ -293,11 +328,11 @@ SaveLog()
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Output:" >> saved.log
-		cat $DAEMON_DIR/daemon-output >> saved.log
+		cat $DAEMON_LOG_DIR/daemon-output >> saved.log
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Errors:" >> saved.log
-		cat $DAEMON_DIR/daemon-error >> saved.log
+		cat $DAEMON_LOG_DIR/daemon-error >> saved.log
 	;;
 
 	*)
@@ -306,11 +341,11 @@ SaveLog()
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Output:" >> $1
-		cat $DAEMON_DIR/daemon-output >> $1
+		cat $DAEMON_LOG_DIR/daemon-output >> $1
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Errors:" >> $1
-		cat $DAEMON_DIR/daemon-error >> $1
+		cat $DAEMON_LOG_DIR/daemon-error >> $1
 	;;
 	esac
 }
@@ -334,6 +369,8 @@ ConfigHubo()
 
 	*)
 		sudo mkdir $DAEMON_DIR
+		sudo mkdir $DAEMON_LOG_DIR
+		sudo mkdir $GENERIC_DAEMON_LOG_DIR
 		sudo cp joint.table $DAEMON_DIR/joint.table
 		sudo cp joint.table $DAEMON_DIR/default-joint.table
 		sudo chmod a-w $DAEMON_DIR/default-joint.table
@@ -426,6 +463,7 @@ ShowUsage()
 	echo 'restart : Restart all channels and processes'
 	echo 'kill    : Emergency kill the daemon process'
 	echo "log     : Print out Hubo's latest log"
+	echo 'ach     : Manage ach channels'
 	echo 'savelog : Save latest log to specified file'
 	echo "param   : Sets Hubo's params from given file"
 	echo "default : Sets Hubo's params to default values"
@@ -509,6 +547,10 @@ case "$1" in
 # Do a first-time setup for the daemon and scripts
 	'config' )
 		ConfigHubo $2
+	;;
+
+	'ach')
+		Ach $2
 	;;
 
 	*)

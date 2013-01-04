@@ -1,7 +1,23 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
+#ifndef HUBO_PRIMARY_H
+#define HUBO_PRIMARY_H
 #include "hubo/canID.h"
 #include "hubo-daemonID.h"
 #include <stdint.h>
+
+
+//888888888888888888888888888888888888888888
+//---------[Prerequisites for ACH]----------
+#include <time.h>
+#include <string.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <ach.h>
+//888888888888888888888888888888888888888888
+
+
+
+
 
 //#define true 1;
 //#define false 0;
@@ -259,3 +275,6 @@ struct hubo_control {
 
 //extern int hubo_debug;
 //extern int verbose;
+
+
+#endif

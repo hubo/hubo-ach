@@ -24,6 +24,7 @@
 #include <signal.h>
 #include "hubo.h"
 #include "hubo-daemon.h"
+#include <string.h>
 
 #define DAEMON_NAME "huboDaemon"
 

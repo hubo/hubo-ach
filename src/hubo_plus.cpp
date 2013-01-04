@@ -28,20 +28,19 @@ hubo_plus::hubo_plus()
     ach_get( &chan_hubo_state, &H_State, sizeof(H_State), &fs, NULL, ACH_O_LAST );
     ach_get( &chan_hubo_ctrl, &H_Ctrl, sizeof(H_Ctrl), &fs, NULL, ACH_O_LAST );
 
-    time = 0;
 
     armjoints[LEFT][0] = LSP;
     armjoints[LEFT][1] = LSR;
     armjoints[LEFT][2] = LSY;
     armjoints[LEFT][3] = LEB;
-    armjoints[LEFT][4] = LWR;
+    armjoints[LEFT][4] = LWY;
     armjoints[LEFT][5] = LWP;
 
     armjoints[RIGHT][0] = RSP;
     armjoints[RIGHT][1] = RSR;
     armjoints[RIGHT][2] = RSY;
     armjoints[RIGHT][3] = REB;
-    armjoints[RIGHT][4] = RWR;
+    armjoints[RIGHT][4] = RWY;
     armjoints[RIGHT][5] = RWP;
 
     legjoints[LEFT][0] = LHP;
@@ -74,11 +73,13 @@ hp_flag_t hubo_plus::update(bool printError)
     size_t fs;
     r1 = ach_get( &chan_hubo_ref, &H_Ref, sizeof(H_Ref), &fs, NULL, ACH_O_LAST );
     if( ACH_OK != r1 && printError )
-        fprintf( stdout, "Ach report -- Ref Channel: %s at time=%f", ach_result_to_string(r1), time );
+        fprintf( stdout, "Ach report -- Ref Channel: %s at time=%f",
+			ach_result_to_string((ach_status_t)r1), getTime() );
 
     r2 = ach_get( &chan_hubo_state, &H_State, sizeof(H_State), &fs, NULL, ACH_O_LAST );
     if( ACH_OK != r2 && printError )
-        fprintf( stdout, "Ach report -- State Channel: %s at time=%f", ach_result_to_string(r2), time );
+        fprintf( stdout, "Ach report -- State Channel: %s at time=%f",
+			ach_result_to_string((ach_status_t)r2), getTime() );
 
     if( r1==ACH_OK && r2==ACH_OK )
         return SUCCESS;
@@ -138,9 +139,9 @@ hp_flag_t hubo_plus::setJointNominalSpeed(int joint, double speed)
             return WRONG_MODE;
     }
     else
-        return 1;
+        return JOINT_OOB;
 
-    return 0;
+    return SUCCESS;
 }
 
 // Velocity control
@@ -159,7 +160,7 @@ hp_flag_t hubo_plus::setVelocityControl( int joint )
 
 hp_flag_t hubo_plus::setJointVelocity(int joint, double vel, bool send)
 {
-    if( joints < HUBO_JOINT_COUNT )
+    if( joint < HUBO_JOINT_COUNT )
     {
         H_Ctrl.joint[joint].velocity = vel;
         H_Ctrl.joint[joint].mode = CTRL_VEL;
@@ -404,10 +405,15 @@ hp_flag_t hubo_plus::setRightLegNomSpeeds(Eigen::VectorXd speeds)
 
 
 // Velocity Control
-void hubo_plus::setLegVelCtrl(int side)
+hp_flag_t hubo_plus::setLegVelCtrl(int side)
 {
-    for(int i=0; i<LEG_JOINT_COUNT; i++)
-        setVelocityControl( legjoints[side][i] );
+    if( side==LEFT || side==RIGHT )
+        for(int i=0; i<LEG_JOINT_COUNT; i++)
+            setVelocityControl( legjoints[side][i] );
+    else
+        return BAD_SIDE;
+
+    return SUCCESS;
 }
 
 hp_flag_t hubo_plus::setLegVels(int side, Eigen::VectorXd vels, bool send)

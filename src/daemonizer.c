@@ -6,6 +6,13 @@
     #define RUN_AS_USER "root"
 #endif
 
+int daemon_sig_quit = 0;
+int daemon_sig_usr1 = 0;
+int daemon_sig_usr2 = 0;
+
+char lockfile[100] = "/var/lock/default-daemon";
+char gdaemon_name[100] = "default-daemon";
+
 
 void stack_prefault(void);
 
@@ -14,7 +21,7 @@ static void daemon_sig_handler(int signum)
 {
     switch(signum)
     {
-        case SIGARLM: exit(EXIT_FAILURE); break;
+        case SIGALRM: exit(EXIT_FAILURE); break;
         case SIGUSR1: daemon_sig_usr1 = 1; break;
         case SIGUSR2: daemon_sig_usr2 = 1; break;
         case SIGCHLD: exit(EXIT_FAILURE); break;
@@ -38,8 +45,8 @@ void daemonize(const char *daemon_name)
     char pbuff[100];
 
     sprintf(gdaemon_name, "%s", daemon_name);
-    sprintf(pbuff, "Starting daemonization for %s", daemon_name);
-
+//    sprintf(pbuff, "Starting daemonization for %s", daemon_name);
+    syslog( LOG_NOTICE, "Starting daemonization for %s", daemon_name );
 
     // Initialize signal variables;
     daemon_sig_quit = 0;
@@ -63,8 +70,9 @@ void daemonize(const char *daemon_name)
         if( lfp < 0 )
         {
             syslog( LOG_ERR, "Unable to create lock file %s, code=%d (%s)"
-                             "\n\tCheck if daemon already exists!",
+                             "  Check if daemon already exists!",
                     lockfile, errno, strerror(errno) );
+            exit( EXIT_FAILURE );
         }
     }
 
@@ -239,8 +247,8 @@ void daemon_close()
     fclose( stdout );
     fclose( stderr );
     char buff[100];
-    sprintf( buff, "Terminated process %s gracefully", gdaemon_name );
-    syslog( LOG_NOTICE, buff );
+//    sprintf( buff, "Terminated process %s gracefully", gdaemon_name );
+    syslog( LOG_NOTICE, "Terminated process %s gracefully", gdaemon_name );
     closelog();
 }
 
@@ -252,11 +260,12 @@ void stack_prefault(void)
 }
 
 
-void daemon_assert( int result )
+void daemon_assert( int result, int line )
 {
     if(!result)
     {
-        fprintf(stderr, "Assertion failed. code=%d (%s)\n", errno, strerror(errno));
+        fprintf(stderr, "Assertion failed on line %d, at time %s\n\t code=%d (%s)\n",
+		line, __TIME__, errno, strerror(errno));
         daemon_close();
         exit( EXIT_FAILURE );
     }

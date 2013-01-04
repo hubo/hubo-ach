@@ -1,18 +1,21 @@
 #ifndef HUBO_PLUS_H
 #define HUBO_PLUS_H
 
+// C Headers
+extern "C" {
 // For Hubo
 #include "hubo.h"
 #include "hubo-jointparams.h"
 
 // For process management
 #include "daemonizer.h"
-#include <ach.h>
+}
+
 
 // For data handling
 #include <math.h>
-#include <Eigen.h>
-#include <vector.h>
+#include </usr/include/eigen3/Eigen/Core>
+#include <vector>
 
 #define ARM_JOINT_COUNT 6
 #define LEG_JOINT_COUNT 6
