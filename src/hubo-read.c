@@ -220,13 +220,13 @@ void huboLoop() {
 		printf("Left Hand: m_x:%g\tm_y%g\tf_z:%g\n", H_state.ft[2].m_x, H_state.ft[3].m_y, H_state.ft[3].f_z);
 */
 
-		printf("[RSP]%f \t [RSR]%f \t [RSY]%f \t [REB]%f \t [RWY]%f \t [RWP]%f\n",
-				H_state.joint[RSP].pos,
-				H_state.joint[RSR].pos,
-				H_state.joint[RSY].pos,
-				H_state.joint[REB].pos,
-				H_state.joint[RWY].pos,
-				H_state.joint[RWP].pos );
+		printf("[LSP]%f \t [LSR]%f \t [LSY]%f \t [LEB]%f \t [LWY]%f \t [LWP]%f\n",
+				H_state.joint[LSP].pos,
+				H_state.joint[LSR].pos,
+				H_state.joint[LSY].pos,
+				H_state.joint[LEB].pos,
+				H_state.joint[LWY].pos,
+				H_state.joint[LWP].pos );
 
 
 /*

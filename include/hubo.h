@@ -141,7 +141,8 @@ typedef enum {
 typedef enum {
     CTRL_OFF    = 0,
     CTRL_POS,
-    CTRL_VEL
+    CTRL_VEL,
+    CTRL_HOME
 } hubo_ctrl_mode_t;
 
 #define RIGHT 0

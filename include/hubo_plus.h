@@ -223,6 +223,8 @@ public:
 
     // ~~~*** Board Commands ***~~~ //
     // TODO: All of these
+    hp_flag_t homeJoint( int joint, bool send=false );
+    void homeAllJoints( bool send=false );
 
 protected:
 

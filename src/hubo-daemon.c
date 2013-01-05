@@ -291,7 +291,8 @@ void huboLoop(struct hubo_param *H_param) {
    	struct can_frame frame;
 
 	// time info
-	struct timespec t;
+	struct timespec t, time;
+	double tsec;
 
 	// get current time
 	//clock_gettime( CLOCK_MONOTONIC,&t);
@@ -303,6 +304,7 @@ void huboLoop(struct hubo_param *H_param) {
 	int a = 0;
 
 
+
 	fprintf(stdout, "Start Hubo Loop\n");
 //	while(1) {
 	while(!hubo_sig_quit) {
@@ -311,13 +313,6 @@ void huboLoop(struct hubo_param *H_param) {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
-		/*
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-		hubo_assert( ACH_OK == r || ACH_MISSED_FRAME == r || ACH_STALE_FRAMES == r );
-		hubo_assert( ACH_STALE_FRAMES == r || sizeof(H_ref) == fs );
-		*/
-		// hubo_assert( sizeof(H_param) == fs );
-
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
 				if(debug) {
@@ -325,30 +320,17 @@ void huboLoop(struct hubo_param *H_param) {
 			}
 		else{	hubo_assert( sizeof(H_ref) == fs ); }
 
-/*
-		r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-				if(debug) {
-					printf("CMD r = %s\n",ach_result_to_string(r));}
-				}
-		else{ hubo_assert( sizeof(H_cmd) == fs ); }
-*/
 
-		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+/*		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
 				if(debug) {
 					fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
 				}
 		else{ hubo_assert( sizeof(H_state) == fs ); }
+*/		// I believe the above ach_get accomplishes nothing
 
 		/* read hubo console */
 		huboMessage(&H_ref, H_param, &H_state, &H_cmd, &frame);
-		/* set reference for zeroed joints only */
-//		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-//			if(H_param.joint[i].zeroed == true) {
-//				hSetEncRef(H_param.joint[i].jntNo, &H_ref, H_param, &frame);
-//			}
-//		}
 
 		/* Set all Ref */
 		if(hubo_noRefTimeAll < T ) {
@@ -373,10 +355,13 @@ void huboLoop(struct hubo_param *H_param) {
 
 		/* Get all Current data */
 //		getCurrentAllSlow(&H_state, &H_param, &frame);
-		
-//		hGetCurrentValue(RSY, &H_param, &frame);
-//		readCan(hubo_socket[H_param.joint[RSY].can], &frame, HUBO_CAN_TIMEOUT_DEFAULT);
-//		decodeFrame(&H_state, &H_param, &frame);
+
+		// Get current timestamp
+		clock_gettime( CLOCK_MONOTONIC, &time );
+		tsec = (double)time.tv_sec;
+		tsec += (double)(time.tv_nsec)/1.0e9;
+
+		H_state.time = tsec;
 
 		/* put data back in ACH channel */
 		ach_put( &chan_hubo_state, &H_state, sizeof(H_state));

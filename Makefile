@@ -19,7 +19,7 @@ CAN_DEFS :=
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
 #BINARIES := hubo-daemon hubo-console hubo-loop hubo-read control-daemon 
-BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus
+BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus home-test
 all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS) -lsomatic
@@ -41,6 +41,11 @@ control_test_objs := src/daemonizer.o src/test-plus.o src/hubo_plus.o src/hubo-j
 
 test-plus: $(control_test_objs)
 	$(CXX) $(CXXFLAGS) -o $@ $(control_test_objs) -lach -lm -lc
+
+home_test_objs := src/daemonizer.o src/home-test.o src/hubo_plus.o src/hubo-jointparams.o
+
+home-test: $(home_test_objs)
+	$(CXX) $(CXXFLAGS) -o $@ $(home_test_objs) -lach -lm -lc
 
 hubo_console_objs := src/hubo-jointparams.o src/hubo-console.o 
 

@@ -274,10 +274,10 @@ void huboLoop(struct hubo_param *H_param) {
 	double qgood[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 	double qgood0[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 	double tfull[16];
-	double fascale = 0.50;
+	double fascale = 0.5;
 	double best = 0;
 	int choice = 0;
-	double filfactor = 1;
+	double filfactor = 0.25;
 	double dtfx=0;
 	double dtfy=0;
 	double dtfz=0;
@@ -436,7 +436,7 @@ void huboLoop(struct hubo_param *H_param) {
 					dr = -V[i]*dt;
 				}
 
-//				H_ref.ref[joints[i]] += dr;
+				H_ref.ref[joints[i]] += dr;
 
 				V0[i] = V[i];
 				qgood0[i] = qgood[i];

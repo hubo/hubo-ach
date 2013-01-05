@@ -107,6 +107,7 @@ hp_flag_t hubo_plus::setPositionControl(int joint)
     {
         H_Ctrl.joint[joint].mode = CTRL_POS;
         H_Ctrl.joint[joint].position = H_State.joint[joint].pos;
+        H_Ctrl.active=1;
     }
     else
         return JOINT_OOB;
@@ -120,6 +121,7 @@ hp_flag_t hubo_plus::setJointAngle(int joint, double radians, bool send)
     {
         H_Ctrl.joint[joint].position = radians;
         H_Ctrl.joint[joint].mode = CTRL_POS;
+        H_Ctrl.active=1;
         if(send)
             sendControls();
     }
@@ -164,6 +166,7 @@ hp_flag_t hubo_plus::setJointVelocity(int joint, double vel, bool send)
     {
         H_Ctrl.joint[joint].velocity = vel;
         H_Ctrl.joint[joint].mode = CTRL_VEL;
+        H_Ctrl.active=1;
         if(send)
             sendControls();
     }
@@ -200,6 +203,7 @@ hp_flag_t hubo_plus::setArmPosCtrl(int side)
 
 hp_flag_t hubo_plus::setArmAngles(int side, Eigen::VectorXd angles, bool send)
 {
+    H_Ctrl.active=1;
     if( angles.size() < ARM_JOINT_COUNT )
         return SHORT_VECTOR;
     else if( angles.size() > ARM_JOINT_COUNT )
@@ -275,6 +279,7 @@ hp_flag_t hubo_plus::setArmVelCtrl(int side)
 
 hp_flag_t hubo_plus::setArmVels(int side, Eigen::VectorXd vels, bool send)
 {
+    H_Ctrl.active=1;
     if( vels.size() < ARM_JOINT_COUNT )
         return SHORT_VECTOR;
     else if( vels.size() > ARM_JOINT_COUNT )
@@ -418,6 +423,7 @@ hp_flag_t hubo_plus::setLegVelCtrl(int side)
 
 hp_flag_t hubo_plus::setLegVels(int side, Eigen::VectorXd vels, bool send)
 {
+    H_Ctrl.active=1;
     if( vels.size() < LEG_JOINT_COUNT )
         return SHORT_VECTOR;
     else if( vels.size() > LEG_JOINT_COUNT )
@@ -818,8 +824,34 @@ double hubo_plus::getRotVelY() { return H_State.imu.w_y; }
 
 
 
+// ~~~*** Board Commands ***~~~ //
+hp_flag_t hubo_plus::homeJoint( int joint, bool send )
+{
+    if( joint < HUBO_JOINT_COUNT )
+    {
+        H_Ctrl.joint[joint].position = 0;
+        H_Ctrl.joint[joint].mode = CTRL_HOME;
+        H_Ctrl.active = 1;
+    }
+    else
+        return JOINT_OOB;
 
+    if(send)
+        sendControls();
 
+    return SUCCESS;
+}
+
+void hubo_plus::homeAllJoints( bool send )
+{
+    for(int i=0; i<HUBO_JOINT_COUNT; i++)
+        homeJoint( i, false );
+    
+    H_Ctrl.active = 2;
+
+    if(send)
+        sendControls();
+}
 
 
 
