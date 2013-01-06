@@ -22,7 +22,7 @@ CAN_DEFS :=
 BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus home-test
 all : $(BINARIES)
 
-LIBS := -lach -lrt $(CAN_LIBS) -lsomatic
+LIBS := -lach -lrt $(CAN_LIBS)
 
 hubo_daemon_objs := src/hubo-daemonizer.o src/hubo-daemon.o src/hubo-jointparams.o $(CAN_OBJS)
 

@@ -90,7 +90,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Timing info
 #define NSEC_PER_SEC    1000000000
 
-#define hubo_home_noRef_delay 6.0	// delay before trajectories can be sent while homeing in sec
+#define hubo_home_noRef_delay 6.0	// delay before trajectories can be sent while homing in sec
 
 
 /* functions */
@@ -121,7 +121,8 @@ void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_
 void hFeedbackControllerOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
+	struct can_frame *f, int send);
 int getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
@@ -306,7 +307,7 @@ void huboLoop(struct hubo_param *H_param) {
 
 
 	fprintf(stdout, "Start Hubo Loop\n");
-//	while(1) {
+
 	while(!hubo_sig_quit) {
 		fs = 0;
 		// wait until next shot
@@ -321,28 +322,22 @@ void huboLoop(struct hubo_param *H_param) {
 		else{	hubo_assert( sizeof(H_ref) == fs ); }
 
 
-/*		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-				if(debug) {
-					fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
-				}
-		else{ hubo_assert( sizeof(H_state) == fs ); }
-*/		// I believe the above ach_get accomplishes nothing
+		/* Set all Ref */
+		if(hubo_noRefTimeAll < T ) {
+			setRefAll(&H_ref, H_param, &H_state, &frame);
+			H_state.refWait = 0;
+		}
+		else{
+			hubo_noRefTimeAll = hubo_noRefTimeAll - T;
+			H_state.refWait = 1;
+		}
 
 		/* read hubo console */
 		huboMessage(&H_ref, H_param, &H_state, &H_cmd, &frame);
 
-		/* Set all Ref */
-		if(hubo_noRefTimeAll < T ) {
-			setRefAll(&H_ref, H_param, &H_state, &frame);
-		}
-		else{
-			hubo_noRefTimeAll = hubo_noRefTimeAll - T;
-		}
-		
 		/* Get all Encoder data */
 		getEncAllSlow(&H_state, H_param, &frame); 
-
+		
 		/* Get FT Sensor data */
 		getFTAllSlow(&H_state, H_param, &frame);
 				
@@ -1629,7 +1624,7 @@ void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inpu
 
 
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
-				struct can_frame *f)
+				struct can_frame *f, int send)
 {
 //	hMotorDriverOnOff( jnt, h, f, D_DISABLE ); // TODO: find good way of dealing with current control switching
 //	hSetControlMode( jnt, h, s, f, D_POSITION );
@@ -1641,15 +1636,20 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 
 	hubo_noRefTimeAll = hubo_home_noRef_delay;
 
+	if(send==1)
+		ach_put( &chan_hubo_ref, r, sizeof(*r) );
+
 }
 
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 		if(s->joint[i].active == true) {
-			hGotoLimitAndGoOffset(i, r, h, s, f);
+			hGotoLimitAndGoOffset(i, r, h, s, f, 0);
 		}
 	}
+	
+	ach_put( &chan_hubo_ref, r, sizeof(*r) );
 }
 
 void hInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f) {
@@ -2194,7 +2194,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hGotoLimitAndGoOffsetAll( r, h, s, f );
 					break;
 				case D_GOTO_HOME:
-					hGotoLimitAndGoOffset( c->joint, r, h, s, f );
+					hGotoLimitAndGoOffset( c->joint, r, h, s, f, 1 );
 					break;
 				case D_JMC_ALARM:
 					hSetAlarm( c->joint, h, f, c->param[0] );

@@ -94,12 +94,35 @@ hp_flag_t hubo_plus::update(bool printError)
     }
 }
 
-void hubo_plus::sendControls() { ach_put( &chan_hubo_ctrl, &H_Ctrl, sizeof(H_Ctrl) ); }
+void hubo_plus::sendControls()
+{
+    int r = ach_put( &chan_hubo_ctrl, &H_Ctrl, sizeof(H_Ctrl) );
+    if( r != ACH_OK ) fprintf(stderr, "Problem sending control commands: (%d) %s\n",
+                                r, ach_result_to_string((ach_status_t)r));
+}
+void hubo_plus::sendCommands()
+{
+    int r = ach_put( &chan_hubo_board_cmd, &H_Cmd, sizeof(H_Cmd) );
+    if( r != ACH_OK ) fprintf(stderr, "Problem sending board commands: (%d) %s\n",
+                                r, ach_result_to_string((ach_status_t)r));
+}
 
 // ~~~*** Sending Control Commands ***~~~ //
 // ~~** Setting reference values
 
 // ~* General sets
+hp_flag_t hubo_plus::resetJointStatus( int joint, bool send )
+{
+    if( joint < HUBO_JOINT_COUNT )
+        H_Ctrl.joint[joint].mode = CTRL_RESET;
+    else
+        return JOINT_OOB;
+
+    if( send )
+        sendControls();
+
+    return SUCCESS;
+}
 // Position control
 hp_flag_t hubo_plus::setPositionControl(int joint)
 {
@@ -561,6 +584,14 @@ double hubo_plus::getJointNominalAcceleration(int joint)
         return 0;
 }
 
+int hubo_plus::getJointStatus( int joint )
+{
+    if( joint < HUBO_JOINT_COUNT )
+        return H_Ref.status[joint];
+    else
+        return 0;
+}
+
 // ~* Arm control gets
 // Position control
 hp_flag_t hubo_plus::getArmAngles(int side, Eigen::VectorXd &angles)
@@ -825,32 +856,47 @@ double hubo_plus::getRotVelY() { return H_State.imu.w_y; }
 
 
 // ~~~*** Board Commands ***~~~ //
-hp_flag_t hubo_plus::homeJoint( int joint, bool send )
+hp_flag_t hubo_plus::homeJoint( int joint, bool send, double wait )
 {
     if( joint < HUBO_JOINT_COUNT )
     {
         H_Ctrl.joint[joint].position = 0;
         H_Ctrl.joint[joint].mode = CTRL_HOME;
-        H_Ctrl.active = 1;
+        H_Ctrl.active = 2;
+        
+        H_Cmd.type = D_GOTO_HOME;
+        H_Cmd.joint = joint;
     }
     else
         return JOINT_OOB;
 
     if(send)
+    {
         sendControls();
+        while( H_Ref.paused==0 )
+            update();
+        sendCommands();
+    }
 
     return SUCCESS;
 }
 
-void hubo_plus::homeAllJoints( bool send )
+void hubo_plus::homeAllJoints( bool send, double wait )
 {
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
         homeJoint( i, false );
     
     H_Ctrl.active = 2;
 
+    H_Cmd.type = D_GOTO_HOME_ALL;
+
     if(send)
+    {
         sendControls();
+        while( H_Ref.paused==0 )
+            update();
+        sendCommands();
+    }
 }
 
 

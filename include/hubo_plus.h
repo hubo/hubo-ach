@@ -24,6 +24,7 @@ typedef enum {
 
     SUCCESS = 0,
     JOINT_OOB,      // The joint you tried to specify is out of bounds
+    VALUE_OOB,      // Some generic value was out of acceptable bounds
     WRONG_MODE,     // You are not in the correct control mode to do what you asked
     BAD_SIDE,       // You did not use LEFT or RIGHT correctly
     SHORT_VECTOR,   // The VectorXd you tried to use has too few entries
@@ -56,6 +57,7 @@ public:
     // ~~** Setting reference values
 
     // ~* General sets
+    hp_flag_t resetJointStatus( int joint, bool send=false );
     // Position control
     hp_flag_t setPositionControl( int joint );
     hp_flag_t setJointAngle( int joint, double radians, bool send=false );
@@ -134,6 +136,8 @@ public:
     //double getJointVelocityState( int joint ); // TODO: add velocity to the state
     // Acceleration setting
     double getJointNominalAcceleration( int joint );
+
+    int getJointStatus( int joint ); // 0:Good 1:Frozen
 
     // ~* Arm control gets
     // Position control
@@ -223,8 +227,10 @@ public:
 
     // ~~~*** Board Commands ***~~~ //
     // TODO: All of these
-    hp_flag_t homeJoint( int joint, bool send=false );
-    void homeAllJoints( bool send=false );
+    void sendCommands();
+
+    hp_flag_t homeJoint( int joint, bool send=true, double wait=1.0 );
+    void homeAllJoints( bool send=true, double wait=1.0 );
 
 protected:
 

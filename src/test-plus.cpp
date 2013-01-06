@@ -18,7 +18,16 @@ int main(int argc, char **argv)
 
 	printf("%f\t%f\t%f\n", vels[0], vels[1], vels[2]);*/
 
+//    if( hubo.getJointStatus(LSP)==1 )
+//       printf("Joint status:%d",hubo.getJointStatus(LSP)); 
+
+//    hubo.resetJointStatus(LSP,true);
+
+    sleep(1);
+
 	hubo.setJointAngle(LSP,1);
+
+	printf("%f\n",hubo.getJointNominalSpeed(LSP));
 
 	hubo.sendControls();
 

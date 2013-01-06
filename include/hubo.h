@@ -3,11 +3,11 @@
 #define HUBO_PRIMARY_H
 #include "hubo/canID.h"
 #include "hubo-daemonID.h"
-#include <stdint.h>
 
 
 //888888888888888888888888888888888888888888
 //---------[Prerequisites for ACH]----------
+#include <stdint.h>
 #include <time.h>
 #include <string.h>
 #include <pthread.h>
@@ -142,7 +142,8 @@ typedef enum {
     CTRL_OFF    = 0,
     CTRL_POS,
     CTRL_VEL,
-    CTRL_HOME
+    CTRL_HOME,
+    CTRL_RESET
 } hubo_ctrl_mode_t;
 
 #define RIGHT 0
@@ -226,10 +227,13 @@ struct hubo_state {
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
 	struct hubo_board_msg msg;
         double time;
+	int refWait;
 };
 
 struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
+	int status[HUBO_JOINT_COUNT];	///< 0:Good, 1:Frozen
+	int paused;
 	struct timespec time;           ///< time message sent
 };
 
