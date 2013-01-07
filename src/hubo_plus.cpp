@@ -904,6 +904,10 @@ void hubo_plus::homeAllJoints( bool send, double wait )
 
 
 
+// ~~~*** Inverse Kinematics ***~~~ //
+
+
+
 
 
 
