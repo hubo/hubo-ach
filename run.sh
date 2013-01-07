@@ -17,6 +17,7 @@ HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_BOARD_CHAN='hubo-board-cmd'
 HUBO_CTRL_CHAN='hubo-control'
+FASTRAK_CHAN='fastrak'
 
 DAEMON_DIR='/etc/hubo-daemon'
 DAEMON_LOG_DIR='/var/log/hubo-daemon'
@@ -48,6 +49,7 @@ Ach()
 		sudo ach -U $HUBO_STATE_CHAN
 		sudo ach -U $HUBO_BOARD_CHAN
 		sudo ach -U $HUBO_CTRL_CHAN
+		sudo ach -U $FASTRAK_CHAN
 
 	;;	
 
@@ -57,6 +59,7 @@ Ach()
 		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
 		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
 		sudo ach -1 -C $HUBO_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $FASTRAK_CHAN	-m 10 -n 3000 -o 666
 
 	;;
 	esac

@@ -122,7 +122,7 @@ void controlLoop()
                     H_ref.ref[jnt] = 0; 
                     V[jnt]=0; V0[jnt]=0; dV[jnt]=0;
                     dr[jnt]=0;
-    if(jnt==LSP) printf("Homed. r:%f\n", H_ref.ref[jnt]);
+//    if(jnt==LSP) printf("Homed. r:%f\n", H_ref.ref[jnt]);
                 }
             }
         }
@@ -176,15 +176,15 @@ void controlLoop()
                         else if( ctrl.joint[jnt].mode == CTRL_POS )
                         {
                             dr[jnt] = ctrl.joint[jnt].position - H_ref.ref[jnt]; // Check how far we are from desired position
-			if(jnt==LSP && maxi==iter) printf("err:%f\tVdi:%f\t",err,ctrl.joint[jnt].velocity);
+//			if(jnt==LSP && maxi==iter) printf("err:%f\tVdi:%f\t",err,ctrl.joint[jnt].velocity);
 			
                             ctrl.joint[jnt].velocity = sign(dr[jnt])*fabs(ctrl.joint[jnt].velocity); // Set velocity into the correct direction
 
-			if(jnt==LSP && maxi==iter) printf("dt:%f\trd:%f\tdri:%f\t",dt,ctrl.joint[jnt].position,dr[jnt]);
+//			if(jnt==LSP && maxi==iter) printf("dt:%f\trd:%f\tdri:%f\t",dt,ctrl.joint[jnt].position,dr[jnt]);
 
                             dV[jnt] = ctrl.joint[jnt].velocity - V0[jnt]; // Check how far we are from desired velocity
 
-			if(jnt==LSP && maxi==iter) printf("Vd:%f\tV0:%f\tdVi:%f\t",ctrl.joint[jnt].velocity,V0[jnt],dV[jnt]);
+//			if(jnt==LSP && maxi==iter) printf("Vd:%f\tV0:%f\tdVi:%f\t",ctrl.joint[jnt].velocity,V0[jnt],dV[jnt]);
 
                             adr = sqrt(fabs(2.0*ctrl.joint[jnt].acceleration*dr[jnt]));
                             if( fabs(V0[jnt]) >= adr ) // Slow down before reaching goal
@@ -194,7 +194,7 @@ void controlLoop()
                             else if( dV[jnt] < -fabs(ctrl.joint[jnt].acceleration*dt) ) // Make sure the sign is correct
                                 dV[jnt] = -fabs(ctrl.joint[jnt].acceleration*dt);
 			
-			if(jnt==LSP && maxi==iter) printf("dV:%f\t",dV[jnt]);
+//			if(jnt==LSP && maxi==iter) printf("dV:%f\t",dV[jnt]);
 
                             V[jnt] = V0[jnt] + dV[jnt]; // Step velocity forward
 
@@ -210,7 +210,7 @@ void controlLoop()
                             else
                                 H_ref.ref[jnt] += dr[jnt];
 
-			if(jnt==LSP && maxi==iter) printf("r:%f\tdr:%f\tV:%f\n", H_ref.ref[jnt], dr[jnt], V[jnt]);
+//			if(jnt==LSP && maxi==iter) printf("r:%f\tdr:%f\tV:%f\n", H_ref.ref[jnt], dr[jnt], V[jnt]);
 			
                         }
                         else if( ctrl.joint[jnt].mode == CTRL_HOME )
@@ -219,7 +219,7 @@ void controlLoop()
                             V[jnt]=0; V0[jnt]=0; dV[jnt]=0;
                             //r[jnt]=0; r0[jnt]=0;
                             dr[jnt]=0;
-            if(jnt==LSP && maxi==iter) printf("Homed. r:%f\n", H_ref.ref[jnt]);
+//            if(jnt==LSP && maxi==iter) printf("Homed. r:%f\n", H_ref.ref[jnt]);
                             
                         }
                         else
@@ -257,11 +257,11 @@ void controlLoop()
             }
 
             if(ctrl.active == 1 && H_ref.paused==0) 
-            { if(iter==maxi) printf("Sending ACH, r:%f\n", H_ref.ref[LSP]);
+            { //if(iter==maxi) printf("Sending ACH, r:%f\n", H_ref.ref[LSP]);
                 presult = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
-//                if(presult != ACH_OK)
-//                    fprintf(stderr, "Error sending ref command! (%d) %s\n",
-//                        presult, ach_result_to_string(presult));
+                if(presult != ACH_OK)
+                    fprintf(stderr, "Error sending ref command! (%d) %s\n",
+                        presult, ach_result_to_string(presult));
             }
             
         }
@@ -549,7 +549,7 @@ int main(int argc, char **argv)
     // TODO: Parse runtime arguments
 
 
-//    daemonize( "control-daemon" );
+    daemonize( "control-daemon" );
 
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
     daemon_assert( ACH_OK == r, __LINE__ );

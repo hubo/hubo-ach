@@ -233,13 +233,12 @@ hp_flag_t hubo_plus::setArmAngles(int side, Vector6d angles, bool send)
     else if( angles.size() > ARM_JOINT_COUNT )
         return LONG_VECTOR;
 
-
     if( side==LEFT || side==RIGHT )
-        for(int i=0; i<ARM_JOINT_COUNT; i++)
-            setJointAngle(armjoints[side][i], angles(i), false);
+       for(int i=0; i<ARM_JOINT_COUNT; i++)
+            setJointAngle(armjoints[side][i], angles[i], false);
+
     else
         return BAD_SIDE;
-
 
     if(send)
         sendControls();
@@ -380,7 +379,7 @@ hp_flag_t hubo_plus::setLegAngles(int side, Vector6d angles, bool send)
 
     if( side==LEFT || side==RIGHT )
         for(int i=0; i<LEG_JOINT_COUNT; i++)
-            setJointAngle(legjoints[side][i], angles(i), false);
+            setJointAngle(legjoints[side][i], angles[i], false);
     else
         return BAD_SIDE;
 
@@ -771,6 +770,29 @@ double hubo_plus::getJointAccelMax(int joint)
 
 // ~~** State
 // TODO: Stuff like state position, velocity, whatever
+double hubo_plus::getJointAngleState(int joint)
+{
+    if( joint < HUBO_JOINT_COUNT )
+        return H_State.joint[joint].pos;
+    else
+        return 0;
+}
+
+hp_flag_t hubo_plus::getArmAngleStates( int side, Vector6d &angles )
+{
+    if( side==LEFT || side==RIGHT )
+        for(int i=0; i<ARM_JOINT_COUNT; i++)
+            angles[i] = getJointAngleState( armjoints[side][i] );
+    else
+        return BAD_SIDE;
+
+    return SUCCESS;
+} 
+void hubo_plus::getRightArmAngleStates( Vector6d &angles )
+{ getArmAngleStates( RIGHT, angles ); }
+void hubo_plus::getLeftArmAngleStates( Vector6d &angles )
+{ getArmAngleStates( LEFT, angles ); }
+
 
 // ~~** Sensors
 // ~* Force-torque
@@ -905,19 +927,245 @@ void hubo_plus::homeAllJoints( bool send, double wait )
 
 
 // ~~~*** Inverse Kinematics ***~~~ //
-
-
-
-
-
-
-
-
-
-
-
-
-
+void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d &B, Vector6d &qPrev, char arm)
+{
+    
+    Eigen::ArrayXXd qAll(6,8);
+    
+    // Declarations
+    Eigen::Isometry3d neck, neckInv, hand, handInv, BInv;
+    Eigen::MatrixXd limits(6,2);
+    double nx, sx, ax, px;
+    double ny, sy, ay, py;
+    double nz, sz, az, pz;
+    double q1, q2, q3, q4, q5, q6;
+    double qP1, qP3;
+    double qT;
+    Eigen::Matrix<int, 8, 3> m;
+    
+    double S2, S4, S5, S6;
+    double C2, C4, C5, C6;
+    
+    // Parameters
+    double l1 = 214.5/1000.0;
+    double l2 = 179.14/1000.0;
+    double l3 = 181.59/1000.0;
+    double l4 = 50.0/1000.0;
+    
+    if (arm == 'r') {
+        neck(0,0) = 1; neck(0,1) =  0; neck(0,2) = 0; neck(0,3) =   0;
+        neck(1,0) = 0; neck(1,1) =  0; neck(1,2) = 1; neck(1,3) = -l1;
+        neck(2,0) = 0; neck(2,1) = -1; neck(2,2) = 0; neck(2,3) =   0;
+        neck(3,0) = 0; neck(3,1) =  0; neck(3,2) = 0; neck(3,3) =   1;
+        
+        limits <<
+        -2,   2,
+        -2,  .2,
+        -2,   2,
+        -2,   0,
+        -2,   2,
+        -1.4, 1.2;
+        
+    } else {
+        neck(0,0) = 1; neck(0,1) =  0; neck(0,2) = 0; neck(0,3) =   0;
+        neck(1,0) = 0; neck(1,1) =  0; neck(1,2) = 1; neck(1,3) =  l1;
+        neck(2,0) = 0; neck(2,1) = -1; neck(2,2) = 0; neck(2,3) =   0;
+        neck(3,0) = 0; neck(3,1) =  0; neck(3,2) = 0; neck(3,3) =   1;
+        
+        limits <<
+        -2,   2,
+        -.3,   2,
+        -2,   2,
+        -2,   0,
+        -2,   2,
+        -1.4, 1.2;
+    }
+    neckInv = neck.inverse();
+    
+    hand(0,0) =  0; hand(0,1) =  0; hand(0,2) = 1; hand(0,3) =   0;
+    hand(1,0) = -1; hand(1,1) =  0; hand(1,2) = 0; hand(1,3) =   0;
+    hand(2,0) =  0; hand(2,1) = -1; hand(2,2) = 0; hand(2,3) =   0;
+    hand(3,0) =  0; hand(3,1) =  0; hand(3,2) = 0; hand(3,3) =   1;
+    handInv = hand.inverse();
+    
+    double zeroSize = .000001;
+    
+    // Variables
+    B = neckInv*B*handInv;
+    BInv = B.inverse();
+    
+    nx = BInv(0,0); sx = BInv(0,1); ax = BInv(0,2); px = BInv(0,3);
+    ny = BInv(1,0); sy = BInv(1,1); ay = BInv(1,2); py = BInv(1,3);
+    nz = BInv(2,0); sz = BInv(2,1); az = BInv(2,2); pz = BInv(2,3);
+    
+    qP1 = qPrev(0); qP3 = qPrev(2);
+    
+    m <<
+    1,  1,  1,
+    1,  1, -1,
+    1, -1,  1,
+    1, -1, -1,
+    -1,  1,  1,
+    -1,  1, -1,
+    -1, -1,  1,
+    -1, -1, -1;
+    
+    // Calculate inverse kinematics
+    for (int i = 0; i < 8; i++) {
+        
+        // Solve for q4
+        C4 = (2*l4*px - pow(l2,2) - pow(l3,2) + pow(l4,2) + pow(px,2) + pow(py,2) + pow(pz,2))/(2*l2*l3);
+        
+        if (abs(C4 - 1) < zeroSize) { // Case 1: q4 == 0
+            
+            // Set q4
+            q4 = 0;
+            
+            // Set q3
+            q3 = qP3;
+            
+            // Solve for q6
+            S6 = py/(l2 + l3);
+            C6 = -(l4 + px)/(l2 + l3);
+            q6 = atan2(S6,C6);
+            
+            // Solve for q2
+            S2 = C4*C6*ax - C4*S6*ay;
+            if (abs(S2 - 1) < zeroSize) {
+                q2 = M_PI/2;
+            } else if (abs(S2 + 1) < zeroSize) {
+                q2 = -M_PI/2;
+            } else {
+                q2 = atan2(S2,m(i,2)*sqrt(1-pow(S2,2)));
+            }
+            
+            // Solve for q5
+            qT = atan2(-C6*ay - S6*ax,az);
+            C2 = cos(q2);
+            
+            if (abs(C2) < zeroSize) { // Case 3: q2 = pi/2 or -pi/2
+                
+                q1 = qP1;
+                q3 = qP3;
+                
+                // Solve for q5
+                if (S2 > 0) { // Case 3a: q2 = pi/2
+                    qT = atan2(nz,-sz);
+                    q5 = wrapToPi(q1 - q3 - qT);
+                } else { // Case 3b: q2 = -pi/2
+                    qT = atan2(-nz,sz);
+                    q5 = wrapToPi(qT - q1 - q3);
+                }
+                
+                
+            } else {
+                
+                if (C2 < 0) {
+                    qT = qT + M_PI;
+                }
+                q5 = wrapToPi(qT - q3);
+                
+                // Solve for q1
+                q1 = atan2(S6*ny - C6*nx,C6*sx - S6*sy);
+                if (C2 < 0) {
+                    q1 = q1 + M_PI;
+                }
+                q1 = wrapToPi(q1);
+            }
+            
+        } else {
+            
+            // Solve for q4
+            q4 = atan2(m(i,0)*sqrt(1-pow(C4,2)),C4);
+            
+            // Solve for q5
+            S4 = sin(q4);
+            S5 = pz/(S4*l2);
+            if (abs(S5 - 1) < zeroSize) {
+                q5 = M_PI/2;
+            } else if (abs(S5 + 1) < zeroSize) {
+                q5 = -M_PI/2;
+            } else {
+                q5 = atan2(S5,m(i,1)*sqrt(1-pow(S5,2)));
+            }
+            
+            // Solve for q6
+            C5 = cos(q5);
+            S6 = (C5*S4*l2 + (py*(l3 + C4*l2 - (C5*S4*l2*py)/(l4 + px)))/(l4 + px + pow(py,2)/(l4 + px)))/(l4 + px);
+            C6 = -(l3 + C4*l2 - (C5*S4*l2*py)/(l4 + px))/(l4 + px + pow(py,2)/(l4 + px));
+            q6 = atan2(S6,C6);
+            
+            // Solve for q2
+            S2 = ax*(C4*C6 - C5*S4*S6) - ay*(C4*S6 + C5*C6*S4) - S4*S5*az;
+            if (abs(S2 - 1) < zeroSize) {
+                q2 = M_PI/2;
+            } else if (abs(S2 + 1) < zeroSize) {
+                q2 = -M_PI/2;
+            } else {
+                q2 = atan2(S2,m(i,2)*sqrt(1-pow(S2,2)));
+            }
+            
+            // Solve for q3
+            C2 = cos(q2);
+            
+            if (abs(C2) < zeroSize) { // Case 2: q2 = pi/2 or -pi/2
+                
+                q3 = qP3;
+                // Solve for q1
+                if (S2 > 0) { // Case 2a: q2 = pi/2
+                    qT = atan2(S6*sy - C6*sx,S6*ny - C6*nx);
+                    if (S4 < 0) {
+                        qT = qT + M_PI;
+                    }
+                    q1 = wrapToPi(qT + q3);
+                } else { // Case 2b: q2 = -pi/2
+                    qT = atan2(S6*sy - C6*sx,S6*ny - C6*nx);
+                    if (S4 < 0) {
+                        qT = qT + M_PI;
+                    }
+                    q1 = wrapToPi(qT - q3);
+                }
+                
+            } else {
+                q3 = atan2(S4*S6*ay - C4*S5*az - C6*S4*ax - C4*C5*C6*ay - C4*C5*S6*ax,C5*az - C6*S5*ay - S5*S6*ax);
+                if (C2 < 0) {
+                    q3 = q3 - M_PI;
+                }
+                q3 = wrapToPi(q3);
+                
+                // Solve for q1
+                q1 = atan2(C4*S6*ny - C4*C6*nx + S4*S5*nz + C5*C6*S4*ny + C5*S4*S6*nx,C4*C6*sx - C4*S6*sy - S4*S5*sz - C5*C6*S4*sy - C5*S4*S6*sx);
+                if (C2 < 0) {
+                    q1 = q1 + M_PI;
+                }
+                q1 = wrapToPi(q1);
+            }
+        }
+        
+        qAll(0,i) = q1;
+        qAll(1,i) = q2;
+        qAll(2,i) = q3;
+        qAll(3,i) = q4;
+        qAll(4,i) = q5;
+        qAll(5,i) = q6;
+    }
+    
+    // Find best solution
+    Eigen::ArrayXd qDiff(6,1);
+    Eigen::ArrayXd qDiffSum(8,1);
+    int minInd;
+    
+    for (int i = 0; i < 8; i++) {
+        qDiff = qAll.col(i) - qPrev.array();
+        qDiffSum(i) = qDiff.abs().sum();
+    }
+    qDiffSum.minCoeff(&minInd);
+    
+    q = qAll.col(minInd);
+    
+    q = q.cwiseMin(limits.col(1));
+    q = q.cwiseMax(limits.col(0));
+}
 
 
 // ~~~*** Fastrak ***~~~ //

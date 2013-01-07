@@ -196,6 +196,10 @@ public:
     // ~~~*** State Readings ***~~~ //
 
     // ~~** State
+    double getJointAngleState( int joint );
+    hp_flag_t getArmAngleStates( int side, Vector6d &angles );
+    void getRightArmAngleStates( Vector6d &angles );
+    void getLeftArmAngleStates( Vector6d &angles );
     // TODO: All of these (state position, velocity, whatever)
 
     // ~~** Sensors
@@ -249,6 +253,19 @@ public:
     
 
     // ~~~*** Inverse Kinematics ***~~~ //
+    inline double wrapToPi(double fAng)
+    {
+        return mod(fAng + M_PI, 2*M_PI) - M_PI;
+    }
+
+    inline double mod(double x, double y)
+    {
+        if (0 == y)
+            return x;
+        
+        return x - y * floor(x/y);
+    }
+    void huboArmIK(Vector6d &q, Eigen::Isometry3d &B, Vector6d &qPrev, char arm);
     
 
 
