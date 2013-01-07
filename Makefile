@@ -19,15 +19,15 @@ CAN_DEFS :=
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
 #BINARIES := hubo-daemon hubo-console hubo-loop hubo-read control-daemon 
-BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus home-test
+BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus home-test ik-test
 all : $(BINARIES)
 
-LIBS := -lach -lrt $(CAN_LIBS)
+LIBS := -lach -lrt $(CAN_LIBS) -lm -lc
 
 hubo_daemon_objs := src/hubo-daemonizer.o src/hubo-daemon.o src/hubo-jointparams.o $(CAN_OBJS)
 
 hubo-daemon: $(hubo_daemon_objs)
-	$(CC) -o $@  $(hubo_daemon_objs) $(LIBS) -lm -lc
+	$(CC) -o $@  $(hubo_daemon_objs) $(LIBS)
 
 hubo-read: src/hubo-read.c
 	$(CC) $(CFLAGS) -o $@ $< -lach
@@ -53,6 +53,12 @@ hubo-console: $(hubo_console_objs)
 	$(CXX) $(CFLAGS) -o $@ $(hubo_console_objs) -lach -lreadline -lm -lc
 
 hubo_loop_objs := src/hubo-jointparams.o src/hubo-loop.o
+
+
+ik_objs := src/ik-test.o src/hubo_plus.o src/hubo-jointparams.o src/daemonizer.o
+
+ik-test: $(ik_objs)
+	$(CXX) $(CXXFLAGS) -o $@ $(ik_objs) -lach -lm -lc
 
 #hubo-loop: $(hubo_loop_objs)
 #	$(CC) $(CFLAGS) -o $@ $(hubo_loop_objs) $(LIBS) -lprotobuf-c -lach -lamino

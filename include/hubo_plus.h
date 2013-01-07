@@ -17,6 +17,7 @@ extern "C" {
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vector>
+#include <complex.h>
 
 #define ARM_JOINT_COUNT 6
 #define LEG_JOINT_COUNT 6
@@ -252,7 +253,7 @@ public:
 
     
 
-    // ~~~*** Inverse Kinematics ***~~~ //
+    // ~~~*** Kinematics ***~~~ //
     inline double wrapToPi(double fAng)
     {
         return mod(fAng + M_PI, 2*M_PI) - M_PI;
@@ -265,7 +266,12 @@ public:
         
         return x - y * floor(x/y);
     }
-    void huboArmIK(Vector6d &q, Eigen::Isometry3d &B, Vector6d &qPrev, char arm);
+    
+    void DH2HG(Eigen::Isometry3d &B, double t, double f, double r, double d);
+    
+    void HuboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side);
+    
+    void huboArmIK(Vector6d &q, Eigen::Isometry3d &B, Vector6d &qPrev, int side);
     
 
 
