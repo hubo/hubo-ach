@@ -3,7 +3,7 @@ default: all
 
 
 CFLAGS := -I./include -g --std=gnu99
-CXXFLAGS := -I./include -g -I/usr/local/include/eigen3
+CXXFLAGS := -I./include -g -I/usr/local/include/eigen3 -I/usr/include/eigen3/
 
 CC := gcc
 CXX := g++

@@ -14,16 +14,23 @@ extern "C" {
 
 // For data handling
 #include <math.h>
-#include </usr/include/eigen3/Eigen/Core>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <vector>
 
 #define ARM_JOINT_COUNT 6
 #define LEG_JOINT_COUNT 6
+typedef Eigen::Matrix< double, 6, 1 > Vector6d;
+
+#define FASTRAK_CHAN_NAME "fastrak"
+
+
 
 typedef enum {
 
     SUCCESS = 0,
     JOINT_OOB,      // The joint you tried to specify is out of bounds
+    SENSOR_OOB,     // You requested data from a sensor which doesn't exist
     VALUE_OOB,      // Some generic value was out of acceptable bounds
     WRONG_MODE,     // You are not in the correct control mode to do what you asked
     BAD_SIDE,       // You did not use LEFT or RIGHT correctly
@@ -31,11 +38,16 @@ typedef enum {
     LONG_VECTOR,    // The VectorXd you tried to use has too many entries
     REF_STALE,      // The reference values were not able to update for some reason
     STATE_STALE,    // The state values were not able to update for some reason
-    ALL_STALE       // Nothing was able to update for some reason
+    FASTRAK_STALE,  // The Fastrak values were not able to update for some reason
+    ALL_STALE,      // Nothing was able to update for some reason
+    CHAN_OPEN_FAIL, // A channel failed to open
 
 } hp_flag_t;
 
 
+typedef struct {
+    float data[4][7];
+} fastrak_c_t;
 
 
 
@@ -71,48 +83,48 @@ public:
     // ~* Arm control sets
     // Position control
     hp_flag_t setArmPosCtrl( int side );
-    hp_flag_t setArmAngles( int side, Eigen::VectorXd angles, bool send=false );
+    hp_flag_t setArmAngles( int side, Vector6d angles, bool send=false );
     void setLeftArmPosCtrl();
-    hp_flag_t setLeftArmAngles( Eigen::VectorXd angles, bool send=false );
+    hp_flag_t setLeftArmAngles( Vector6d angles, bool send=false );
     void setRightArmPosCtrl();
-    hp_flag_t setRightArmAngles( Eigen::VectorXd angles, bool send=false );
-    hp_flag_t setArmNomSpeeds( int side, Eigen::VectorXd speeds );
-    hp_flag_t setLeftArmNomSpeeds( Eigen::VectorXd speeds );
-    hp_flag_t setRightArmNomSpeeds( Eigen::VectorXd speeds );
+    hp_flag_t setRightArmAngles( Vector6d angles, bool send=false );
+    hp_flag_t setArmNomSpeeds( int side, Vector6d speeds );
+    hp_flag_t setLeftArmNomSpeeds( Vector6d speeds );
+    hp_flag_t setRightArmNomSpeeds( Vector6d speeds );
     // Velocity control
     hp_flag_t setArmVelCtrl( int side );
-    hp_flag_t setArmVels( int side, Eigen::VectorXd vels, bool send=false );
+    hp_flag_t setArmVels( int side, Vector6d vels, bool send=false );
     void setLeftArmVelCtrl();
-    hp_flag_t setLeftArmVels( Eigen::VectorXd vels, bool send=false );
+    hp_flag_t setLeftArmVels( Vector6d vels, bool send=false );
     void setRightArmVelCtrl();
-    hp_flag_t setRightArmVels( Eigen::VectorXd vels, bool send=false );
+    hp_flag_t setRightArmVels( Vector6d vels, bool send=false );
     // Acceleration settings
-    hp_flag_t setArmNomAcc(int side, Eigen::VectorXd acc );
-    hp_flag_t setLeftArmNomAcc( Eigen::VectorXd acc );
-    hp_flag_t setRightArmNomAcc( Eigen::VectorXd acc );
+    hp_flag_t setArmNomAcc(int side, Vector6d acc );
+    hp_flag_t setLeftArmNomAcc( Vector6d acc );
+    hp_flag_t setRightArmNomAcc( Vector6d acc );
 
     // ~* Leg control sets
     // Position control
     hp_flag_t setLegPosCtrl( int side );
-    hp_flag_t setLegAngles( int side, Eigen::VectorXd angles, bool send=false );
+    hp_flag_t setLegAngles( int side, Vector6d angles, bool send=false );
     void setLeftLegPosCtrl();
-    hp_flag_t setLeftLegAngles( Eigen::VectorXd angles, bool send=false );
+    hp_flag_t setLeftLegAngles( Vector6d angles, bool send=false );
     void setRightLegPosCtrl();
-    hp_flag_t setRightLegAngles( Eigen::VectorXd angles, bool send=false );
-    hp_flag_t setLegNomSpeeds( int side, Eigen::VectorXd speeds );
-    hp_flag_t setLeftLegNomSpeeds( Eigen::VectorXd speeds );
-    hp_flag_t setRightLegNomSpeeds( Eigen::VectorXd speeds );
+    hp_flag_t setRightLegAngles( Vector6d angles, bool send=false );
+    hp_flag_t setLegNomSpeeds( int side, Vector6d speeds );
+    hp_flag_t setLeftLegNomSpeeds( Vector6d speeds );
+    hp_flag_t setRightLegNomSpeeds( Vector6d speeds );
     // Velocity control
     hp_flag_t setLegVelCtrl( int side );
-    hp_flag_t setLegVels( int side, Eigen::VectorXd vels, bool send=false );
+    hp_flag_t setLegVels( int side, Vector6d vels, bool send=false );
     void setLeftLegVelCtrl();
-    hp_flag_t setLeftLegVels( Eigen::VectorXd vels, bool send=false );
+    hp_flag_t setLeftLegVels( Vector6d vels, bool send=false );
     void setRightLegVelCtrl();
-    hp_flag_t setRightLegVels( Eigen::VectorXd vels, bool send=false );
+    hp_flag_t setRightLegVels( Vector6d vels, bool send=false );
     // Acceleration settings
-    hp_flag_t setLegNomAcc(int side, Eigen::VectorXd acc );
-    hp_flag_t setLeftLegNomAcc( Eigen::VectorXd acc );
-    hp_flag_t setRightLegNomAcc( Eigen::VectorXd acc );
+    hp_flag_t setLegNomAcc(int side, Vector6d acc );
+    hp_flag_t setLeftLegNomAcc( Vector6d acc );
+    hp_flag_t setRightLegNomAcc( Vector6d acc );
 
     // ~~** Setting limit values
     // ~* General sets
@@ -141,37 +153,37 @@ public:
 
     // ~* Arm control gets
     // Position control
-    hp_flag_t getArmAngles( int side, Eigen::VectorXd &angles );
-    void getLeftArmAngles( Eigen::VectorXd &angles );
-    void getRightArmAngles( Eigen::VectorXd &angles );
-    hp_flag_t getArmNomSpeeds( int side, Eigen::VectorXd &speeds );
-    void getLeftArmNomSpeeds( Eigen::VectorXd &speeds );
-    void getRightArmNomSpeeds( Eigen::VectorXd &speeds );
+    hp_flag_t getArmAngles( int side, Vector6d &angles );
+    void getLeftArmAngles( Vector6d &angles );
+    void getRightArmAngles( Vector6d &angles );
+    hp_flag_t getArmNomSpeeds( int side, Vector6d &speeds );
+    void getLeftArmNomSpeeds( Vector6d &speeds );
+    void getRightArmNomSpeeds( Vector6d &speeds );
     // Velocity control
-    hp_flag_t getArmVels( int side, Eigen::VectorXd &vels );
-    void getLeftArmVels( Eigen::VectorXd &vels );
-    void getRightArmVels( Eigen::VectorXd &vels );
+    hp_flag_t getArmVels( int side, Vector6d &vels );
+    void getLeftArmVels( Vector6d &vels );
+    void getRightArmVels( Vector6d &vels );
     // Acceleration settings
-    hp_flag_t getArmNomAcc(int side, Eigen::VectorXd &acc );
-    void getLeftArmNomAcc( Eigen::VectorXd &acc );
-    void getRightArmNomAcc( Eigen::VectorXd &acc );
+    hp_flag_t getArmNomAcc(int side, Vector6d &acc );
+    void getLeftArmNomAcc( Vector6d &acc );
+    void getRightArmNomAcc( Vector6d &acc );
 
     // ~* Leg control gets
     // Position control
-    hp_flag_t getLegAngles( int side, Eigen::VectorXd &angles );
-    void getLeftLegAngles( Eigen::VectorXd &angles );
-    void getRightLegAngles( Eigen::VectorXd &angles );
-    hp_flag_t getLegNomSpeeds( int side, Eigen::VectorXd &speeds );
-    void getLeftLegNomSpeeds( Eigen::VectorXd &speeds );
-    void getRightLegNomSpeeds( Eigen::VectorXd &speeds );
+    hp_flag_t getLegAngles( int side, Vector6d &angles );
+    void getLeftLegAngles( Vector6d &angles );
+    void getRightLegAngles( Vector6d &angles );
+    hp_flag_t getLegNomSpeeds( int side, Vector6d &speeds );
+    void getLeftLegNomSpeeds( Vector6d &speeds );
+    void getRightLegNomSpeeds( Vector6d &speeds );
     // Velocity control
-    hp_flag_t getLegVels( int side, Eigen::VectorXd &vels );
-    void getLeftLegVels( Eigen::VectorXd &vels );
-    void getRightLegVels( Eigen::VectorXd &vels );
+    hp_flag_t getLegVels( int side, Vector6d &vels );
+    void getLeftLegVels( Vector6d &vels );
+    void getRightLegVels( Vector6d &vels );
     // Acceleration settings
-    hp_flag_t getLegNomAcc(int side, Eigen::VectorXd &acc );
-    void getLeftLegNomAcc( Eigen::VectorXd &acc );
-    void getRightLegNomAcc( Eigen::VectorXd &acc );
+    hp_flag_t getLegNomAcc(int side, Vector6d &acc );
+    void getLeftLegNomAcc( Vector6d &acc );
+    void getRightLegNomAcc( Vector6d &acc );
 
     // ~~** Getting limit values
     // ~* General gets
@@ -232,12 +244,32 @@ public:
     hp_flag_t homeJoint( int joint, bool send=true, double wait=1.0 );
     void homeAllJoints( bool send=true, double wait=1.0 );
 
+
+
+
+
+
+
+
+
+    // ~~~*** Fastrak ***~~~ //
+    hp_flag_t initFastrak(bool assert=false);
+    hp_flag_t getFastrak( Eigen::Vector3d &position, Eigen::Quaterniond &quat, int sensor=1, bool update=true );
+    hp_flag_t getFastrak( Eigen::Vector3d &position, Eigen::Matrix3d &rotation, int sensor=1, bool update=true );
+    hp_flag_t getFastrak( Eigen::Isometry3d &tf, int sensor=1, bool update=true );
+
+
+
+
+
+
 protected:
 
     ach_channel_t chan_hubo_ref;
     ach_channel_t chan_hubo_board_cmd;
     ach_channel_t chan_hubo_state;
     ach_channel_t chan_hubo_ctrl;
+    ach_channel_t chan_fastrak;
 
     hubo_ref H_Ref;
     hubo_board_cmd H_Cmd;
@@ -247,7 +279,8 @@ protected:
 
     int armjoints[2][ARM_JOINT_COUNT];
     int legjoints[2][LEG_JOINT_COUNT];
-
+    
+    fastrak_c_t fastrak;
 };
 
 #endif // HUBO_PLUS_H
