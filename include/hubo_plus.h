@@ -10,6 +10,7 @@ extern "C" {
 // For process management
 #include "daemonizer.h"
 }
+#include <iostream>
 
 
 // For data handling
@@ -22,6 +23,7 @@ extern "C" {
 #define ARM_JOINT_COUNT 6
 #define LEG_JOINT_COUNT 6
 typedef Eigen::Matrix< double, 6, 1 > Vector6d;
+typedef Eigen::Vector3d Vector3d;
 
 #define FASTRAK_CHAN_NAME "fastrak"
 
@@ -269,15 +271,17 @@ public:
     
     void DH2HG(Eigen::Isometry3d &B, double t, double f, double r, double d);
     
-    void HuboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side);
+    void huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side);
     
-    void huboArmIK(Vector6d &q, Eigen::Isometry3d &B, Vector6d &qPrev, int side);
+    void huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side);
     
 
 
 
     // ~~~*** Fastrak ***~~~ //
     hp_flag_t initFastrak(bool assert=false);
+    void setFastrakScale( double scale );
+    double getFastrakScale();
     hp_flag_t getFastrak( Eigen::Vector3d &position, Eigen::Quaterniond &quat, int sensor=1, bool update=true );
     hp_flag_t getFastrak( Eigen::Vector3d &position, Eigen::Matrix3d &rotation, int sensor=1, bool update=true );
     hp_flag_t getFastrak( Eigen::Isometry3d &tf, int sensor=1, bool update=true );
@@ -305,6 +309,7 @@ protected:
     int legjoints[2][LEG_JOINT_COUNT];
     
     fastrak_c_t fastrak;
+    double fastrakScale;
 };
 
 #endif // HUBO_PLUS_H

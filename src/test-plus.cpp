@@ -7,6 +7,16 @@ int main(int argc, char **argv)
 	
 	hubo_plus hubo;
 
+
+
+    Vector6d qr;
+    qr << 0, 0, 0, -M_PI/2, -0.3, 0;
+
+
+//    std::cout << hubo.setJointAngle( RSR, -0.5 ) << std::endl;
+//    hubo.sendControls();
+    
+
 /*	Eigen::VectorXd angles(6);
 	angles << -2, -0.3, -2.25, -2.0, -2.0, -1.25;
 
@@ -22,9 +32,25 @@ int main(int argc, char **argv)
 //       printf("Joint status:%d",hubo.getJointStatus(LSP)); 
 
 //    hubo.resetJointStatus(LSP,true);
-    Vector6d angles1, angles2, angles3, angles4, angles5;
+
+/*
+    hubo.update();
+    std::cout << hubo.getJointAngleState( RSR ) << std::endl;
+*/
 
 
+
+//    Vector6d angles1, angles2, angles3, angles4, angles5;
+
+    std::vector<Vector6d> angles(5);
+    angles[0] <<  0.0556916,   0.577126,  0.0816814,  -0.492327, 0, 0;
+    angles[1] <<  -1.07878,  0.408266, -0.477742, -0.665062, 0, 0;
+    angles[2] <<   -1.17367, -0.0540511,  -0.772141,  -0.503859, 0, 0;
+    angles[3] <<  -0.518417,   0.172191,  -0.566084, -0.0727671, 0, 0;
+    angles[4] << 0, 0, 0, 0, 0, 0;
+
+
+/*
     angles1 <<  0.0556916,   0.577126,  0.0816814,  -0.492327, 0, 0;
     angles2 <<  -1.07878,  0.408266, -0.477742, -0.665062, 0, 0;
     angles3 <<   -1.17367, -0.0540511,  -0.772141,  -0.503859, 0, 0;
@@ -41,39 +67,63 @@ int main(int argc, char **argv)
 
         hubo.getLeftArmAngleStates( current );
 
-	if(traj==0)
-	{
-		hubo.setLeftArmAngles( angles1 );
-		if( (current-angles1).norm() < tol )
-			traj++;
-	}
-	else if(traj==1)
-	{
-		hubo.setLeftArmAngles( angles2 );
-		if( (current-angles2).norm() < tol )
-			traj++;
-	}
-	else if(traj==2)
-	{
-		hubo.setLeftArmAngles( angles3 );
-		if( (current-angles3).norm() < tol )
-			traj++;
-	}
-	if( traj==3 )
-	{
-		hubo.setLeftArmAngles( angles4 );
-		if( (current-angles4).norm() < tol )
-			traj++;
+        if(traj==0)
+        {
+            hubo.setLeftArmAngles( angles1 );
+            if( (current-angles1).norm() < tol )
+                traj++;
         }
-	if( traj==4 )
-	{
-		hubo.setLeftArmAngles( angles5 );
-		if( (current-angles5).norm() < tol )
-			traj = 0;
-	}
+        else if(traj==1)
+        {
+            hubo.setLeftArmAngles( angles2 );
+            if( (current-angles2).norm() < tol )
+                traj++;
+        }
+        else if(traj==2)
+        {
+            hubo.setLeftArmAngles( angles3 );
+            if( (current-angles3).norm() < tol )
+                traj++;
+        }
+        if( traj==3 )
+        {
+            hubo.setLeftArmAngles( angles4 );
+            if( (current-angles4).norm() < tol )
+                traj++;
+            }
+        if( traj==4 )
+        {
+            hubo.setLeftArmAngles( angles5 );
+            if( (current-angles5).norm() < tol )
+                traj = 0;
+        }
 
         hubo.sendControls();
 
+    }
+*/
+
+
+    Vector6d current;
+    
+    double tol = 0.075;
+    int traj = 0;
+    while(true)
+    {
+        hubo.update();
+        
+        hubo.getLeftArmAngleStates( current );
+
+        if( (current-angles[traj]).norm() < tol )
+        {
+            traj++;
+            if(traj > 4)
+                traj = 0;
+        }
+
+        hubo.setLeftArmAngles( angles[traj] );
+
+        hubo.sendControls();
     }
 
 }
