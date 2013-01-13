@@ -314,7 +314,7 @@ void huboLoop(struct hubo_param *H_param) {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
 		if(ACH_OK != r) {
 				if(debug) {
 					fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}

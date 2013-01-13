@@ -5,6 +5,7 @@
 extern "C" {
 // For Hubo
 #include "hubo.h"
+#include "control-daemon.h"
 #include "hubo-jointparams.h"
 
 // For process management
@@ -20,13 +21,19 @@ extern "C" {
 #include <vector>
 #include <complex.h>
 
-#define ARM_JOINT_COUNT 6
-#define LEG_JOINT_COUNT 6
 typedef Eigen::Matrix< double, 6, 1 > Vector6d;
 typedef Eigen::Vector3d Vector3d;
 
 #define FASTRAK_CHAN_NAME "fastrak"
 
+#define CtrlNE  0
+#define CtrlRA  1
+#define CtrlLA  2
+#define CtrlRL  3
+#define CtrlLL  4
+#define CtrlRF  5
+#define CtrlLF  6
+#define CtrlAX  7
 
 
 typedef enum {
@@ -145,6 +152,7 @@ public:
     // Position control
     hubo_ctrl_mode_t getCtrlMode( int joint );
     double getJointAngle( int joint );
+    double getJointAngleCtrl( int joint );
     double getJointNominalSpeed( int joint );
     // Velocity control
     double getJointVelocity( int joint );
@@ -203,6 +211,9 @@ public:
     hp_flag_t getArmAngleStates( int side, Vector6d &angles );
     void getRightArmAngleStates( Vector6d &angles );
     void getLeftArmAngleStates( Vector6d &angles );
+    hp_flag_t getLegAngleStates( int side, Vector6d &angles );
+    void getRightLegAngleStates( Vector6d &angles );
+    void getLeftLegAngleStates( Vector6d &angles );
     // TODO: All of these (state position, velocity, whatever)
 
     // ~~** Sensors
@@ -248,8 +259,8 @@ public:
     // TODO: All of these
     void sendCommands();
 
-    hp_flag_t homeJoint( int joint, bool send=true, double wait=1.0 );
-    void homeAllJoints( bool send=true, double wait=1.0 );
+    hp_flag_t homeJoint( int joint, bool send=true );
+    void homeAllJoints( bool send=true );
 
 
 
@@ -296,20 +307,45 @@ protected:
     ach_channel_t chan_hubo_ref;
     ach_channel_t chan_hubo_board_cmd;
     ach_channel_t chan_hubo_state;
-    ach_channel_t chan_hubo_ctrl;
+    ach_channel_t chan_hubo_arm_ctrl_right;
+    ach_channel_t chan_hubo_arm_ctrl_left;
+    ach_channel_t chan_hubo_leg_ctrl_right;
+    ach_channel_t chan_hubo_leg_ctrl_left;
+    ach_channel_t chan_hubo_fin_ctrl_right;
+    ach_channel_t chan_hubo_fin_ctrl_left;
+    ach_channel_t chan_hubo_aux_ctrl;
     ach_channel_t chan_fastrak;
 
     hubo_ref H_Ref;
     hubo_board_cmd H_Cmd;
     hubo_state H_State;
-    hubo_control H_Ctrl;
+    hubo_arm_control H_Arm_Ctrl[2];
+    hubo_leg_control H_Leg_Ctrl[2];
+    hubo_fin_control H_Fin_Ctrl[2];
+    hubo_aux_control H_Aux_Ctrl;
+    
     hubo_param H_Param;
 
     int armjoints[2][ARM_JOINT_COUNT];
     int legjoints[2][LEG_JOINT_COUNT];
-    
+    int finjoints[2][FIN_JOINT_COUNT];
+
+    bool ctrlOn[8];
+    // 0) Right Arm
+    // 1) Left Arm
+    // 2) Right Leg
+    // 3) Left Leg
+    // 4) Right Fingers
+    // 5) Left Fingers
+    // 6) Auxiliary ( Neck & Waist )
+
     fastrak_c_t fastrak;
     double fastrakScale;
+
+private:
+    
+    int ctrlMap[HUBO_JOINT_COUNT];
+    int localMap[HUBO_JOINT_COUNT];
 };
 
 #endif // HUBO_PLUS_H

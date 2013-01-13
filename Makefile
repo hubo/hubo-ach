@@ -13,13 +13,15 @@ CAN_LIBS :=
 CAN_OBJS := src/hubo-socketcan.o
 CAN_DEFS :=
 
+PLUS_OBJS := src/hubo_plus.o src/hubo-jointparams.o src/daemonizer.o
+
 # esd CAN #
 # CAN_LIBS := -lntcan
 # CAN_OBJS := src/hubo-esdcan.o
 # CAN_DEFS := -DHUBO_CONFIG_ESD
 
 #BINARIES := hubo-daemon hubo-console hubo-loop hubo-read control-daemon 
-BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus home-test ik-test
+BINARIES := hubo-daemon hubo-console hubo-read control-daemon test-plus home-test ik-test balance-test
 all : $(BINARIES)
 
 LIBS := -lach -lrt $(CAN_LIBS) -lm -lc
@@ -59,6 +61,11 @@ ik_objs := src/ik-test.o src/hubo_plus.o src/hubo-jointparams.o src/daemonizer.o
 
 ik-test: $(ik_objs)
 	$(CXX) $(CXXFLAGS) -o $@ $(ik_objs) -lach -lm -lc
+
+balance_objs := $(PLUS_OBJS) src/balance-test.o
+
+balance-test: $(balance_objs)
+	$(CXX) $(CXXFLAGS) -o $@ $(balance_objs) -lach -lm -lc
 
 #hubo-loop: $(hubo_loop_objs)
 #	$(CC) $(CFLAGS) -o $@ $(hubo_loop_objs) $(LIBS) -lprotobuf-c -lach -lamino

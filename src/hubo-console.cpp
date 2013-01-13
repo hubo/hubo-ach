@@ -81,6 +81,7 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 //char** cmd ={ "initialize","fet","initializeAll","homeAll",
@@ -174,6 +175,10 @@ int main() {
 			tsleep = 5;
 			
 		}
+        else if (strcmp(buf0,"reset")==0) {
+            hubo_enc_reset(&H_param, &H_cmd, buf);
+            printf("%s - Zeroing Encoder \n",getArg(buf,1));
+        }
 		else if (strcmp(buf0,"startup")==0) {
 			hubo_startup_all(&H_param, &H_cmd, buf);
 			printf("Starting up Hubo\n");
@@ -279,6 +284,11 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
+void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
+        c->type = D_ZERO_ENCODER;
+        c->joint = name2mot(getArg(buff, 1), h);
+        int r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
+}
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
         /* make beiep */
         c->type = D_GOTO_HOME_ALL;
@@ -302,10 +312,6 @@ void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff
 	c->type = D_SENSOR_STARTUP;
 	int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c));
 
-	sleep( 1 );
-
-	c->type = D_GOTO_HOME_ALL;
-	r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c));
 }
 
 char* getArg(string s, int argNum) {

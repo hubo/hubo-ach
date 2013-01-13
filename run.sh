@@ -16,7 +16,13 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_BOARD_CHAN='hubo-board-cmd'
-HUBO_CTRL_CHAN='hubo-control'
+HUBO_RL_CTRL_CHAN='hubo-RL-control'
+HUBO_LL_CTRL_CHAN='hubo-LL-control'
+HUBO_RA_CTRL_CHAN='hubo-RA-control'
+HUBO_LA_CTRL_CHAN='hubo-LA-control'
+HUBO_RF_CTRL_CHAN='hubo-RF-control'
+HUBO_LF_CTRL_CHAN='hubo-LF-control'
+HUBO_AUX_CTRL_CHAN='hubo-AUX-control'
 FASTRAK_CHAN='fastrak'
 
 DAEMON_DIR='/etc/hubo-daemon'
@@ -48,7 +54,13 @@ Ach()
 		sudo ach -U $HUBO_REF_CHAN
 		sudo ach -U $HUBO_STATE_CHAN
 		sudo ach -U $HUBO_BOARD_CHAN
-		sudo ach -U $HUBO_CTRL_CHAN
+		sudo ach -U $HUBO_RL_CTRL_CHAN
+		sudo ach -U $HUBO_LL_CTRL_CHAN
+		sudo ach -U $HUBO_RA_CTRL_CHAN
+		sudo ach -U $HUBO_LA_CTRL_CHAN
+		sudo ach -U $HUBO_RF_CTRL_CHAN
+		sudo ach -U $HUBO_LF_CTRL_CHAN
+		sudo ach -U $HUBO_AUX_CTRL_CHAN
 		sudo ach -U $FASTRAK_CHAN
 
 	;;	
@@ -58,7 +70,13 @@ Ach()
 		sudo ach -1 -C $HUBO_REF_CHAN   -m 10 -n 3000 -o 666
 		sudo ach -1 -C $HUBO_STATE_CHAN -m 10 -n 3000 -o 666
 		sudo ach -1 -C $HUBO_BOARD_CHAN -m 10 -n 3000 -o 666
-		sudo ach -1 -C $HUBO_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_RL_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_LL_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_RA_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_LA_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_RF_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_LF_CTRL_CHAN  -m 10 -n 3000 -o 666
+		sudo ach -1 -C $HUBO_AUX_CTRL_CHAN  -m 10 -n 3000 -o 666
 		sudo ach -1 -C $FASTRAK_CHAN	-m 10 -n 3000 -o 666
 
 	;;

@@ -386,7 +386,7 @@
 
 #define H_REQ_NULL				0x81
 #define H_NULL_FT				0x00
-#define H_NULL_ACC				0x02
+#define H_NULL_ACC				0x04
 #define H_INIT_DEFAULT_2			0xAA
 
 
