@@ -140,7 +140,8 @@ int main() {
 	setJointParams(&H_param, &H_state);
 
 	size_t fs;
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	printf("\nWaiting for Ref \n");
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_ref) == fs );
 	r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref_filter) == fs );
