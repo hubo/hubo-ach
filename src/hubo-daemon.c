@@ -127,7 +127,7 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
-void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
+void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, int onOff);
 void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f);
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
@@ -258,12 +258,6 @@ void huboLoop(struct hubo_param *H_param) {
 
 		/* read hubo console */
 		huboConsole(&H_ref, H_param, &H_state, &H_init, &frame);
-		/* set reference for zeroed joints only */
-//		for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-//			if(H_param.joint[i].zeroed == true) {
-//				hSetEncRef(H_param.joint[i].jntNo, &H_ref, H_param, &frame);
-//			}
-//		}
 
 		/* Set all Ref */
 		if(hubo_noRefTimeAll < T ) {
@@ -551,7 +545,7 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		f->data[0] =    (uint8_t)(pos0		& 0x000000FF);
 		f->data[1] =    (uint8_t)((pos0>>8)     & 0x000000FF);
 		f->data[2] =    (uint8_t)((pos0>>16)	& 0x000000FF);
-		f->data[3] =    (uint8_t)(pos1                  & 0x000000FF);
+		f->data[3] =    (uint8_t)(pos1          & 0x000000FF);
 		f->data[4] =    (uint8_t)((pos1>>8)     & 0x000000FF);
 		f->data[5] =    (uint8_t)((pos1>>16)	& 0x000000FF);
 
@@ -574,7 +568,7 @@ void fSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 		f->data[0] =    (uint8_t)(pos0		& 0x000000FF);
 		f->data[1] =    (uint8_t)((pos0>>8)     & 0x000000FF);
 		f->data[2] =    (uint8_t)((pos0>>16)	& 0x000000FF);
-		f->data[3] =    (uint8_t)(pos1                  & 0x000000FF);
+		f->data[3] =    (uint8_t)(pos1          & 0x000000FF);
 		f->data[4] =    (uint8_t)((pos1>>8)     & 0x000000FF);
 		f->data[5] =    (uint8_t)((pos1>>16)	& 0x000000FF);
 
@@ -926,11 +920,18 @@ void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct
 		sendCan(hubo_socket[h->joint[jnt].can], f); }
 }
 
-void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff) {
+void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, int onOff) {
 	if(onOff == 1) { // turn on FET
+		r->ref[jnt] = s->joint[jnt].pos;
+		s->joint[jnt].ref = s->joint[jnt].pos;
+		r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
+		ach_put( &chan_hubo_ref, r, sizeof(*r));
 		fEnableFeedbackController(jnt,r, h, f);
 		sendCan(hubo_socket[h->joint[jnt].can], f); }
 	else if(onOff == 0) { // turn off FET
+		r->ref[jnt] = s->joint[jnt].pos;
+		r->mode[jnt] = HUBO_REF_MODE_COMPLIANT;
+		ach_put( &chan_hubo_ref, r, sizeof(*r));
 		fDisableFeedbackController(jnt,r, h, f);
 		sendCan(hubo_socket[h->joint[jnt].can], f); }
 }
@@ -972,7 +973,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hMotorDriverOnOff(c->cmd[1],r,h,f,c->cmd[2]);
 					break;
 				case HUBO_CTRL_ON_OFF:
-					hFeedbackControllerOnOff(c->cmd[1],r,h,f,c->cmd[2]);
+					hFeedbackControllerOnOff(c->cmd[1],r,s,h,f,c->cmd[2]);
 					break;
 				case HUBO_ZERO_ENC:
 					hResetEncoderToZero(c->cmd[1],r,h,s,f);
