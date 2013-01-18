@@ -372,25 +372,25 @@ hp_flag_t hubo_plus::setJointVelocity(int joint, double vel, bool send)
                 H_Arm_Ctrl[RIGHT].joint[localMap[joint]].mode = CTRL_VEL;
                 H_Arm_Ctrl[RIGHT].active=1; ctrlOn[CtrlRA]=true; break;
             case CtrlLA: // Left Arm
-                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].velocity = vel;
-                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].mode = CTRL_VEL;
-                H_Arm_Ctrl[RIGHT].active=1; ctrlOn[CtrlLA]=true; break;
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].velocity = vel;
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].mode = CTRL_VEL;
+                H_Arm_Ctrl[LEFT].active=1; ctrlOn[CtrlLA]=true; break;
             case CtrlRL: // Right Leg
                 H_Leg_Ctrl[RIGHT].joint[localMap[joint]].velocity = vel;
                 H_Leg_Ctrl[RIGHT].joint[localMap[joint]].mode = CTRL_VEL;
                 H_Leg_Ctrl[RIGHT].active=1; ctrlOn[CtrlRL]=true; break;
             case CtrlLL: // Left Leg
-                H_Leg_Ctrl[RIGHT].joint[localMap[joint]].velocity = vel;
-                H_Leg_Ctrl[RIGHT].joint[localMap[joint]].mode = CTRL_VEL;
-                H_Leg_Ctrl[RIGHT].active=1; ctrlOn[CtrlLL]=true; break;
+                H_Leg_Ctrl[LEFT].joint[localMap[joint]].velocity = vel;
+                H_Leg_Ctrl[LEFT].joint[localMap[joint]].mode = CTRL_VEL;
+                H_Leg_Ctrl[LEFT].active=1; ctrlOn[CtrlLL]=true; break;
             case CtrlRF: // Right Fingers
                 H_Fin_Ctrl[RIGHT].joint[localMap[joint]].velocity = vel;
                 H_Fin_Ctrl[RIGHT].joint[localMap[joint]].mode = CTRL_VEL;
                 H_Fin_Ctrl[RIGHT].active=1; ctrlOn[CtrlRF]=true; break;
             case CtrlLF: // Left Fingers
-                H_Fin_Ctrl[RIGHT].joint[localMap[joint]].velocity = vel;
-                H_Fin_Ctrl[RIGHT].joint[localMap[joint]].mode = CTRL_VEL;
-                H_Fin_Ctrl[RIGHT].active=1; ctrlOn[CtrlLF]=true; break;
+                H_Fin_Ctrl[LEFT].joint[localMap[joint]].velocity = vel;
+                H_Fin_Ctrl[LEFT].joint[localMap[joint]].mode = CTRL_VEL;
+                H_Fin_Ctrl[LEFT].active=1; ctrlOn[CtrlLF]=true; break;
             case CtrlAX: // Aux
                 H_Aux_Ctrl.joint[localMap[joint]].velocity = vel;
                 H_Aux_Ctrl.joint[localMap[joint]].mode = CTRL_VEL;
@@ -976,8 +976,8 @@ hp_flag_t hubo_plus::getArmAngles(int side, Vector6d &angles)
         if(angles.size() != ARM_JOINT_COUNT)
             angles.resize(ARM_JOINT_COUNT);
         for(int i=0; i<ARM_JOINT_COUNT; i++)
-            angles[i] = getJointAngleCtrl(armjoints[side][i]);
-    }
+            angles[i] = getJointAngle(armjoints[side][i]);
+    } // TODO: make getArmAngleCtrls
     else
         return BAD_SIDE;
 
@@ -1045,8 +1045,8 @@ hp_flag_t hubo_plus::getLegAngles(int side, Vector6d &angles)
         if(angles.size() != LEG_JOINT_COUNT)
             angles.resize(LEG_JOINT_COUNT);
         for(int i=0; i<LEG_JOINT_COUNT; i++)
-            angles[i] = getJointAngleCtrl(legjoints[side][i]);
-    }
+            angles[i] = getJointAngle(legjoints[side][i]);
+    } // TODO: getLegAngleCtrls
     else
         return BAD_SIDE;
 
@@ -1414,14 +1414,14 @@ void hubo_plus::homeAllJoints( bool send )
 }
 
 
-
-
-
 // ~~~*** Kinematics ***~~~ //
+inline double min(double x, double y) { return ( x > y ) ? y : x; }
+inline double max(double x, double y) { return ( x < y ) ? y : x; }
+
 void hubo_plus::DH2HG(Eigen::Isometry3d &B, double t, double f, double r, double d)
 {
     // Convert DH parameters (standard convention) to Homogenuous transformation matrix.
-    B = Eigen::Isometry3d::Identity();
+    B = Eigen::Matrix4d::Identity();
     
     B.translate(Eigen::Vector3d(0.,0.,d));
     B.rotate(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
@@ -1430,7 +1430,18 @@ void hubo_plus::DH2HG(Eigen::Isometry3d &B, double t, double f, double r, double
     
 }
 
-void hubo_plus::huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side)
+
+void hubo_plus::huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side) {
+    Eigen::Isometry3d hand;
+    hand(0,0) =  1; hand(0,1) =  0; hand(0,2) = 0; hand(0,3) =   0;
+    hand(1,0) =  0; hand(1,1) =  0; hand(1,2) =-1; hand(1,3) =   0;
+    hand(2,0) =  0; hand(2,1) =  1; hand(2,2) = 0; hand(2,3) =   0;
+    hand(3,0) =  0; hand(3,1) =  0; hand(3,2) = 0; hand(3,3) =   1;
+    
+    huboArmFK(B, q, side, hand);
+}
+
+void hubo_plus::huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side,  const Eigen::Isometry3d &endEffector)
 {
     // Declarations
     Eigen::Isometry3d neck, hand, T;
@@ -1441,7 +1452,7 @@ void hubo_plus::huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side)
     double l1 = 214.5/1000.0;
     double l2 = 179.14/1000.0;
     double l3 = 181.59/1000.0;
-    double l4 = 50.0/1000.0;
+    double l4 = 4.75*25.4/1000.0;
     
     Vector6d t, f, r, d;
     t <<  M_PI/2, -M_PI/2,  M_PI/2,       0,       0,  M_PI/2;
@@ -1485,35 +1496,35 @@ void hubo_plus::huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side)
         offset(1) = limits(1,0); // Note: I think this might be backwards
 //        offset(1) = -limits(1,0);
     }
-    
-    hand(0,0) =  1; hand(0,1) =  0; hand(0,2) = 0; hand(0,3) =   0;
-    hand(1,0) =  0; hand(1,1) =  0; hand(1,2) =-1; hand(1,3) =   0;
-    hand(2,0) =  0; hand(2,1) =  1; hand(2,2) = 0; hand(2,3) =   0;
-    hand(3,0) =  0; hand(3,1) =  0; hand(3,2) = 0; hand(3,3) =   1;
-    
+     
     // Calculate forward kinematics
     B = neck;
     for (int i = 0; i < 6; i++) {
         DH2HG(T, t(i)+q(i)-offset(i), f(i), r(i), d(i));
         B = B*T;
     }
-    B = B*hand;
+    B = B*endEffector;
     
 }
 
-inline double min(double x, double y) { return ( x > y ) ? y : x; }
-inline double max(double x, double y) { return ( x < y ) ? y : x; }
 
-
-
-
-void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side)
-{
+void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side) {
+    // Hand	
+    Eigen::Isometry3d hand;
+    hand(0,0) =  1; hand(0,1) =  0; hand(0,2) = 0; hand(0,3) =   0;
+    hand(1,0) =  0; hand(1,1) =  0; hand(1,2) =-1; hand(1,3) =   0;
+    hand(2,0) =  0; hand(2,1) =  1; hand(2,2) = 0; hand(2,3) =   0;
+    hand(3,0) =  0; hand(3,1) =  0; hand(3,2) = 0; hand(3,3) =   1;
     
+    huboArmIK(q, B, qPrev, side, hand);
+}
+  
+void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side, const Eigen::Isometry3d &endEffector)
+{
     Eigen::ArrayXXd qAll(6,8);
     
     // Declarations
-    Eigen::Isometry3d neck, neckInv, hand, handInv, BInv;
+    Eigen::Isometry3d neck, neckInv, endEffectorInv, BInv;
     Eigen::MatrixXd limits(6,2);
     Vector6d offset; offset.setZero();
     double nx, sx, ax, px;
@@ -1531,7 +1542,7 @@ void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int 
     double l1 = 214.5/1000.0;
     double l2 = 179.14/1000.0;
     double l3 = 181.59/1000.0;
-    double l4 = 50.0/1000.0;
+    double l4 = 4.75*25.4/1000.0;
     
     if (side == RIGHT) {
         neck(0,0) = 1; neck(0,1) =  0; neck(0,2) = 0; neck(0,3) =   0;
@@ -1548,8 +1559,7 @@ void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int 
         -1.4, 1.2;
         
         // Set offsets
-        offset(1) = limits(1,1); // Note: I think this is backwards
-//        offset(1) = -limits(1,1);
+        offset(1) = limits(1,1); 
         
     } else {
         neck(0,0) = 1; neck(0,1) =  0; neck(0,2) = 0; neck(0,3) =   0;
@@ -1566,24 +1576,17 @@ void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int 
         -1.4, 1.2;
         
         // Set offsets
-        offset(1) = limits(1,0); // Note: I think this is backwards
-//        offset(1) = -limits(1,0);
+        offset(1) = limits(1,0); 
     }
     neckInv = neck.inverse();
     
-    hand(0,0) =  1; hand(0,1) =  0; hand(0,2) = 0; hand(0,3) =   0;
-    hand(1,0) =  0; hand(1,1) =  0; hand(1,2) =-1; hand(1,3) =   0;
-    hand(2,0) =  0; hand(2,1) =  1; hand(2,2) = 0; hand(2,3) =   0;
-    hand(3,0) =  0; hand(3,1) =  0; hand(3,2) = 0; hand(3,3) =   1;
-    handInv = hand.inverse();
-
-        
+    endEffectorInv = endEffector.inverse();        
 
     double zeroSize = .000001;
     
     // Variables
-    B = neckInv*B*handInv;
-    BInv = B.inverse();
+//    B = neckInv*B*endEffectorInv;
+    BInv = (neckInv*B*endEffectorInv).inverse();
     
     nx = BInv(0,0); sx = BInv(0,1); ax = BInv(0,2); px = BInv(0,3);
     ny = BInv(1,0); sy = BInv(1,1); ay = BInv(1,2); py = BInv(1,3);
@@ -1744,21 +1747,266 @@ void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int 
         qAll(3,i) = q4;
         qAll(4,i) = q5;
         qAll(5,i) = q6;
+
     }
-    
-    // Find best solution
+    // Set to offsets
+    for( int j=0; j<8; j++) {
+        for (int i = 0; i < 6; i++) {
+            if (side==RIGHT) {
+                qAll(i,j) = wrapToPi(qAll(i,j) + offset(i));
+            } else {
+                qAll(i,j) = wrapToPi(qAll(i,j) + offset(i));
+            } 
+        }
+    }
+    // TODO: Find best solution using better method
+
+    bool withinLim[8];
     Eigen::ArrayXd qDiff(6,1); qDiff.setZero();
     Eigen::ArrayXd qDiffSum(8,1);
     int minInd;
+
+    for(int i=0; i<8; i++)
+        withinLim[i] = true;
+
+    for(int i=0; i<8; i++)
+        for(int j=0; j<6; j++)
+            if( limits(j,0) > qAll(j,i) || qAll(j,i) > limits(j,1) )
+                withinLim[i] = false;
+    
+    bool anyWithin=false;
+    for(int i=0; i<8; i++)
+        if( withinLim[i] )
+            anyWithin = true;
+
+    if(anyWithin)
+    {
+        for (int i = 0; i < 8; i++) {
+            if( withinLim[i] )
+            {
+                for (int j=0; j < 6; j++)
+                    qDiff(j) = wrapToPi(qAll(j,i) - qPrev(j));
+                qDiffSum(i) = qDiff.abs().sum();
+            }
+            else
+                qDiffSum(i) = std::numeric_limits<double>::infinity();
+        }
+        qDiffSum.minCoeff(&minInd);
+        q = qAll.col(minInd);
+    }
+    else
+    {
+        for( int i=0; i<8; i++)
+        {
+            Vector6d qtemp = qAll.col(i).matrix();
+            qtemp = qtemp.cwiseMin(limits.col(1));
+            qtemp = qtemp.cwiseMax(limits.col(0));
+
+            Eigen::Isometry3d Btemp;
+            huboArmFK( Btemp, qtemp, side );
+            qDiffSum(i) = (Btemp.translation() - B.translation()).norm();
+        }
+        qDiffSum.minCoeff(&minInd);
+        q = qAll.col(minInd);
+    }
+    
+    for( int i=0; i<6; i++ )
+        q(i) = max( min( q(i), limits(i,1)), limits(i,0) );
+    
+    //q = q.cwiseMin(limits.col(1)); //TODO: Put these back
+    //q = q.cwiseMax(limits.col(0));
+}
+
+
+void hubo_plus::huboLegFK(Eigen::Isometry3d &B, Vector6d &q, int side) {
+    // Declarations
+    Eigen::Isometry3d neck, waist, T;
+    Eigen::MatrixXd limits(6,2);
+    Vector6d offset; offset.setZero();
+    
+    // Parameters
+    double l1 = (79.5+107)/1000.0;
+    double l2 = 88.43/1000.0;
+    double l3 = (289.47-107)/1000.0;
+    double l4 = 300.03/1000.0;
+    double l5 = 300.38/1000.0;
+    double l6 = 94.97/1000.0;
+    
+    Vector6d t, f, r, d;
+    t <<       0, -M_PI/2,       0,       0,       0,       0;
+    f <<  M_PI/2, -M_PI/2,       0,       0,  M_PI/2,       0;
+    r <<       0,       0,      l4,      l5,       0,      l6;
+    d <<       0,       0,       0,       0,       0,       0;
+    
+    neck(0,0) = 1; neck(0,1) =  0; neck(0,2) = 0; neck(0,3) =   0;
+    neck(1,0) = 0; neck(1,1) =  1; neck(1,2) = 0; neck(1,3) =   0;
+    neck(2,0) = 0; neck(2,1) =  0; neck(2,2) = 1; neck(2,3) = -l1;
+    neck(3,0) = 0; neck(3,1) =  0; neck(3,2) = 0; neck(3,3) =   1;
+    
+    if (side == RIGHT) {
+        waist(0,0) = 0; waist(0,1) = -1; waist(0,2) = 0; waist(0,3) =   0;
+        waist(1,0) = 1; waist(1,1) =  0; waist(1,2) = 0; waist(1,3) = -l2;
+        waist(2,0) = 0; waist(2,1) =  0; waist(2,2) = 1; waist(2,3) = -l3;
+        waist(3,0) = 0; waist(3,1) =  0; waist(3,2) = 0; waist(3,3) =   1;
+        
+                limits <<
+                -1.30,   1.30,
+                -0.58,   0.0,
+                -1.80,   0.0,
+                0.0,     2.50,
+                -1.26,   1.80,
+                -0.23,   0.31;
+        
+        // Set offsets
+        //        offset(1) = limits(1,1);
+        
+    } else {
+        waist(0,0) = 0; waist(0,1) = -1; waist(0,2) = 0; waist(0,3) =   0;
+        waist(1,0) = 1; waist(1,1) =  0; waist(1,2) = 0; waist(1,3) =  l2;
+        waist(2,0) = 0; waist(2,1) =  0; waist(2,2) = 1; waist(2,3) = -l3;
+        waist(3,0) = 0; waist(3,1) =  0; waist(3,2) = 0; waist(3,3) =   1;
+        
+                limits <<
+                -1.30,   1.30,
+                0.0,     0.58,
+                0.0,     1.80,
+                0.0,     2.50,
+                -1.26,   1.80,
+                -0.31,   0.23;
+        
+        // Set offsets
+        //        offset(1) = limits(1,0);
+    }
+    
+    // Calculate forward kinematics
+    B = waist*neck;
+    for (int i = 0; i < 6; i++) {
+        DH2HG(T, t(i)+q(i)+offset(i), f(i), r(i), d(i));
+        B = B*T;
+    }
+}
+
+void hubo_plus::huboLegIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side) {
+    Eigen::ArrayXXd qAll(6,8);
+    
+    // Declarations
+    Eigen::Isometry3d neck, neckInv, waist, waistInv, BInv;
+    Eigen::MatrixXd limits(6,2);
+    Vector6d offset; offset.setZero();
+    double nx, sx, ax, px;
+    double ny, sy, ay, py;
+    double nz, sz, az, pz;
+    double q1, q2, q3, q4, q5, q6;
+    double C45, psi, q345;
+    Eigen::Matrix<int, 8, 3> m;
+    
+    double S2, S4, S6;
+    double C2, C4, C5, C6;
+    
+    // Parameters
+    double l1 = (79.5+107)/1000.0;
+    double l2 = 88.43/1000.0;
+    double l3 = (289.47-107)/1000.0;
+    double l4 = 300.03/1000.0;
+    double l5 = 300.38/1000.0;
+    double l6 = 94.97/1000.0;
+    
+    neck(0,0) = 1; neck(0,1) =  0; neck(0,2) = 0; neck(0,3) =   0;
+    neck(1,0) = 0; neck(1,1) =  1; neck(1,2) = 0; neck(1,3) =   0;
+    neck(2,0) = 0; neck(2,1) =  0; neck(2,2) = 1; neck(2,3) = -l1;
+    neck(3,0) = 0; neck(3,1) =  0; neck(3,2) = 0; neck(3,3) =   1;
+    
+    if (side == RIGHT) {
+        waist(0,0) = 0; waist(0,1) = -1; waist(0,2) = 0; waist(0,3) =   0;
+        waist(1,0) = 1; waist(1,1) =  0; waist(1,2) = 0; waist(1,3) = -l2;
+        waist(2,0) = 0; waist(2,1) =  0; waist(2,2) = 1; waist(2,3) = -l3;
+        waist(3,0) = 0; waist(3,1) =  0; waist(3,2) = 0; waist(3,3) =   1;
+        
+                limits <<
+                -1.30,   1.30,
+                -0.58,   0.0,
+                -1.80,   0.0,
+                0.0,     2.50,
+                -1.26,   1.80,
+                -0.23,   0.31;
+        
+        // Set offsets
+        //        offset(1) = limits(1,1);
+        
+    } else {
+        waist(0,0) = 0; waist(0,1) = -1; waist(0,2) = 0; waist(0,3) =   0;
+        waist(1,0) = 1; waist(1,1) =  0; waist(1,2) = 0; waist(1,3) =  l2;
+        waist(2,0) = 0; waist(2,1) =  0; waist(2,2) = 1; waist(2,3) = -l3;
+        waist(3,0) = 0; waist(3,1) =  0; waist(3,2) = 0; waist(3,3) =   1;
+        
+                limits <<
+                -1.30,   1.30,
+                0.0,     0.58,
+                0.0,     1.80,
+                0.0,     2.50,
+                -1.26,   1.80,
+                -0.31,   0.23;
+        // Set offsets
+        //        offset(1) = limits(1,0);
+    }
+    neckInv = neck.inverse();
+    waistInv = waist.inverse();
+    
+    // Variables
+    B = neckInv*waistInv*B;
+    BInv = B.inverse();
+    
+    nx = BInv(0,0); sx = BInv(0,1); ax = BInv(0,2); px = BInv(0,3);
+    ny = BInv(1,0); sy = BInv(1,1); ay = BInv(1,2); py = BInv(1,3);
+    nz = BInv(2,0); sz = BInv(2,1); az = BInv(2,2); pz = BInv(2,3);
+    
+    m <<
+    1,  1,  1,
+    1,  1, -1,
+    1, -1,  1,
+    1, -1, -1,
+    -1,  1,  1,
+    -1,  1, -1,
+    -1, -1,  1,
+    -1, -1, -1;
     
     for (int i = 0; i < 8; i++) {
-        for (int j=0; j < 3; j++)
-            qDiff(j) = wrapToPi(qAll(j,i) - qPrev(j));
-        qDiffSum(i) = qDiff.abs().sum();
+        C4 = ((l6 + px)*(l6 + px) - l4*l4 - l5*l5 + py*py + pz*pz)/(2*l4*l5);
+        q4 = atan2(m(i,0)*creal(sqrt(1-C4*C4)),C4);
+        
+        S4 = sin(q4);
+        psi = atan2(S4*l4, C4*l4+l5);
+        q5 = wrapToPi(atan2(-pz, m(i,1)*creal(sqrt((px+l6)*(px+l6)+py*py)))-psi);
+        
+        q6 = atan2(py, -px-l6);
+        C45 = cos(q4+q5);
+        C5 = cos(q5);
+        if (C45*l4 + C5*l5 < 0) {
+            q6 = wrapToPi(q6 + M_PI);
+        }
+        
+        S6 = sin(q6);
+        C6 = cos(q6);
+        
+        S2 = C6*ay + S6*ax;
+        q2 = atan2(S2,m(i,2)*creal(sqrt(1-S2*S2)));
+        
+        q1 = atan2(C6*sy + S6*sx,C6*ny + S6*nx);
+        C2 = cos(q2);
+        if (C2 < 0) {
+            q1 = wrapToPi(q1 + M_PI);
+        }
+        
+        q345 = atan2(-az/C2,-(C6*ax - S6*ay)/C2);
+        q3 = wrapToPi(q345-q4-q5);
+        
+        qAll(0,i) = q1;
+        qAll(1,i) = q2;
+        qAll(2,i) = q3;
+        qAll(3,i) = q4;
+        qAll(4,i) = q5;
+        qAll(5,i) = q6;
     }
-    qDiffSum.minCoeff(&minInd);
-    
-    q = qAll.col(minInd);
     
     // Set to offsets
     for (int i = 0; i < 6; i++) {
@@ -1769,9 +2017,75 @@ void hubo_plus::huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int 
         }
     }
     
-    q = q.cwiseMin(limits.col(1)); //TODO: Put these back
-    q = q.cwiseMax(limits.col(0));
+    // Find best solution // TODO: Need to find a better way of choosing the best solution
+    Eigen::ArrayXd qDiff(6,1); qDiff.setZero();
+    Eigen::ArrayXd qDiffSum(8,1);
+    int minInd;
+    
+    for (int i = 0; i < 8; i++) {
+        for (int j=0; j < 6; j++)
+            qDiff(j) = wrapToPi(qAll(j,i) - qPrev(j));
+        qDiffSum(i) = qDiff.abs().sum();
+    }
+    qDiffSum.minCoeff(&minInd);
+    
+    q = qAll.col(minInd);
+    
+    //    q = q.cwiseMin(limits.col(1));
+    //    q = q.cwiseMax(limits.col(0));
 }
+
+void hubo_plus::HuboDrillFK(Eigen::Isometry3d &B, Vector6d &q) {
+    Eigen::Isometry3d drill;
+    
+    double ld = 7*25.4/1000.0;
+    double ad = M_PI/4;
+    
+    drill(0,0) = cos(ad);  drill(0,1) = 0; drill(0,2) = sin(ad); drill(0,3) = ld*cos(ad);
+    drill(1,0) = 0;        drill(1,1) = 1; drill(1,2) = 0;       drill(1,3) = 0;
+    drill(2,0) = -sin(ad); drill(2,1) = 0; drill(2,2) = cos(ad); drill(2,3) = -ld*sin(ad);
+    drill(3,0) = 0;        drill(3,1) = 0; drill(3,2) = 0;       drill(3,3) = 1;
+    
+    huboArmFK(B, q, RIGHT, drill);
+}
+
+void hubo_plus::HuboDrillIK(Vector6d &q, double y) {
+    Vector6d qPrev; qPrev.setZero();
+    Eigen::Isometry3d drill, B;
+    
+    double l1 = 214.5/1000;
+    double l2 = 179.14/1000;
+    double l3 = 181.59/1000;
+    double l4 = 4.75*25.4/1000;
+    double ld = 7*25.4/1000.0;
+    double ad = M_PI/4;
+    
+    drill(0,0) = cos(ad);  drill(0,1) = 0; drill(0,2) = sin(ad); drill(0,3) = ld*cos(ad);
+    drill(1,0) = 0;        drill(1,1) = 1; drill(1,2) = 0;       drill(1,3) = 0;
+    drill(2,0) = -sin(ad); drill(2,1) = 0; drill(2,2) = cos(ad); drill(2,3) = -ld*sin(ad);
+    drill(3,0) = 0;        drill(3,1) = 0; drill(3,2) = 0;       drill(3,3) = 1;
+    
+    double pyLimits[2] = {-0.2050, 0.1850};
+    
+    double px = 0.0925;
+    double py = min(max(y,pyLimits[0]),pyLimits[1]);
+    double pz = 0.04;
+    
+    double px0 = (l3+l4)*sin(M_PI/4)+ld;
+    double py0 = -l1;
+    double pz0 = (l3+l4)*cos(M_PI/4)-l2;
+    
+    B(0,0) = 1; B(0,1) = 0; B(0,2) = 0; B(0,3) = px0+px;
+    B(1,0) = 0; B(1,1) = 1; B(1,2) = 0; B(1,3) = py0+py;
+    B(2,0) = 0; B(2,1) = 0; B(2,2) = 1; B(2,3) = pz0+pz;
+    B(3,0) = 0; B(3,1) = 0; B(3,2) = 0; B(3,3) = 1;
+    
+    huboArmIK(q, B, qPrev, RIGHT, drill);
+    
+}
+
+
+
 
 
 // ~~~*** Fastrak ***~~~ //

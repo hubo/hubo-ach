@@ -7,6 +7,27 @@ int main(int argc, char **argv)
     hubo.initFastrak();
     hubo.setFastrakScale( 1.0 );
 
+    Vector6d q;
+    double y=0, offset;
+
+    hubo.HuboDrillIK( q, y );
+    hubo.setRightArmAngles( q, true );
+
+    Eigen::Vector3d trans; Eigen::Quaterniond quat;
+    hubo.getFastrak( trans, quat );
+    offset = trans(1);
+
+    while( true )
+    {
+        hubo.update();
+        hubo.getFastrak( trans, quat );
+        y = trans(1) - offset;
+
+        hubo.HuboDrillIK( q, y );
+        hubo.setRightArmAngles( q, true );
+        
+    }
+
 
 /*
     // Testing consistency of FK and IK
@@ -53,8 +74,9 @@ int main(int argc, char **argv)
 */
 
 
-
-
+/*
+    double y=0;
+    double y0=-0.2145;
 
     Vector6d q, ql, qr, q0; q.setZero(); q0.setZero();
     ql << 0, 0, 0, -M_PI/2, 0.3, 0;
@@ -69,8 +91,8 @@ int main(int argc, char **argv)
     hubo.update();
     hubo.getLeftArmAngleStates( langlecheck );
     hubo.getRightArmAngleStates( ranglecheck );
-
-    while( (langlecheck-ql).norm() > 0.075 && (ranglecheck-qr).norm() > 0.075 )
+    while(false)
+//    while( (langlecheck-ql).norm() > 0.075 && (ranglecheck-qr).norm() > 0.075 )
     {
         hubo.update();
         hubo.getLeftArmAngleStates( langlecheck );
@@ -90,7 +112,13 @@ int main(int argc, char **argv)
     hubo.huboArmFK( B, qr, RIGHT );
     rhandOS = B.translation();
 
-
+    
+    hubo.HuboDrillIK( q, y );
+    hubo.HuboDrillFK( B, q );
+    std::cout << B.matrix() << std::endl;
+    std::cout << q.transpose() << std::endl;
+    std::cout << B(1,3) - y0 << std::endl;
+    
 
     std::cout << "Left Hand offset: " << lhandOS.transpose() << std::endl;
     std::cout << "Left Sensor offset: " << lsensorOS.transpose() << std::endl;
@@ -98,7 +126,7 @@ int main(int argc, char **argv)
 
 //    Eigen::Vector3d position;
 //    Eigen::Matrix3d rotation;
-    while(true)
+    while(false)
     {
         hubo.update();
 
@@ -126,5 +154,5 @@ int main(int argc, char **argv)
         
         std::cout << q.transpose() << std::endl;
 
-    }
+    }*/
 }

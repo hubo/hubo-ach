@@ -61,7 +61,6 @@ Ach()
 		sudo ach -U $HUBO_RF_CTRL_CHAN
 		sudo ach -U $HUBO_LF_CTRL_CHAN
 		sudo ach -U $HUBO_AUX_CTRL_CHAN
-		sudo ach -U $FASTRAK_CHAN
 
 	;;	
 

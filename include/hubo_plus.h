@@ -283,10 +283,17 @@ public:
     void DH2HG(Eigen::Isometry3d &B, double t, double f, double r, double d);
     
     void huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side);
+    void huboArmFK(Eigen::Isometry3d &B, Vector6d &q, int side, const Eigen::Isometry3d &endEffector);
     
     void huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side);
+    void huboArmIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side, const Eigen::Isometry3d &endEffector);
     
+    void huboLegFK(Eigen::Isometry3d &B, Vector6d &q, int side);
 
+    void huboLegIK(Vector6d &q, Eigen::Isometry3d B, Vector6d qPrev, int side);
+
+    void HuboDrillFK(Eigen::Isometry3d &B, Vector6d &q);
+    void HuboDrillIK(Vector6d &q, double y);
 
 
     // ~~~*** Fastrak ***~~~ //

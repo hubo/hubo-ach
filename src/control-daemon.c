@@ -456,7 +456,7 @@ void setCtrlDefaults( struct hubo_control *ctrl )
     lactrl.joint[1].pos_max = 2.0;
     lactrl.joint[2].pos_max = 2.0;
     lactrl.joint[3].pos_max = 0.0;
-    lactrl.joint[4].pos_max = 2.0;
+    lactrl.joint[4].pos_max = 2.0; //2.0; this pi/2 limit is on the board
     lactrl.joint[5].pos_max = 1.0;
 
     // Right Arm Min
@@ -464,7 +464,7 @@ void setCtrlDefaults( struct hubo_control *ctrl )
     ractrl.joint[1].pos_min = -2.0;
     ractrl.joint[2].pos_min = -2.0;
     ractrl.joint[3].pos_min = -2.5;
-    ractrl.joint[4].pos_min = -2.0;
+    ractrl.joint[4].pos_min = -2.0; //-2.0; this -pi/2 limit is on the board
     ractrl.joint[5].pos_min = -1.4;
     // Right Arm Max
     ractrl.joint[0].pos_max = 2.0;
