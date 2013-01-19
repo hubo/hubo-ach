@@ -19,8 +19,7 @@
 
 
 
-//#define true 1;
-//#define false 0;
+
 //888888888888888888888888888888888888888888
 //-----[Static Definitions and Offsets]-----
 //888888888888888888888888888888888888888888
@@ -113,7 +112,6 @@
 #define		LF4		40		//	Left Finger
 #define		LF5		41		//	Left Finger
 
-
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 
 #define		HUBO_JOINT_COUNT	50	///< The size of the array
@@ -146,6 +144,12 @@ typedef enum {
 	HUBO_IMU2	  = 6  ///< Index of IMU2
 } hubo_sensor_index_t;
 
+typedef enum {
+	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
+	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
+	HUBO_REF_MODE_COMPLIANT     = 2, ///< Compliant mode, sets ref to current encoder position. 
+	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
+} hubo_mode_type_t;
 
 #define RIGHT 0
 #define LEFT 1
@@ -216,21 +220,29 @@ struct hubo_joint_state {
 				///	Temperature is stored in the "hubo_jmc_state driver[]"
 	uint8_t active; 	///< checks if the joint is active or not
 	uint8_t zeroed;		///< checks to see if the motor is zeroed
-};
+}hubo_joint_state_t;
 
 struct hubo_board_msg {
 	hubo_d_msg_t type;		// Type of message. Enumerated in hubo-daemonID.h
 	int board;			// Board number which the message originates from
 	hubo_d_param_t param[8];	// Parameters for the command. Enumerated in hubo-daemonID.h
 	int values[8];			// Content of the message TODO: Figure out if 8 is sufficient
-};
+}hubo_board_msg_t;
 
 struct hubo_jmc_state {
 	double temp;	///< temperature (dec C)
 //	hubo_d_param_t ctrlMode;
 	// TODO: Add more things, such as whether an alarm is on
 	//	 or whether motor control / FETs are on
-};
+}hubo_jmc_state_t;
+
+struct hubo_ref {
+	double ref[HUBO_JOINT_COUNT];	///< joint reference
+	int status[HUBO_JOINT_COUNT];	///< 0:Good, 1:Frozen
+	int mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
+	int paused;
+	struct timespec time;           ///< time message sent
+}hubo_ref_t;
 
 struct hubo_state {
 	struct hubo_imu imu[3];	///< IMU
@@ -239,14 +251,7 @@ struct hubo_state {
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
     double time;
 	int refWait;
-};
-
-struct hubo_ref {
-	double ref[HUBO_JOINT_COUNT];	///< joint reference
-	int status[HUBO_JOINT_COUNT];	///< 0:Good, 1:Frozen
-	int paused;
-	struct timespec time;           ///< time message sent
-};
+}hubo_state_t;
 
 struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive

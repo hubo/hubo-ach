@@ -184,12 +184,15 @@ void huboLoop(struct hubo_param *H_param) {
 // ---------------[ DO NOT EDIT AVBOE THIS LINE]---------------------------------
 // ------------------------------------------------------------------------------
 
+			/* set reference position for LEB */
+			H_ref.ref[LEB] = -1.0;
 
-			H_ref.ref[RHY] = 0.3;
-			H_ref.ref[LEB] = -0.4;
-			H_ref.ref[RSP] = 0.3;
+			//H_ref.ref[RHY] = 0.3;
+			//H_ref.ref[LEB] = -0.4;
+			//H_ref.ref[RSP] = 0.3;
 
-			double encRSP = H_state.joint[RSP].pos;
+			/* read LEB position as read from the encoders */
+			double encRSP = H_state.joint[LEB].pos;
 
 // ------------------------------------------------------------------------------
 // ---------------[ DO NOT EDIT BELOW THIS LINE]---------------------------------

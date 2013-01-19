@@ -101,8 +101,10 @@ int main() {
 	assert( ACH_OK == r );
 
 	// open hubo state
-	r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
-	assert( ACH_OK == r );
+	// filter is now ref
+	chan_hubo_ref_filter = chan_hubo_ref;
+//	r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
+//	assert( ACH_OK == r );
 
 	// initialize control channel
 	r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
@@ -128,13 +130,13 @@ int main() {
 	setJointParams(&H_param, &H_state);
 
 	size_t fs;
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
 	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_COPY );
 	assert( sizeof(H_ref_filter) == fs );
-	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_COPY );
 	assert( sizeof(H_init) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
 	assert( sizeof(H_state) == fs );
 
     char *buf;
