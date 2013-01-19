@@ -125,7 +125,8 @@
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
-#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
+#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
+#define     HUBO_REF_FILTER_LENGTH   40
 
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
@@ -143,6 +144,14 @@ typedef enum {
 	HUBO_IMU1	  = 5, ///< Index of IMU1
 	HUBO_IMU2	  = 6  ///< Index of IMU2
 } hubo_sensor_index_t;
+
+
+#define HUBO_IMU_COUNT 3
+typedef enum {
+    TILT_R  = 0;
+    TILT_L  = 1;
+    IMU     = 2;
+}
 
 typedef enum {
 	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
@@ -180,6 +189,7 @@ struct hubo_joint_param {
 };
 
 struct hubo_joint_state {
+    double ref;
 	double pos;     ///< actual position (rad)
 	double cur;     ///< actual current (amps)
 	double vel;     ///< actual velocity (rad/sec)
@@ -196,14 +206,11 @@ struct hubo_param {
 };
 
 struct hubo_imu {
-	angle_x;       ///< angular position around x (rad)
-	angle_y;       ///< angular position around y (rad)
+	double angle_x;       ///< angular position around x (rad)
+	double angle_y;       ///< angular position around y (rad)
 	double w_x;    ///< rotational velocity in x (rad/s)
 	double w_y;    ///< rotational velocity in y (rad/s)
 	double w_z;    ///< rotational velocity in z (rad/s)
-	double a_x;    ///< linear acceleration in x (m/s/s)
-	double a_y;    ///< linear acceleration in y (m/s/s)
-	double a_z;    ///< linear acceleration in z (m/s/s)
 };
 
 struct hubo_ft {
@@ -245,7 +252,7 @@ struct hubo_ref {
 }hubo_ref_t;
 
 struct hubo_state {
-	struct hubo_imu imu[3];	///< IMU
+	struct hubo_imu imu[HUBO_IMU_COUNT];	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
