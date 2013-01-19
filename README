@@ -2,14 +2,15 @@ HUBO-ACH
 
 Run Hubo-Ach
 ============
-
-(1) Setup Config (first time only or new builds and param changes)
-	$ sudo ./run.sh config
-(2) Start hubo-ach daemon.  This will automatically start hubo-console as well
+(1) Goto Scripts directory
+	$ cd scripts
+(2) Setup Config (first time only or new builds and param changes)
+	$ ./hubo-ach config
+(3) Start hubo-ach daemon.  This will automatically start hubo-console as well
     CAN packets will not start to be sent
-	$ sudo ./run.sh start
-(3) To stop hubo-ach daemon 
-	$ sudo ./run.sh stop
+	$ ./hubo-ach start
+(4) To stop hubo-ach daemon 
+	$ ./hubo-ach stop
 
 Install ACH
 ===========
@@ -98,6 +99,10 @@ Functions: "initilize XXX" - sets defaults to motor XXX and turns on FETs
            "zero XXX"      - zero the sensor XXX
            "zeroacc"       - zero the foot accelerometer XXX
            "iniSensors"    - zero all sensors
+           "ctrl XXX Y"    - turn on and off control to motor XXX.  If Y = 0 then Off, if Y = 1 then On 
+                             Note: must home joint first.
+           "ctrlAll Y"     - turn on and off control to all motors. If Y = 0 then Off, if Y = 1 then On 
+                             Note: must home joint first.
 
 Required for installation:
     sudo apt-get install libreadline-dev
