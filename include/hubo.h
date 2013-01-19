@@ -132,7 +132,8 @@ typedef enum {
 	HUBO_GOTO_HOME_ALL	= 8,	///> home all joints
 	HUBO_JMC_INI_ALL	= 9,	///> Initilize all JMC boards
 	HUBO_ZERO_SENSOR    	= 10,   ///> Zero out the given FT sensor
-	HUBO_ZERO_ACC    	= 11    ///> Zero out the given Accelerometer
+	HUBO_ZERO_ACC    	= 11,   ///> Zero out the given Accelerometer
+	HUBO_CTRL_ON_OFF_ALL 	= 12	///> turn control on or off cmd[2] = 1 (on), 0 (off)
 } hubo_console_t;
 
 typedef enum {

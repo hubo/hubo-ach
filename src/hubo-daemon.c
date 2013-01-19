@@ -967,6 +967,7 @@ void huboConsole(struct hubo_ref *r,struct hubo_ref *r_filt, struct hubo_param *
 
 //		if ( status != 0 & status != ACH_OK & status != ACH_MISSED_FRAME ) {
 //			break; }
+			int i = 0;
 			switch (c->cmd[0]) {
 				case HUBO_JMC_INI_ALL:
 					hInitializeBoardAll(r,h,s,f);
@@ -979,7 +980,12 @@ void huboConsole(struct hubo_ref *r,struct hubo_ref *r_filt, struct hubo_param *
 					hMotorDriverOnOff(c->cmd[1],r,h,f,c->cmd[2]);
 					break;
 				case HUBO_CTRL_ON_OFF:
-					hFeedbackControllerOnOff(c->cmd[1],r,r_filt,s,h,f,c->cmd[2]);
+					if(true == s->joint[c->cmd[1]].zeroed) {hFeedbackControllerOnOff(c->cmd[1],r,r_filt,s,h,f,c->cmd[2]);}
+					break;
+				case HUBO_CTRL_ON_OFF_ALL:
+					for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+						if(true == s->joint[i].active & true == s->joint[i].zeroed ) {hFeedbackControllerOnOff(i,r,r_filt,s,h,f,c->cmd[1]);}
+					}
 					break;
 				case HUBO_ZERO_ENC:
 					hResetEncoderToZero(c->cmd[1],r,h,s,f);

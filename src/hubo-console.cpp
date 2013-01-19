@@ -85,7 +85,7 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff);
 double hubo_set(char*s, struct hubo_ref *h, struct hubo_param *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors",
-		"ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
+		"ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 /*
 		"get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR",
 		"get LHY", "get LHR", "get LHP", "get LKN", "get LAP", "get LAR",
@@ -221,6 +221,19 @@ int main() {
 				printf("%s - Turning Off CTRL\n",getArg(buf,1));}
 			else {
 				printf("%s - Turning On CTRL\n",getArg(buf,1));}
+		}
+
+	}
+	else if (strcmp(buf0,"ctrlAll")==0) {
+		int onOrOff = atof(getArg(buf,1));
+		if(onOrOff == 0 | onOrOff == 1) {
+			H_init.cmd[0] = HUBO_CTRL_ON_OFF_ALL;
+			H_init.cmd[1] = atof(getArg(buf,1));         // 1 = on, 0 = 0ff
+			r = ach_put( &chan_hubo_init_cmd, &H_init, sizeof(H_init) );
+			if(onOrOff == 0) {
+				printf("Turning Off ALL CTRL\n");}
+			else {
+				printf("Turning On ALL CTRL\n");}
 		}
 
 	}
