@@ -127,10 +127,10 @@ void hSetEncRef(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_fr
 void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f, int onOff);
-void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, int onOff);
+void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, int onOff);
 void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f);
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void huboConsole(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f);
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
@@ -143,7 +143,7 @@ void getCurrentAll(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void hZeroSensor(int jnt, uint8_t mode, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void fZeroSensor(int jnt, uint8_t mode, struct hubo_param *h, struct can_frame *f);
@@ -154,6 +154,9 @@ uint8_t getFingerInt(double n);
 
 void hSetEncRef2(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f);
+void decodeFTFrame(int num, struct hubo_state *s, struct can_frame *f);
+void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f);
+void decodeADFrame(int num, struct hubo_state *s, struct can_frame *f);
 
 // ach message type
 //typedef struct hubo h[1];
@@ -184,13 +187,13 @@ void huboLoop(struct hubo_param *H_param) {
 	//memset(&hubo_noRef, 0, sizeof(hubo_noRef));
 
 	size_t fs;
-	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
 	if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_ref) == fs );
 	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_init) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
 	if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_state) == fs );
 
@@ -257,7 +260,7 @@ void huboLoop(struct hubo_param *H_param) {
 		else{ hubo_assert( sizeof(H_state) == fs ); }
 
 		/* read hubo console */
-		huboConsole(&H_ref, H_param, &H_state, &H_init, &frame);
+		huboConsole(&H_ref,&H_ref_filter, H_param, &H_state, &H_init, &frame);
 
 		/* Set all Ref */
 		if(hubo_noRefTimeAll < T ) {
@@ -832,20 +835,22 @@ void fGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 //	printf("go home %i\n", ((uint8_t)h->joint[jnt].motNo << 4)|2);
 }
 
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r,struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	fGotoLimitAndGoOffset(jnt, r, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
-	r->ref[jnt] = 0;
+	r->ref[jnt] = 0.0;
+	r_filt->ref[jnt] = 0.0;
+	s->joint[jnt].ref = 0.0;
 	s->joint[jnt].zeroed = true;
 
 	hubo_noRefTimeAll = hubo_home_noRef_delay;
 }
 
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
 	int i = 0;
 	for(i = 0; i < HUBO_JOINT_COUNT; i++) {
 		if(s->joint[i].active == true) {
-			hGotoLimitAndGoOffset(i, r, h, s, f);
+			hGotoLimitAndGoOffset(i, r, r_filt, h, s, f);
 		}
 	}
 }
@@ -920,16 +925,17 @@ void hMotorDriverOnOff(int jnt, struct hubo_ref *r, struct hubo_param *h, struct
 		sendCan(hubo_socket[h->joint[jnt].can], f); }
 }
 
-void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, int onOff) {
+void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, int onOff) {
 	if(onOff == 1) { // turn on FET
-		r->ref[jnt] = s->joint[jnt].pos;
-		s->joint[jnt].ref = s->joint[jnt].pos;
+		 r->ref[jnt] = s->joint[jnt].pos; 
+//		r_filt->ref[jnt] = s->joint[jnt].pos;
+//		s->joint[jnt].ref = s->joint[jnt].pos;
 		r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
 		ach_put( &chan_hubo_ref, r, sizeof(*r));
 		fEnableFeedbackController(jnt,r, h, f);
 		sendCan(hubo_socket[h->joint[jnt].can], f); }
 	else if(onOff == 0) { // turn off FET
-		r->ref[jnt] = s->joint[jnt].pos;
+//		r->ref[jnt] = s->joint[jnt].pos;
 		r->mode[jnt] = HUBO_REF_MODE_COMPLIANT;
 		ach_put( &chan_hubo_ref, r, sizeof(*r));
 		fDisableFeedbackController(jnt,r, h, f);
@@ -942,7 +948,7 @@ void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, stru
 	s->joint[jnt].zeroed == true;		// need to add a can read back to confirm it was zeroed
 }
 
-void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f) {
+void huboConsole(struct hubo_ref *r,struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct hubo_init_cmd *c, struct can_frame *f) {
 	/* gui for controling basic features of the hubo  */
 //	printf("hubo-ach - interface 2012-08-18\n");
 	size_t fs;
@@ -951,7 +957,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 		/* get oldest ach message */
 		//status = ach_get( &chan_hubo_ref, &c, sizeof(c), &fs, NULL, 0 );
 		//status = ach_get( &chan_hubo_init_cmd, c, sizeof(*c), &fs, NULL, ACH_O_LAST );
-		status = ach_get( &chan_hubo_init_cmd, c, sizeof(*c), &fs, NULL, 0 );
+		status = ach_get( &chan_hubo_init_cmd, c, sizeof(*c), &fs, NULL, ACH_O_LAST );
 	//printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
 //	printf("here2 h = %f status = %i c = %d v = %f\n", h->joint[0].ref, status,(uint16_t)c->cmd[0], c->val[0]);
 		if( status == ACH_STALE_FRAMES) {
@@ -973,7 +979,7 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hMotorDriverOnOff(c->cmd[1],r,h,f,c->cmd[2]);
 					break;
 				case HUBO_CTRL_ON_OFF:
-					hFeedbackControllerOnOff(c->cmd[1],r,s,h,f,c->cmd[2]);
+					hFeedbackControllerOnOff(c->cmd[1],r,r_filt,s,h,f,c->cmd[2]);
 					break;
 				case HUBO_ZERO_ENC:
 					hResetEncoderToZero(c->cmd[1],r,h,s,f);
@@ -982,10 +988,12 @@ void huboConsole(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
 					hSetBeep(c->cmd[1],r,h,f,c->val[0]);
 					break;
 				case HUBO_GOTO_HOME_ALL:
-					hGotoLimitAndGoOffsetAll(r,h,s,f);
+					hGotoLimitAndGoOffsetAll(r,r_filt,h,s,f);
+					ach_put( &chan_hubo_ref, r, sizeof(*r));
 					break;
 				case HUBO_GOTO_HOME:
-					hGotoLimitAndGoOffset(c->cmd[1],r,h,s,f);
+					hGotoLimitAndGoOffset(c->cmd[1],r,r_filt,h,s,f);
+					ach_put( &chan_hubo_ref, r, sizeof(*r));
 					break;
 				case HUBO_ZERO_SENSOR:
 		    //TODO: Add constants for mode flags

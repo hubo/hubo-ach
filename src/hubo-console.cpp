@@ -351,13 +351,13 @@ void hubo_jmc_home_all(struct hubo_param *h, struct hubo_init_cmd *c, char* buff
 }
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_ref *h_ref_filter) {
 	size_t fs;
-	int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_COPY );
 	if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
 		assert( sizeof(*h_ref) == fs );}
-	r = ach_get( &chan_hubo_state, h_state, sizeof(*h_state), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_state, h_state, sizeof(*h_state), &fs, NULL, ACH_O_COPY);
 	if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
 		assert( sizeof(*h_state) == fs );}
-	r = ach_get( &chan_hubo_ref_filter, h_ref_filter, sizeof(*h_ref_filter), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_ref_filter, h_ref_filter, sizeof(*h_ref_filter), &fs, NULL, ACH_O_COPY );
 	if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
 		assert( sizeof(*h_ref_filter) == fs );}
 	// look into posix message que
