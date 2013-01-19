@@ -34,6 +34,21 @@ typedef enum {
 					param: N/A
 					iValues: N/A
 					dValues: N/A	*/
+	D_NULL_SENSOR		,///> Send a null request to any sensor
+			/*		joint: N/A
+					param: Sensor board
+						D_R_FOOT_FT, D_L_FOOT_FT,
+						D_R_HAND_FT, D_L_HAND_FT,
+						D_R_FOOT_ACC, D_L_FOOT_ACC,
+						D_IMU_SENSOR_0, D_IMU_SENSOR_1,
+						D_IMU_SENSOR_2
+					iValues: N/A
+					dValues: N/A	*/
+	D_NULL_SENSORS_ALL	,///> Send a null request to all sensors
+			/*		joint: N/A
+					param: N/A
+					iValues: N/A
+					dValues: N/A	*/
 	D_NULL_FT_SENSOR	,///> Send a null request to force-torque sensor
 			/*		joint: N/A
 					param: Force-torque board

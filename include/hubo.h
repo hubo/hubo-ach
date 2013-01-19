@@ -206,11 +206,12 @@ struct hubo_param {
 };
 
 struct hubo_imu {
-	double angle_x;       ///< angular position around x (rad)
-	double angle_y;       ///< angular position around y (rad)
-	double w_x;    ///< rotational velocity in x (rad/s)
-	double w_y;    ///< rotational velocity in y (rad/s)
-	double w_z;    ///< rotational velocity in z (rad/s)
+	double a_x;     ///< angular position around x (rad)
+	double a_y;     ///< angular position around y (rad)
+    double a_z;     ///< angular position around z
+	double w_x;     ///< rotational velocity in x (rad/s)
+	double w_y;     ///< rotational velocity in y (rad/s)
+	double w_z;     ///< rotational velocity in z (rad/s)
 };
 
 struct hubo_ft {

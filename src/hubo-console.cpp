@@ -234,16 +234,45 @@ int main() {
             H_cmd.type = D_JMC_INITIALIZE_ALL;
             int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
             printf("%s - Initialize All\n",getArg(buf,1));
-            tsleep = 8;
+            tsleep = 2;
         }
         else if (strcmp(buf0,"zero")==0) {
             int ft = name2sensor(getArg(buf,1), &H_param);
-            if (ft>=0){
-                H_cmd.type = D_NULL_FT_SENSOR;
-                
-
-
+            H_cmd.type = D_NULL_SENSOR;
+            switch(ft){
+                case HUBO_FT_R_HAND: H_cmd.param[0] = D_R_HAND_FT; break;
+                case HUBO_FT_L_HAND: H_cmd.param[0] = D_L_HAND_FT; break;
+                case HUBO_FT_R_FOOT: H_cmd.param[0] = D_R_FOOT_FT; break;
+                case HUBO_FT_L_FOOT: H_cmd.param[0] = D_L_FOOT_FT; break;
+                case HUBO_IMU0: H_cmd.param[0] = D_IMU_SENSOR_0; break;
+                case HUBO_IMU1: H_cmd.param[0] = D_IMU_SENSOR_1; break;
+                case HUBO_IMU2: H_cmd.param[0] = D_IMU_SENSOR_2; break;
+                    printf("Name %s not found!\n", getArg(buf,1));
             }
+            ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+        }
+        else if (strcmp(buf0,"zeracc")==0) {
+            int ft = name2sensor(getArg(buf,1), &H_param);
+            H_cmd.type = D_NULL_SENSOR;
+            switch(ft){
+                case HUBO_FT_R_HAND: H_cmd.param[0] = D_R_HAND_ACC; break;
+                case HUBO_FT_L_HAND: H_cmd.param[0] = D_L_HAND_ACC; break;
+                case HUBO_FT_R_FOOT: H_cmd.param[0] = D_R_FOOT_ACC; break;
+                case HUBO_FT_L_FOOT: H_cmd.param[0] = D_L_FOOT_ACC; break;
+                case HUBO_IMU0: H_cmd.param[0] = D_IMU_SENSOR_0; break;
+                case HUBO_IMU1: H_cmd.param[0] = D_IMU_SENSOR_1; break;
+                case HUBO_IMU2: H_cmd.param[0] = D_IMU_SENSOR_2; break;
+                default:
+                    printf("Name %s not found!\n", getArg(buf,1));
+            }
+            ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+        }
+        else if (strcmp(buf0,"iniSensors")==0){
+            printf("Nulling All Sensors\n");
+            c->type = D_NULL_SENSORS_ALL;
+            int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c));
+            
+        }
         /* Quit */
         else if (strcmp(buf0,"quit")==0)
             break;
@@ -370,6 +399,7 @@ int name2sensor(char* name, struct hubo_param *h) {
 	}
 	return iout;
 }
+
 
 static char** my_completion( const char * text , int start,  int end) {
     char **matches;
