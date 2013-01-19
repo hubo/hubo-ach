@@ -61,6 +61,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include "ach.h"
 
+//#include "../include/hubo_ref_filter.h"
+#include "hubo-ref-filter.h"
+
 
 /* At time of writing, these constants are not defined in the headers */
 #ifndef PF_CAN
@@ -105,34 +108,43 @@ void getMotorPosFrame(int motor, struct can_frame *frame);
 void huboLoop();
 int ftime(struct timeb *tp);
 
-
-
-
-
-
-
-
-
-
 // ach message type
 //typedef struct hubo h[1];
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
-ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_ref_filter;      // hubo-ach-filter
+ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
+int hubo_debug = 0;
+int i = 0;
+int j = 0;
 
 void huboLoop() {
 	// get initial values for hubo
 	struct hubo_ref H_ref;
+	struct hubo_ref H_ref_filter;
+	struct hubo_ref H_ref_filter_buff[buffLength];
+	struct hubo_ref H_ref_filter_buff2[buffLength2];
 	struct hubo_state H_state;
-	struct hubo_param H_param;
+	struct hubo_ref H_ref_buff;
+
 	memset( &H_ref,   0, sizeof(H_ref));
+	memset( &H_ref_buff,   0, sizeof(H_ref_buff));
+	memset( &H_ref_filter,   0, sizeof(H_ref_filter));
+	memset( &H_ref_filter_buff,   0, sizeof(H_ref_filter_buff));
+	memset( &H_ref_filter_buff2,   0, sizeof(H_ref_filter_buff2));
 	memset( &H_state, 0, sizeof(H_state));
-	memset( &H_param, 0, sizeof(H_param));
+
+	int N = 0;  // counter 1
+	int N2 = 0; // counter 2
+
+	//printf("buffLength = %i\n",buffLength);
+	///printf("buffLength2 = %i\n",buffLength2);
+
 
 	size_t fs;
 	//int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
@@ -153,15 +165,25 @@ void huboLoop() {
 		assert( sizeof(H_state) == fs );
 	 }
 
-	r = ach_get( &chan_hubo_param, &H_param, sizeof(H_param), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
 		if(hubo_debug) {
 			printf("State ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{
-		assert( sizeof(H_state) == fs );
+		assert( sizeof(H_ref_filter) == fs );
+	 }
+
+	for( i = 0; i< HUBO_JOINT_COUNT; i++) {
+		for( j = 0; j < buffLength; j++) {
+			H_ref_filter_buff[j].ref[i] = H_ref.ref[i];
+			if( j < buffLength2 ) { H_ref_filter_buff2[j].ref[i] = H_ref.ref[i]; }
+			H_ref_filter.ref[i] = H_ref.ref[i];
+			H_ref_buff.ref[i] = H_ref.ref[i];
+		}
 	}
 
+	ach_put( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter));
 
 	// time info
 	struct timespec t;
@@ -178,32 +200,50 @@ void huboLoop() {
 	//clock_gettime( CLOCK_MONOTONIC,&t);
 	clock_gettime( 0,&t);
 
+	double tmp = 0.0;
+	//printf("here1\n");
 	while(1) {
 		// wait until next shot
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
-		/* Get latest ACH message */
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
+		r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_LAST );
+		if( ACH_OK == r ) {
+			memcpy(&H_ref_buff, &H_ref_filter, sizeof(H_ref_filter));
+		}
+		else if(ACH_OK != r) {
 			if(hubo_debug) {
-				printf("Ref r = %s\n",ach_result_to_string(r));}
+				printf("State ini r = %s\n",ach_result_to_string(r));}
 			}
-		else{   assert( sizeof(H_ref) == fs ); }
-		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-		if(ACH_OK != r) {
-			if(hubo_debug) {
-				printf("State r = %s\n",ach_result_to_string(r));}
-			}
-		else{   assert( sizeof(H_state) == fs ); }
-
+		else{
+			assert( sizeof(H_ref_filter) == fs );
+		}
 // ------------------------------------------------------------------------------
 // ---------------[ DO NOT EDIT AVBOE THIS LINE]---------------------------------
 // ------------------------------------------------------------------------------
+		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
+			H_ref_filter_buff[N].ref[i] = H_ref_buff.ref[i];
+			// Average
+			tmp = 0.0;
+			for(j = 0; j < buffLength; j++) { tmp = tmp + H_ref_filter_buff[j].ref[i]; }
 
+			if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+			    (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) {
+				H_ref.ref[i] = H_ref_buff.ref[i];
+			}
+			else {
+				H_ref_filter_buff2[N2].ref[i] = tmp/(double)buffLength;
+				H_ref.ref[i] = tmp/(double)buffLength;
 
-			H_ref.ref[RHY] = 1.23456;
+				tmp = 0.0;
+				for(j = 0; j < buffLength2; j++) { tmp = tmp + H_ref_filter_buff2[j].ref[i]; }
 
+				if( N < (buffLength) ) { N = N + 1; }
+				else {N = 0;}
 
+				if( N2 < (buffLength2) ) { N2 = N2 + 1; }
+				else {N2 = 0;}
+			}
+		}
 // ------------------------------------------------------------------------------
 // ---------------[ DO NOT EDIT BELOW THIS LINE]---------------------------------
 // ------------------------------------------------------------------------------
@@ -211,8 +251,6 @@ void huboLoop() {
 		t.tv_nsec+=interval;
 		tsnorm(&t);
 	}
-
-
 }
 
 
@@ -274,11 +312,13 @@ int main(int argc, char **argv) {
 	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
 	assert( ACH_OK == r );
 
-	r = ach_open(&chan_hubo_param, HUBO_CHAN_PARAM_NAME , NULL);
-	assert( ACH_OK == r );
-
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME , NULL);
 	assert( ACH_OK == r );
+
+	/* open ach-filter channel */
+	r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME , NULL);
+	assert( ACH_OK == r );
+
 
 	huboLoop();
 	pause();

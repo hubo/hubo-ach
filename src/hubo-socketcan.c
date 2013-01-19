@@ -1,3 +1,4 @@
+/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 /*
 Copyright (c) 2012, Daniel M. Lofaro
 All rights reserved.
@@ -9,22 +10,21 @@ modification, are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-    * Neither the name of the author nor the names of its contributors may 
-      be used to endorse or promote products derived from this software 
+    * Neither the name of the author nor the names of its contributors may
+      be used to endorse or promote products derived from this software
       without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
-OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 
 
 #include <sys/types.h>
@@ -49,22 +49,22 @@ int hubo_ver_can = 0;
 
 static int openCAN(char* name) {
 
-   	/* Create the socket */
-   	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
+	/* Create the socket */
+	int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
 
-   	/* Locate the interface you wish to use */
-   	struct ifreq ifr;
-   	//strcpy(ifr.ifr_name, "vcan0");
+	/* Locate the interface you wish to use */
+	struct ifreq ifr;
+	//strcpy(ifr.ifr_name, "vcan0");
 
 	// FIXME: buffer overflow here!!!
-   	strcpy(ifr.ifr_name, name);
-   	ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
+	strcpy(ifr.ifr_name, name);
+	ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled
 				  * with that device's index */
-   	/* Select that CAN interface, and bind the socket to it. */
-   	struct sockaddr_can addr;
-   	addr.can_family = AF_CAN;
-   	addr.can_ifindex = ifr.ifr_ifindex;
-   	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+	/* Select that CAN interface, and bind the socket to it. */
+	struct sockaddr_can addr;
+	addr.can_family = AF_CAN;
+	addr.can_ifindex = ifr.ifr_ifindex;
+	bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
 	return skt;
 }
 
@@ -126,9 +126,9 @@ static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond p
 	fd_set fds;
 
 	timeout.tv_sec = 0;
-  	timeout.tv_usec = timeo;
-  	FD_ZERO(&fds);
-  	FD_SET(sockfd, &fds);
+	timeout.tv_usec = timeo;
+	FD_ZERO(&fds);
+	FD_SET(sockfd, &fds);
 
 	while(n_left>0){
 

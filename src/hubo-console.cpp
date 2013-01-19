@@ -78,42 +78,39 @@ int name2mot(char*s, struct hubo_param *h);
 double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p);
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
-void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
-//char** cmd ={ "initialize","fet","initializeAll","homeAll",
-//                "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
-/*
-                "get RHY", "get RHR", "get RHP", "get RKN", "get RAP", "get RAR",
-                "get LHY", "get LHR", "get LHP", "get LKN", "get LAP", "get LAR",
-                "get RSP", "get RSR", "get RSY", "get REB", "get RWY", "get RWP",
-                "get LSP", "get LSR", "get LSY", "get LEB", "get LWY", "get LWP",
-                "get NKY", "get NK1", "get NK2", "get WST", "get RF1", "get RF2",
-                "get RF3", "get RF4", "get RF5", "get LF1", "get LF2", "get LF3",
-                "get LF4", "get LF5"};
- */
+
 
 int main() {
-        printf("\n");
-        printf(" ***************** hubo-ach **************** \n");
-        printf(" Support: Daniel M. Lofaro dan@danlofaro.com \n");
-        printf(" ******************************************* \n");
+	printf("\n");
+	printf(" ***************** hubo-ach **************** \n");
+	printf(" Support: Daniel M. Lofaro dan@danlofaro.com \n");
+	printf(" ******************************************* \n");
 
-        // get initial values for hubo
-        // open ach channel
-        int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-        assert( ACH_OK == r );
+	// get initial values for hubo
+	// open ach channel
+	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+	assert( ACH_OK == r );
 
-        // open hubo state
-        r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
-        assert( ACH_OK == r );
+	// open hubo state
+	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
+	assert( ACH_OK == r );
 
-        // initialize control channel
-        r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-        assert( ACH_OK == r );
+	// open hubo state
+	r = ach_open(&chan_hubo_ref_filter, HUBO_CHAN_REF_FILTER_NAME, NULL);
+	assert( ACH_OK == r );
+
+	// initialize control channel
+	r = ach_open(&chan_hubo_init_cmd, HUBO_CHAN_INIT_CMD_NAME, NULL);
+	assert( ACH_OK == r );
+
+    // initialize control channel
+    r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
+    assert( ACH_OK == r );
 
         // get initial values for hubo
         struct hubo_ref H_ref;
@@ -127,143 +124,188 @@ int main() {
 	
 	usleep(250000);
 
-	// set default values for H_ref in ach
-//	setPosZeros();
-
-//	setConsoleFlags();	
-
 	// set default values for Hubo
 	setJointParams(&H_param, &H_state);
 
-        char *buf;
-        rl_attempted_completion_function = my_completion;
-        printf("\n");
-        while((buf = readline(">> hubo-ach: "))!=NULL) {
-		//enable auto-complete
-		rl_bind_key('\t',rl_complete);
+	size_t fs;
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_ref) == fs );
+	r = ach_get( &chan_hubo_ref_filter, &H_ref_filter, sizeof(H_ref_filter), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_ref_filter) == fs );
+	r = ach_get( &chan_hubo_init_cmd, &H_init, sizeof(H_init), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_init) == fs );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_state) == fs );
 
-	//	printf("cmd [%s]\n",buf);
-	//	printf(">> ");
-		printf("   ");
+    char *buf;
+    rl_attempted_completion_function = my_completion;
+    printf("\n");
+    while((buf = readline(">> hubo-ach: "))!=NULL) {
+	//enable auto-complete
+	rl_bind_key('\t',rl_complete);
 
-		/* get update after every command */
+	printf("   ");
+
+	/* get update after every command */
+	hubo_update(&H_ref, &H_state);
+	
+	int tsleep = 0;
+	char* buf0 = getArg(buf, 0);
+	//printf(buf0);
+
+	if (strcmp(buf0,"update")==0) {
 		hubo_update(&H_ref, &H_state);
+		printf("--->Hubo Information Updated\n");
+	}
+	else if (strcmp(buf0,"get")==0) {
+		double jRef = hubo_get(buf,&H_ref, &H_param);
+		char* tmp = getArg(buf,1);
+		printf(">> %s = %f rad \n",tmp,jRef);
+	}
+	else if (strcmp(buf0,"beep")==0) {
+		hubo_jmc_beep(&H_param, &H_cmd, buf);
+	}
+	else if (strcmp(buf0,"home")==0) {
+		hubo_jmc_home(&H_param, &H_cmd, buf);
+		printf("%s - Home \n",getArg(buf,1));
+	}
+	else if (strcmp(buf0,"homeAll")==0) {
+		hubo_jmc_home_all(&H_param, &H_cmd, buf);
+		printf("%s - Home All \n",getArg(buf,1));
+		tsleep = 5;
 		
-		int tsleep = 0;
-		char* buf0 = getArg(buf, 0);
-		//printf(buf0);
+	}
+    else if (strcmp(buf0,"reset")==0) {
+        hubo_enc_reset(&H_param, &H_cmd, buf);
+        printf("%s - Zeroing Encoder \n",getArg(buf,1));
+    }
+	else if (strcmp(buf0,"startup")==0) {
+		hubo_startup_all(&H_param, &H_cmd, buf);
+		printf("Starting up Hubo\n");
+		tsleep = 5;
+	}
+	else if (strcmp(buf0,"ctrl")==0) {
+		int onOrOff = atof(getArg(buf,2));
+		if(onOrOff == 0 | onOrOff == 1) {
+			H_cmd.type = D_CTRL_SWITCH;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if(onOrOff==1)			// 1 = on, 0 = 0ff
+				H_cmd.param[0] = D_ENABLE;
+			else if(onOrOff==0)
+				H_cmd.param[0] = D_DISABLE;	
+			r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if(onOrOff == 0) {
+				printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+			else {
+				printf("%s - Turning On CTRL\n",getArg(buf,1));}
+		}
+	else if (strcmp(buf0,"get")==0) {
+		double jRef = hubo_get(buf,&H_ref, &H_param);
+		char* tmp = getArg(buf,1);
+		printf(">> %s = %f rad \n",tmp,jRef);
+	}
+	else if (strcmp(buf0,"beep")==0) {
+		hubo_jmc_beep(&H_param, &H_cmd, buf);
+	}
+	else if (strcmp(buf0,"home")==0) {
+		hubo_jmc_home(&H_param, &H_cmd, buf);
+		printf("%s - Home \n",getArg(buf,1));
+	}
+	else if (strcmp(buf0,"homeAll")==0) {
+		hubo_jmc_home_all(&H_param, &H_cmd, buf);
+		printf("%s - Home All \n",getArg(buf,1));
+		tsleep = 5;
+		
+	}
+    else if (strcmp(buf0,"reset")==0) {
+        hubo_enc_reset(&H_param, &H_cmd, buf);
+        printf("%s - Zeroing Encoder \n",getArg(buf,1));
+    }
+	else if (strcmp(buf0,"startup")==0) {
+		hubo_startup_all(&H_param, &H_cmd, buf);
+		printf("Starting up Hubo\n");
+		tsleep = 5;
+	}
+	else if (strcmp(buf0,"ctrl")==0) {
+		int onOrOff = atof(getArg(buf,2));
+		if(onOrOff == 0 | onOrOff == 1) {
+			H_cmd.type = D_CTRL_SWITCH;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if(onOrOff==1)			// 1 = on, 0 = 0ff
+				H_cmd.param[0] = D_ENABLE;
+			else if(onOrOff==0)
+				H_cmd.param[0] = D_DISABLE;	
+			r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if(onOrOff == 0) {
+				printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+			else {
+				printf("%s - Turning On CTRL\n",getArg(buf,1));}
+		}
 
-		if (strcmp(buf0,"update")==0) {
-			hubo_update(&H_ref, &H_state);
-			printf("--->Hubo Information Updated\n");
-		}
-		else if (strcmp(buf0,"get")==0) {
-			double jRef = hubo_get(buf,&H_ref, &H_param);
-			char* tmp = getArg(buf,1);
-			printf(">> %s = %f rad \n",tmp,jRef);
-		}
-		else if (strcmp(buf0,"beep")==0) {
-			hubo_jmc_beep(&H_param, &H_cmd, buf);
-		}
-		else if (strcmp(buf0,"home")==0) {
-			hubo_jmc_home(&H_param, &H_cmd, buf);
-			printf("%s - Home \n",getArg(buf,1));
-		}
-		else if (strcmp(buf0,"homeAll")==0) {
-			hubo_jmc_home_all(&H_param, &H_cmd, buf);
-			printf("%s - Home All \n",getArg(buf,1));
-			tsleep = 5;
-			
-		}
-        else if (strcmp(buf0,"reset")==0) {
-            hubo_enc_reset(&H_param, &H_cmd, buf);
-            printf("%s - Zeroing Encoder \n",getArg(buf,1));
-        }
-		else if (strcmp(buf0,"startup")==0) {
-			hubo_startup_all(&H_param, &H_cmd, buf);
-			printf("Starting up Hubo\n");
-			tsleep = 5;
-		}
-		else if (strcmp(buf0,"ctrl")==0) {
-			int onOrOff = atof(getArg(buf,2));
-			if(onOrOff == 0 | onOrOff == 1) {
-				H_cmd.type = D_CTRL_SWITCH;
-				H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-				if(onOrOff==1)			// 1 = on, 0 = 0ff
-					H_cmd.param[0] = D_ENABLE;
-				else if(onOrOff==0)
-					H_cmd.param[0] = D_DISABLE;	
-				r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-				if(onOrOff == 0) {
-					printf("%s - Turning Off CTRL\n",getArg(buf,1));}
-				else {
-					printf("%s - Turning On CTRL\n",getArg(buf,1));}
-			}
-
-		}
-		else if (strcmp(buf0,"fet")==0) {
-			int onOrOff = atof(getArg(buf,2));
-			if(onOrOff == 0 | onOrOff == 1) {
-				H_cmd.type = D_FET_SWITCH;
-				H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-				if(onOrOff==1)
-					H_cmd.param[0] = D_ENABLE;
-				else if(onOrOff==0)
-					H_cmd.param[0] = D_DISABLE;
-				int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-				if(onOrOff == 0) {
-					printf("%s - Turning Off FET\n",getArg(buf,1));}
-				else {
-					printf("%s - Turning On FET\n",getArg(buf,1));}
-			}
-		}
-		else if (strcmp(buf0,"initialize")==0) {
-			H_cmd.type = D_JMC_INITIALIZE;
-			H_cmd.joint = name2mot(getArg(buf,1),&H_param);	// set motor num
-			//C.val[0] = atof(getArg(buf,2));
+	}
+	else if (strcmp(buf0,"fet")==0) {
+		int onOrOff = atof(getArg(buf,2));
+		if(onOrOff == 0 | onOrOff == 1) {
+			H_cmd.type = D_FET_SWITCH;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if(onOrOff==1)
+				H_cmd.param[0] = D_ENABLE;
+			else if(onOrOff==0)
+				H_cmd.param[0] = D_DISABLE;
 			int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-			printf("%s - Initialize \n",getArg(buf,1));
+			if(onOrOff == 0) {
+				printf("%s - Turning Off FET\n",getArg(buf,1));}
+			else {
+				printf("%s - Turning On FET\n",getArg(buf,1));}
 		}
-		else if (strcmp(buf0,"initializeAll")==0) {
-			H_cmd.type = D_JMC_INITIALIZE_ALL;
-			int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-			printf("%s - Initialize All\n",getArg(buf,1));
-			tsleep = 8;
-		}
+	}
+	else if (strcmp(buf0,"initialize")==0) {
+		H_cmd.type = D_JMC_INITIALIZE;
+		H_cmd.joint = name2mot(getArg(buf,1),&H_param);	// set motor num
+		//C.val[0] = atof(getArg(buf,2));
+		int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+		printf("%s - Initialize \n",getArg(buf,1));
+	}
+	else if (strcmp(buf0,"initializeAll")==0) {
+		H_cmd.type = D_JMC_INITIALIZE_ALL;
+		int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+		printf("%s - Initialize All\n",getArg(buf,1));
+		tsleep = 8;
+	}
 /*		else if (strcmp(buf0,"control")==0) {
-			H_cmd.type = D_CTRL_MODE;
-			H_cmd.joint = name2mot(getArg(buf,1),&H_param);
-			if(strcmp(getArg(buf,2),"pos")==0) {
-				H_cmd.param[0] = D_POSITION;
-				H_ref.ref[H_cmd.joint] = H_state.joint[H_cmd.joint].pos;
-			}
-			else if(strcmp(getArg(buf,2),"cur")==0) {
-				H_cmd.param[0] = D_CURRENT;
-				H_ref.ref[H_cmd.joint] = 0;
-			}
-			else
-				continue;
-			int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-			r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
-			printf("%s - Switching Control Mode\n",getArg(buf,1));
-		}*/
-		/* Quit */
-		else if (strcmp(buf0,"quit")==0)
-			break;
-		if (buf[0]!=0)
-		add_history(buf);
-		sleep(tsleep);	// sleep for tsleep sec
-        }
-        free(buf);
-        return 0;
+		H_cmd.type = D_CTRL_MODE;
+		H_cmd.joint = name2mot(getArg(buf,1),&H_param);
+		if(strcmp(getArg(buf,2),"pos")==0) {
+			H_cmd.param[0] = D_POSITION;
+			H_ref.ref[H_cmd.joint] = H_state.joint[H_cmd.joint].pos;
+		}
+		else if(strcmp(getArg(buf,2),"cur")==0) {
+			H_cmd.param[0] = D_CURRENT;
+			H_ref.ref[H_cmd.joint] = 0;
+		}
+		else
+			continue;
+		int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+		r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+		printf("%s - Switching Control Mode\n",getArg(buf,1));
+	}*/
+	/* Quit */
+	else if (strcmp(buf0,"quit")==0)
+		break;
+	if (buf[0]!=0)
+	add_history(buf);
+	sleep(tsleep);	// sleep for tsleep sec
+    }
+    free(buf);
+    return 0;
 }
 
 double hubo_get(char*s, struct hubo_ref *h, struct hubo_param *p) {
 
-        /* get joint number */
-        int jointNo = name2mot(getArg(s,1),p);
+	/* get joint number */
+	int jointNo = name2mot(getArg(s,1),p);
 
-        return h->ref[jointNo];
+	return h->ref[jointNo];
 }
 
 void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
@@ -290,21 +332,21 @@ void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) 
         int r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 }
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
-        /* make beiep */
-        c->type = D_GOTO_HOME_ALL;
-        int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
+    /* make beiep */
+    c->type = D_GOTO_HOME_ALL;
+    int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state) {
-        size_t fs;
-        int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );
-        if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
-                assert( sizeof(*h_ref) == fs );}
-        r = ach_get( &chan_hubo_state, h_state, sizeof(*h_state), &fs, NULL, ACH_O_LAST );
-        if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
-                assert( sizeof(*h_state) == fs );}
-        // look into posix message que
-        // posix rt signal can give signal number and an interger
+    size_t fs;
+    int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );
+    if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
+            assert( sizeof(*h_ref) == fs );}
+    r = ach_get( &chan_hubo_state, h_state, sizeof(*h_state), &fs, NULL, ACH_O_LAST );
+    if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
+            assert( sizeof(*h_state) == fs );}
+    // look into posix message que
+    // posix rt signal can give signal number and an interger
 }
 
 void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
@@ -315,98 +357,106 @@ void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff
 }
 
 char* getArg(string s, int argNum) {
-//	printf("\n dan test\n");
+    istringstream iss(s);
 
-        istringstream iss(s);
+    int i = 0;
+    do
+    {
+        string sub;
+        iss >> sub;
+        if( i == argNum ) {
+                return (char*)sub.c_str(); }
+        i++;
+    } while (iss);
 
-        int i = 0;
-//	char* theOut[];
-        do
-        {
-                string sub;
-                iss >> sub;
-//              cout << "Substring: " << sub << endl;
-                if( i == argNum ) {
-                        return (char*)sub.c_str(); }
-                i++;
-        } while (iss);
-
-        return NULL;
+    return NULL;
 }
 
 int test(char* s, struct hubo_param *h) {
-        printf("\n dan test\n");
+    printf("\n dan test\n");
 
-        char* mot = getArg(s,1);
+    char* mot = getArg(s,1);
 
-        int tmp = name2mot(mot, h);
-        printf("mot = %i \n",tmp);
-        return 0;
+    int tmp = name2mot(mot, h);
+    printf("mot = %i \n",tmp);
+    return 0;
 }
 
 int name2mot(char* name, struct hubo_param *h) {
-        /* Returns the number of the requested joint */
-        int i = 0;
-        int iout = -1;
-        for( i = 0; i < HUBO_JOINT_COUNT ; i++ ) {
-                        char *mot = h->joint[i].name;
-                        if (strcmp(name, mot) == 0) {
-//				printf("i = %i\n", i);
-                                iout = i;}
-        }
+    /* Returns the number of the requested joint */
+    int i = 0;
+    int iout = -1;
+    for( i = 0; i < HUBO_JOINT_COUNT ; i++ ) {
+        char *mot = h->joint[i].name;
+        if (strcmp(name, mot) == 0) {
+        	iout = i;
+		}
+    }
 	return iout;
 }
 
 
+int name2sensor(char* name, struct hubo_param *h) {
+	/* Returns the number of the requested joint */
+	int i = 0;
+	int iout = -1;
+	for( i = 0; i < HUBO_SENSOR_COUNT ; i++ ) {
+	    char *sens = h->sensor[i].name;
+	    printf("i = %i, name = %s\n", i,sens);
+	    if (strcmp(name, sens) == 0) {
+		iout = i;}
+	}
+	return iout;
+}
 
 static char** my_completion( const char * text , int start,  int end) {
-        char **matches;
+    char **matches;
 
-        matches = (char **)NULL;
+    matches = (char **)NULL;
 
-        if (start == 0)
-                matches = rl_completion_matches ((char*)text, &my_generator);
-        else
-                rl_bind_key('\t',rl_abort);
+    if (start == 0)
+            matches = rl_completion_matches ((char*)text, &my_generator);
+    else
+            rl_bind_key('\t',rl_abort);
 
-        return (matches);
+    return (matches);
 }
 
 char* my_generator(const char* text, int state) {
-        static int list_index, len;
-        char *name;
+    static int list_index, len;
+    char *name;
 
-        if (!state) {
-                list_index = 0;
-                len = strlen (text);
-        }
+    if (!state) {
+            list_index = 0;
+            len = strlen (text);
+    }
 
-        while (name = cmd[list_index]) {
-                list_index++;
+    while (name = cmd[list_index]) {
+            list_index++;
 
-        if (strncmp (name, text, len) == 0)
-                return (dupstr(name));
-        }
+    if (strncmp (name, text, len) == 0)
+            return (dupstr(name));
+    }
 
-        /* If no names matched, then return NULL. */
-        return ((char *)NULL);
+    /* If no names matched, then return NULL. */
+    return ((char *)NULL);
 }
 
 char * dupstr (char* s) {
-        char *r;
+    char *r;
 
-        r = (char*) xmalloc ((strlen (s) + 1));
-        strcpy (r, s);
-        return (r);
+    r = (char*) xmalloc ((strlen (s) + 1));
+    strcpy (r, s);
+    return (r);
 }
 
 void * xmalloc (int size) {
-        void *buf;
+    void *buf;
 
-        buf = malloc (size);
-        if (!buf) {
-                fprintf (stderr, "Error: Out of memory. Exiting.'n");
-                exit (1);
-        }
-        return buf;
+    buf = malloc (size);
+    if (!buf) {
+            fprintf (stderr, "Error: Out of memory. Exiting.'n");
+            exit (1);
+    }
+    return buf;
 }

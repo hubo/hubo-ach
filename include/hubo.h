@@ -116,11 +116,17 @@
 
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 
+#define		HUBO_JOINT_COUNT	50	///< The size of the array
+						///< For the joints
+#define 	HUBO_JMC_COUNT		0X40	///< Numbher of jmc
+#define 	HUBO_SENSOR_COUNT	10	///< Hubo Sensor Count
+
 
 #define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
 #define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"   ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
+#define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Defautl time for CAN to time out
 
 
@@ -131,17 +137,28 @@
 
 
 typedef enum {
-	HUBO_FT_R_FOOT    = 0, ///< Index of right foot FT
-	HUBO_FT_L_FOOT    = 1, ///< Index of left foot FT
-	HUBO_FT_R_HAND    = 2, ///< Index of right hand FT
-	HUBO_FT_L_HAND    = 3  ///< Index of left hand FT
-} hubo_ft_index_t;
+	HUBO_FT_R_HAND    = 0, ///< Index of right hand FT
+	HUBO_FT_L_HAND    = 1, ///< Index of left hand FT
+	HUBO_FT_R_FOOT    = 2, ///< Index of right foot FT
+	HUBO_FT_L_FOOT    = 3, ///< Index of left foot FT
+	HUBO_IMU0	  = 4, ///< Index of IMU0
+	HUBO_IMU1	  = 5, ///< Index of IMU1
+	HUBO_IMU2	  = 6  ///< Index of IMU2
+} hubo_sensor_index_t;
 
 
 #define RIGHT 0
 #define LEFT 1
 
 
+struct hubo_sensor_param {
+	char name[5];		///< Name of sensor
+	uint16_t sensNo;	///< Sensor number
+	uint16_t can;		///< Can channel
+	uint8_t active;		///< Active sensor
+	uint16_t canID;		///< Can I.D. of the sensor
+	uint16_t boardNo;	///< Sensor Board Nuber
+};
 
 struct hubo_joint_param {
 	uint16_t motNo;		///< Onboard channel number
@@ -158,6 +175,13 @@ struct hubo_joint_param {
 	uint8_t numMot;		///< number of motors
 };
 
+struct hubo_joint_state {
+	double pos;     ///< actual position (rad)
+	double cur;     ///< actual current (amps)
+	double vel;     ///< actual velocity (rad/sec)
+	double tmp;	///< temperature (dec C)
+}
+
 struct hubo_jmc_param {
 	uint8_t joints[5]; // other motors on the same drive
 };
@@ -168,18 +192,14 @@ struct hubo_param {
 };
 
 struct hubo_imu {
-	
-	// LEFT and RIGHT are enumerated above
-	double a_foot_x[2];	//< Linear accelerations for the feet along the x-axis (m/s/s)
-	double a_foot_y[2];	//< Linear accelerations for the feet along the y-axis (m/s/s)
-	double a_foot_z[2];	//< Linear accelerations for the feet along the z-axis (m/s/s)
-
-	double angle_x;		//< IMU angle about the x-axis (degrees)
-	double angle_y;		//< IMU angle about the y-axis (degrees)
-
-	double w_x;		//< IMU rotational velocity about the x-axis (degrees/sec)
-	double w_y;		//< IMU rotational velocity about the y-axis (degrees/sec)
-
+	angle_x;       ///< angular position around x (rad)
+	angle_y;       ///< angular position around y (rad)
+	double w_x;    ///< rotational velocity in x (rad/s)
+	double w_y;    ///< rotational velocity in y (rad/s)
+	double w_z;    ///< rotational velocity in z (rad/s)
+	double a_x;    ///< linear acceleration in x (m/s/s)
+	double a_y;    ///< linear acceleration in y (m/s/s)
+	double a_z;    ///< linear acceleration in z (m/s/s)
 };
 
 struct hubo_ft {
@@ -213,12 +233,11 @@ struct hubo_jmc_state {
 };
 
 struct hubo_state {
-	struct hubo_imu imu;	///< IMU
+	struct hubo_imu imu[3];	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
-	struct hubo_board_msg msg;
-        double time;
+    double time;
 	int refWait;
 };
 
@@ -229,6 +248,9 @@ struct hubo_ref {
 	struct timespec time;           ///< time message sent
 };
 
+struct jmcDriver{
+	uint8_t jmc[5]; // other motors on the same drive
+};
 // Structure for sending board commands to the daemon
 struct hubo_board_cmd {
 
@@ -248,11 +270,12 @@ struct hubo_board_cmd {
 	
 	double dValues[8];		// Double values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 8 is sufficient
-	
 };
 
-//extern int hubo_debug;
-//extern int verbose;
+struct hubo_param {
+	struct hubo_joint_param joint[HUBO_JOINT_COUNT];	///< Joint param
+	struct jmcDriver driver[HUBO_JMC_COUNT];		///< Motor driver param
+	struct hubo_sensor_param sensor[HUBO_SENSOR_COUNT];	///< Sensor param
+};
 
-
-#endif
+extern int hubo_debug;

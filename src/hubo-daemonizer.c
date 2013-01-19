@@ -22,15 +22,16 @@
 #include <errno.h>
 #include <pwd.h>
 #include <signal.h>
+#include <string.h>
+#include <errno.h>
 #include "hubo.h"
 #include "hubo-daemon.h"
-#include <string.h>
 
 #define DAEMON_NAME "huboDaemon"
 
 // Make sure that the daemon has the permissions it needs
 #define RUN_AS_USER "root"
-#define LOCKFILE "/var/lock/hubo-daemon" 
+#define LOCKFILE "/var/lock/hubo-daemon"
 
 // Priority
 #define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
@@ -58,7 +59,7 @@ static void hubo_sig_handler(int signum)
 		case SIGCHLD: exit(EXIT_FAILURE); break;
 		case SIGINT:
 		case SIGQUIT:
-		case SIGTERM: hubo_sig_quit=1; break;	
+		case SIGTERM: hubo_sig_quit=1; break;
 	}
 }
 
@@ -206,15 +207,15 @@ void hubo_daemonize()
         // Change the current working directory to prevent the current directory from being locked
 	if( (chdir("/")) < 0 )
 	{
-                syslog( LOG_ERR, "Unable to change directory, code=%d (%s)",
-                        errno, strerror(errno) );
+        syslog( LOG_ERR, "Unable to change directory, code=%d (%s)",
+                errno, strerror(errno) );
 		exit(EXIT_FAILURE);
 	}
 
 
 	// Create files for logging, in case they don't exist already
-        if(	!fopen( "/var/log/hubo-daemon/daemon-output", "w" ) ||
-                !fopen( "/var/log/hubo-daemon/daemon-error", "w" ) )
+    if(	!fopen( "/var/log/hubo-daemon/daemon-output", "w" ) ||
+        !fopen( "/var/log/hubo-daemon/daemon-error", "w" ) )
 	{
 		syslog( LOG_ERR, "Unable to create log files, code=%d (%s)",
 			errno, strerror(errno) );
@@ -222,8 +223,8 @@ void hubo_daemonize()
 	}
 
 	// Redirect standard files to /dev/hubo-daemon
-        if(	!freopen( "/var/log/hubo-daemon/daemon-output", "w", stdout ) ||
-                !freopen( "/var/log/hubo-daemon/daemon-error", "w", stderr ) )
+    if(	!freopen( "/var/log/hubo-daemon/daemon-output", "w", stdout ) ||
+        !freopen( "/var/log/hubo-daemon/daemon-error", "w", stderr ) )
 	{
 		syslog( LOG_ERR, "Unable to stream output, code=%d (%s)",
 			errno, strerror(errno) );
@@ -286,35 +287,3 @@ void hubo_assert( int result )
 		exit(EXIT_FAILURE);
 	}
 }
-
-/*
-void hubo_assert( int result, const char * msg )
-{
-	if(!result)
-	{
-		fprintf(stderr, "Assertion failed. code=%d (%s)\n", errno, strerror(errno));
-		fprintf(stderr, "Assertion message: %s\n", msg);
-		hubo_daemon_close();
-		exit(EXIT_FAILURE);
-	}
-}
-*/
-
-void hubo_verbose( const char *verb )
-{
-	int verbose = 1; //TODO: Do this correctly
-	if( verbose==1 )
-		fprintf(stdout, "%s\n", verb); // TODO: Put a time stamp in here
-
-} 
-/*
-void hubo_debug( const char *deb )
-{
-	if( debug==1 ) 
-		fprintf(stderr, "%s\n", deb); //TODO: Put a time stamp in here
-}
-*/
-
-
-
-

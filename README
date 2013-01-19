@@ -1,5 +1,16 @@
 HUBO-ACH
 
+Run Hubo-Ach
+============
+
+(1) Setup Config (first time only or new builds and param changes)
+	$ sudo ./run.sh config
+(2) Start hubo-ach daemon.  This will automatically start hubo-console as well
+    CAN packets will not start to be sent
+	$ sudo ./run.sh start
+(3) To stop hubo-ach daemon 
+	$ sudo ./run.sh stop
+
 Install ACH
 ===========
 
@@ -11,28 +22,91 @@ Install ACH
   precise, etc.)
 
 (2) `sudo apt-get update`
-(3) `sudo apt-get install libach0 libach-dev`
+(3) `sudo apt-get install libach1 libach-dev`
 (4) `sudo apt-get install ach-utils`
 
-Run Hubo-Ach
-============
 
-(1) build the system
-	$ make
+5) If you have obtained amino from the git repo, you need to
+initialize the autotools build scripts.  This requires the autotools
+and the autoconf macro archive. To install these on Debian or Ubuntu
+GNU/Linux, you can do
 
-(2) run run.sh, this will open all 4 can devices, initilize them to 1mbps and run hubo-main
-	For Hardware CAN run: `./run.sh`
-	For Virturl CAN run: `./vrun.sh`
+`$ sudo apt-get install autoconf automake libtool autoconf-archive'
 
-hubo-main options
-	-d : debug mode, will print out all sending and receiving CAN data
+Then, initialize autotools with
+
+`$ autoreconf -i'
+
+This whole step is not necessary when you have obtained a distribution
+tarball which already contains the autoconf-generated configure script.
+
+1) Configure for your system:
+
+`$ ./configure'
+
+2) Build:
+
+`$ make'
+
+3) Install:
+
+`$ sudo make install'
+
+
+
+
+Functionality:
+==============
+    Feedforward:
+                - set position reference (rad)
+
+    Feedback: 
+                - get encoder position (rad)
+                - get IMU x angle (rad)
+                - get IMU y angle (rad)
+                - get IMU Vx velos(rad/sec)
+                - get IMU Vy velos(rad/sec)
+                - get FT Mx moment (Nm)
+                - get FT My moment (Nm)
+                - get FT Fz force (N)
+                - get foot angle from acc Ax (rad)
+                - get foot angle from acc Ay (rad)
+                - get foot G-force acc Az (G)
+
+    Motor Control:
+                - home motors
+                - reset to defaults
 
 hubo-ach-console
 ================
-console input for hubo ach
+
+Console input for hubo-ach
+
+Usage:
+       Home all motors and zero sensors
+           >> hubo-ach: homeAll
+           >> hubo-ach: iniSensors
+    
+Functions: "initilize XXX" - sets defaults to motor XXX and turns on FETs
+           "initilizeAll"  - sets defaults to all motors and turns on all FETs
+           "home XXX"      - homes motor XXX
+           "homeAll"       - homes all motors that are active
+           "goto XXX val"  - sets motor XXX to goto position "val" in rad.
+                             uses linear interpolation via hubo-ref-filter
+                             0.5 sec linear filter by default
+           "get XXX"       - gets current encoder location of motor XXX
+           "zero XXX"      - zero the sensor XXX
+           "zeroacc"       - zero the foot accelerometer XXX
+           "iniSensors"    - zero all sensors
 
 Required for installation:
     sudo apt-get install libreadline-dev
+
+For joint "goto" functionality must have hubo-ref-filter running
+    Note: do not have hubo-ref-filter running when trying to write directly
+          to the hubo-ref channel.
+	$ sudo ./hubo-ref-filter
+
 
 hubo-ach-loop
 =============
