@@ -256,7 +256,7 @@ void hubo_daemonize()
 	stack_prefault();
 
 	syslog( LOG_NOTICE, "Daemonization finished - Process Beginning" );
-
+    fprintf(stdout, "Printing the daemonizer!\n"); fflush(stdout);
 }
 
 
@@ -278,11 +278,11 @@ void stack_prefault(void) {
 }
 
 
-void hubo_assert( int result )
+void hubo_assert( int result, int line )
 {
 	if(!result)
 	{
-		fprintf(stderr, "Assertion failed. code=%d (%s)\n", errno, strerror(errno));
+		fprintf(stderr, "Assertion failed on line %d: code=%d (%s)\n", line, errno, strerror(errno));
 		hubo_daemon_close();
 		exit(EXIT_FAILURE);
 	}

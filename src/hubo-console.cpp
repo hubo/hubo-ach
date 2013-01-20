@@ -81,6 +81,8 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+int name2sensor(char* name, struct hubo_param *h);
 double hubo_set(char*s, struct hubo_param *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
                 "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
@@ -184,7 +186,7 @@ int main() {
         else if (strcmp(buf0,"startup")==0) {
             hubo_startup_all(&H_param, &H_cmd, buf);
             printf("Starting up Hubo\n");
-            tsleep = 5;
+            tsleep = 2;
         }
         else if (strcmp(buf0,"ctrl")==0) {
             int onOrOff = atof(getArg(buf,2));
@@ -201,11 +203,6 @@ int main() {
                 else {
                     printf("%s - Turning On CTRL\n",getArg(buf,1));}
             }
-        }
-        else if (strcmp(buf0,"startup")==0) {
-            hubo_startup_all(&H_param, &H_cmd, buf);
-            printf("Starting up sensors\n");
-            tsleep = 2;
         }
         else if (strcmp(buf0,"fet")==0) {
             int onOrOff = atof(getArg(buf,2));
@@ -255,8 +252,6 @@ int main() {
             int ft = name2sensor(getArg(buf,1), &H_param);
             H_cmd.type = D_NULL_SENSOR;
             switch(ft){
-                case HUBO_FT_R_HAND: H_cmd.param[0] = D_R_HAND_ACC; break;
-                case HUBO_FT_L_HAND: H_cmd.param[0] = D_L_HAND_ACC; break;
                 case HUBO_FT_R_FOOT: H_cmd.param[0] = D_R_FOOT_ACC; break;
                 case HUBO_FT_L_FOOT: H_cmd.param[0] = D_L_FOOT_ACC; break;
                 case HUBO_IMU0: H_cmd.param[0] = D_IMU_SENSOR_0; break;
@@ -269,8 +264,8 @@ int main() {
         }
         else if (strcmp(buf0,"iniSensors")==0){
             printf("Nulling All Sensors\n");
-            c->type = D_NULL_SENSORS_ALL;
-            int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c));
+            H_cmd.type = D_NULL_SENSORS_ALL;
+            int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd));
             
         }
         /* Quit */

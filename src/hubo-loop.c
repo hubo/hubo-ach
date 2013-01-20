@@ -108,6 +108,7 @@ void huboLoop(struct hubo_param *h);
 int ftime(struct timeb *tp);
 
 
+int debug = 0;
 
 
 // ach message type
@@ -232,17 +233,10 @@ int main(int argc, char **argv) {
 
 	int vflag = 0;
 	int c;
+    debug = 0;
 
     int i = 1;
-    while(argc > i) {
-            if(strcmp(argv[i], "-d") == 0) {
-                    debug = 1;
-            }
-            i++;
-    }
-
-	char* ach_chan = HUBO_CHAN_REF_FILTER_NAME;
-	int i = 1;
+    char* ach_chan = HUBO_CHAN_REF_FILTER_NAME;
 	while(argc > i) {
 		if(strcmp(argv[i], "-d") == 0) {
 			debug = 1;

@@ -13,7 +13,7 @@ include_HEADERS = include/hubo.h
 pkginclude_HEADERS = 	                \
 	include/hubo/hubo-esdcan.h      \
 	include/hubo/hubo-socketcan.h   \
-	include/hubo/canId.h
+	include/hubo/canID.h
 
 # not installed
 noinst_HEADERS =                        \

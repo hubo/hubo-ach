@@ -21,6 +21,7 @@ HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-init-cmd'
 
 DAEMON_DIR='/etc/hubo-daemon'
+DAEMON_LOG='/var/log/hubo-daemon/'
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -31,7 +32,7 @@ MakeAch()
 	ach -1 -C hubo-ref -m 10 -n 3000
 	ach -1 -C hubo-ref-filter -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
-	ach -1 -C hubo-init-cmd -m 10 -n 3000
+	ach -1 -C hubo-board-cmd -m 10 -n 3000
 }
 
 Kill()
@@ -299,11 +300,11 @@ LogHubo()
 		echo "_______________________________"
 		echo
 		echo "Hubo Output:"
-		cat $DAEMON_DIR/daemon-output
+		cat $DAEMON_LOG/daemon-output
 		echo "_______________________________"
 		echo
 		echo "Hubo Errors:"
-		cat $DAEMON_DIR/daemon-error
+		cat $DAEMON_LOG/daemon-error
 		echo
 	;;
 	esac
@@ -335,11 +336,11 @@ SaveLog()
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Output:" >> saved.log
-		cat $DAEMON_DIR/daemon-output >> saved.log
+		cat $DAEMON_LOG/daemon-output >> saved.log
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Errors:" >> saved.log
-		cat $DAEMON_DIR/daemon-error >> saved.log
+		cat $DAEMON_LOG/daemon-error >> saved.log
 	;;
 
 	*)
@@ -348,11 +349,11 @@ SaveLog()
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Output:" >> $1
-		cat $DAEMON_DIR/daemon-output >> $1
+		cat $DAEMON_LOG/daemon-output >> $1
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Errors:" >> $1
-		cat $DAEMON_DIR/daemon-error >> $1
+		cat $DAEMON_LOG/daemon-error >> $1
 	;;
 	esac
 }

@@ -124,7 +124,7 @@ void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, st
 void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
     struct can_frame *f, int send);
-int getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
+int getEncRef(int jnt, struct hubo_state *s, struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, struct hubo_param *h);
@@ -265,13 +265,13 @@ void huboLoop(struct hubo_param *H_param) {
 	size_t fs;
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
-	hubo_assert( sizeof(H_ref) == fs );
+	hubo_assert( sizeof(H_ref) == fs, __LINE__ );
 	r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
-	hubo_assert( sizeof(H_init) == fs );
+	hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
-	hubo_assert( sizeof(H_state) == fs );
+	hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
     // put back on channels
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
@@ -305,7 +305,6 @@ void huboLoop(struct hubo_param *H_param) {
     frame.can_dlc = strlen( frame.data );
 
 
-	setupSensorDefaults(&H_param);
 
 	printf("Start Hubo Loop\n");
 	while(!hubo_sig_quit) {
@@ -319,7 +318,7 @@ void huboLoop(struct hubo_param *H_param) {
                 if(debug) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
             }
-        else{    hubo_assert( sizeof(H_ref) == fs ); }
+        else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
 
 
         /* Set all Ref */
@@ -644,7 +643,7 @@ void fSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
         else
             m1 = h->driver[jmc].joints[1];
 
-        unsigned long pos1 = signConvention((int)getEncRef(m1, r, h));
+        unsigned long pos1 = signConvention((int)getEncRef(m1, s, h));
 
         f->data[3] =    int_to_bytes(pos1,1);
         f->data[4] =     int_to_bytes(pos1,2);
@@ -1857,7 +1856,7 @@ void hNullAllAccSensors(struct hubo_param *h, struct can_frame *f)
     hNullAccSensor(D_L_FOOT_ACC, h, f);
 }
 
-hNullAllSensors( struct hubo_param *h, struct can_frame *f )
+void hNullAllSensors( struct hubo_param *h, struct can_frame *f )
 {
     hNullAllAccSensors( h, f );
     hNullAllFTSensors( h, f );
@@ -2193,123 +2192,105 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
     {
         int num = fs - H_SENSOR_FT_BASE_RXDF;
         int16_t val;
-        switch (num)
+        if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
-            case h->sensor[HUBO_FT_R_FOOT].boardNo:
-                
-                val = (f->data[1]<<8) | f->data[0];
-                s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
-            
-                val = (f->data[3]<<8) | f->data[2];
-                s->ft[HUBO_FT_R_FOOT].m_y = ((double)(val))/100.0;
-
-                val = (f->data[5]<<8) | f->data[4];
-                s->ft[HUBO_FT_R_FOOT].f_z = ((double)(val))/10.0;
-                break;
-
-            case h->sensor[HUBO_FT_L_FOOT].boardNo:
-                
-                val =  (f->data[1]<<8) | f->data[0];
-                s->ft[HUBO_FT_L_FOOT].m_x = ((double)(val))/100.0;
-                
-                val =  (f->data[3]<<8) | f->data[2];
-                s->ft[HUBO_FT_L_FOOT].m_y = ((double)(val))/100.0;
-
-                val =  (f->data[5]<<8) | f->data[4];
-                s->ft[HUBO_FT_L_FOOT].f_z = ((double)(val))/10.0;
-                break;
-
-            case h->sensor[HUBO_FT_R_HAND].boardNo:
-
-                val =  (f->data[1]<<8) | f->data[0];
-                s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
-                
-                val =  (f->data[3]<<8) | f->data[2];
-                s->ft[HUBO_FT_R_HAND].m_y = ((double)(val))/100.0;
-
-                s->ft[HUBO_FT_R_HAND].f_z = 0;
-
-                //val = (f->data[5]<<8) | f->data[4]; // This does not exist
-                //s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
-
-                break;
-            case h->sensor[HUBO_FT_L_HAND].boardNo:
-
-                val =  (f->data[1]<<8) | f->data[0];
-                s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
-                
-                val =  (f->data[3]<<8) | f->data[2];
-                s->ft[HUBO_FT_L_HAND].m_y = ((double)(val))/100.0;
-
-                s->ft[HUBO_FT_L_HAND].f_z = 0;
-
-                //val =  (f->data[5]<<8) | f->data[4]; // This does not exist
-                //s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
-
-                break;
-            default:
-                fprintf(stderr, "Invalid value for FT Sensor: %d\n\t"
-                        "Must be 1, 2, 6, or 7\n", num);
-                break;
-                
-        }
-                
+            val = (f->data[1]<<8) | f->data[0];
+            s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
         
+            val = (f->data[3]<<8) | f->data[2];
+            s->ft[HUBO_FT_R_FOOT].m_y = ((double)(val))/100.0;
+
+            val = (f->data[5]<<8) | f->data[4];
+            s->ft[HUBO_FT_R_FOOT].f_z = ((double)(val))/10.0;
+        }
+        else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
+        {
+            val =  (f->data[1]<<8) | f->data[0];
+            s->ft[HUBO_FT_L_FOOT].m_x = ((double)(val))/100.0;
+            
+            val =  (f->data[3]<<8) | f->data[2];
+            s->ft[HUBO_FT_L_FOOT].m_y = ((double)(val))/100.0;
+
+            val =  (f->data[5]<<8) | f->data[4];
+            s->ft[HUBO_FT_L_FOOT].f_z = ((double)(val))/10.0;
+        }
+        else if(num==h->sensor[HUBO_FT_R_HAND].boardNo)
+        {
+            val =  (f->data[1]<<8) | f->data[0];
+            s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
+            
+            val =  (f->data[3]<<8) | f->data[2];
+            s->ft[HUBO_FT_R_HAND].m_y = ((double)(val))/100.0;
+
+            s->ft[HUBO_FT_R_HAND].f_z = 0;
+
+            //val = (f->data[5]<<8) | f->data[4]; // This does not exist
+            //s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
+        }
+        else if(num==h->sensor[HUBO_FT_L_HAND].boardNo)
+        {
+            val =  (f->data[1]<<8) | f->data[0];
+            s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
+            
+            val =  (f->data[3]<<8) | f->data[2];
+            s->ft[HUBO_FT_L_HAND].m_y = ((double)(val))/100.0;
+
+            s->ft[HUBO_FT_L_HAND].f_z = 0;
+
+            //val =  (f->data[5]<<8) | f->data[4]; // This does not exist
+            //s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
+        }
+        else
+            fprintf(stderr, "Invalid value for FT Sensor: %d\n\t"
+                    "Must be 1, 2, 6, or 7\n", num);
     }
     /* IMU Readings */
     else if( (fs >= H_SENSOR_IMU_BASE_RXDF) && (fs <= H_SENSOR_IMU_MAX_RXDF) )
     {
         int num = fs - H_SENSOR_IMU_BASE_RXDF;
         int16_t val;
-
-
-        switch (num)
+        
+        if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
-            case h->sensor[HUBO_FT_R_FOOT].boardNo:
+            val = (f->data[1]<<8) | f->data[0];
+            s->imu[TILT_R].a_x = ((double)(val))/100.0;
+            
+            val = (f->data[3]<<8) | f->data[2];
+            s->imu[TILT_R].a_y = ((double)(val))/100.0;
 
-                val = (f->data[1]<<8) | f->data[0];
-                s->imu[TILT_R].a_x = ((double)(val))/100.0;
-                
-                val = (f->data[3]<<8) | f->data[2];
-                s->imu[TILT_R].a_y = ((double)(val))/100.0;
-
-                val = (f->data[5]<<8) | f->data[4];
-                s->imu[TILT_R].a_z = ((double)(val))/750.0;
-
-                break;
-            case h->sensor[HUBO_FT_L_FOOT].boardNo:
-
-                val = (f->data[1]<<8) | f->data[0];
-                s->imu[TILT_L].a_x = ((double)(val))/100.0;
-                
-                val = (f->data[3]<<8) | f->data[2];
-                s->imu[TILT_L].a_y = ((double)(val))/100.0;
-
-                val = (f->data[5]<<8) | f->data[4];
-                s->imu[TILT_L].a_z = ((double)(val))/750.0;
-                
-                break;
-            case h->sensor[HUBO_IMU0].boardNo:
-            case h->sensor[HUBO_IMU1].boardNo:
-            case h->sensor[HUBO_IMU2].boardNo:
-                val = (f->data[1]<<8) | f->data[0];
-                s->imu[IMU].a_x = ((double)(val))/100.0;
-
-                val = (f->data[3]<<8) | f->data[2];
-                s->imu[IMU].a_y = ((double)(val))/100.0;
-                
-                val = (f->data[5]<<8) | f->data[4];
-                s->imu[IMU].w_x = ((double)(val))/100.0;
-
-                val = (f->data[7]<<8) | f->data[6];
-                s->imu[IMU].w_y = ((double)(val))/100.0;
-                
-                break;
-            default:
-                fprintf(stderr, "Invalid value for IMU sensor: %d\n\t"
-                        "Must range from 1 to 5\n", num);
-                break;
+            val = (f->data[5]<<8) | f->data[4];
+            s->imu[TILT_R].a_z = ((double)(val))/750.0;
         }
+        else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
+        {
+            val = (f->data[1]<<8) | f->data[0];
+            s->imu[TILT_L].a_x = ((double)(val))/100.0;
+            
+            val = (f->data[3]<<8) | f->data[2];
+            s->imu[TILT_L].a_y = ((double)(val))/100.0;
+
+            val = (f->data[5]<<8) | f->data[4];
+            s->imu[TILT_L].a_z = ((double)(val))/750.0;
+        }   
+        else if(num==h->sensor[HUBO_IMU0].boardNo ||
+                num==h->sensor[HUBO_IMU1].boardNo ||
+                num==h->sensor[HUBO_IMU2].boardNo)
+        {
+            val = (f->data[1]<<8) | f->data[0];
+            s->imu[IMU].a_x = ((double)(val))/100.0;
+
+            val = (f->data[3]<<8) | f->data[2];
+            s->imu[IMU].a_y = ((double)(val))/100.0;
+            
+            val = (f->data[5]<<8) | f->data[4];
+            s->imu[IMU].w_x = ((double)(val))/100.0;
+
+            val = (f->data[7]<<8) | f->data[6];
+            s->imu[IMU].w_y = ((double)(val))/100.0;
+        }
+        else
+            fprintf(stderr, "Invalid value for IMU sensor: %d\n\t"
+                    "Must range from 1 to 5\n", num);
     }
 
     /* Current and temperature readings */
@@ -2322,7 +2303,8 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
         double temp = 0;            // Initialize temperature variable
         if( numMot == 1 || numMot == 2 )
         {
-            for(int i = 0; i < numMot; i++)
+            int i;
+            for(i = 0; i < numMot; i++)
             {
                 int jnt = h->driver[jmc].joints[i];
                 s->joint[jnt].cur = f->data[0+i*1]/100.0;
@@ -2454,9 +2436,11 @@ int main(int argc, char **argv) {
         }
         i++;
     }
-
+    fprintf(stdout, "How about this??\n"); fflush(stdout);
     // Daemonize
     hubo_daemonize();
+    
+    fprintf(stdout, "See if this prints\n"); fflush(stdout);
 
     // Initialize Hubo Structs
     struct hubo_ref H_ref;
@@ -2473,15 +2457,15 @@ int main(int argc, char **argv) {
 
     // open hubo reference
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-    hubo_assert( ACH_OK == r );
+    hubo_assert( ACH_OK == r, __LINE__ );
 
     // open hubo state
     r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
-    hubo_assert( ACH_OK == r );
+    hubo_assert( ACH_OK == r, __LINE__ );
 
     // initilize control channel
     r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-    hubo_assert( ACH_OK == r );
+    hubo_assert( ACH_OK == r, __LINE__ );
 
     openAllCAN( vflag );
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));

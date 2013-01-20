@@ -16,4 +16,4 @@ int hubo_sig_usr2;
 
 void hubo_daemonize();
 void hubo_daemon_close();
-void hubo_assert( int result ); // Instructs the program to quit gracefully if the result is not true
+void hubo_assert( int result, int line ); // Instructs the program to quit gracefully if the result is not true
