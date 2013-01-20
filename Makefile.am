@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-EXTRA_DIST = jointtab scripts/hubo-ach
+EXTRA_DIST = joint.table scripts/hubo-ach
 
 init_ddir = $(sysconfdir)/init.d
 init_d_SCRIPTS = scripts/hubo-ach
@@ -21,9 +21,9 @@ noinst_HEADERS =                        \
 	include/hubo-ref-filter.h       \
 	include/hubo-jointparams.h
 
-huboachconfdir=$(sysconfdir)/hubo-ach
+huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = jointtab
+huboachconf_DATA = joint.table
 
 bin_PROGRAMS = hubo-daemon hubo-console hubo-loop hubo-read hubo-ref-filter
 

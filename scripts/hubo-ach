@@ -20,7 +20,7 @@ HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-init-cmd'
 
-DAEMON_DIR='/etc/hubo-daemon'
+DAEMON_DIR='/etc/hubo-ach'
 DAEMON_LOG='/var/log/hubo-daemon/'
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0

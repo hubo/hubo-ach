@@ -42,8 +42,10 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 
 	// open file for read access and if it fails, return -1
 	if (!(ptr_file=fopen(fileLocation, "r")))
+    {
+        fprintf(stderr, "Unable to locate %s\n -- Try reinstalling or reconfiguring!\n",fileLocation);
 		return -1;
-
+    }
 	// instantiate stucts for getting values from joint.table
 	// file and copying them to
 	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing

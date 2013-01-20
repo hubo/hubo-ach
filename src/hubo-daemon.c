@@ -1480,9 +1480,9 @@ void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inpu
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
                 struct can_frame *f, int send)
 {
-
     fGotoLimitAndGoOffset(jnt, h, f);
     sendCan( getSocket(h,jnt), f );
+    fprintf(stdout," -- Homing Joint #%d\n",jnt);
     r->ref[jnt] = 0;
     s->joint[jnt].zeroed = true;
 
@@ -1494,11 +1494,14 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 }
 
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+    fprintf(stdout, "Homing all joints!\n");
     int i = 0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
         if(s->joint[i].active == true) {
             hGotoLimitAndGoOffset(i, r, h, s, f, 0);
         }
+        else
+            fprintf(stdout, " -- Joint #%d is inactive!\n",i);
     }
     
     ach_put( &chan_hubo_ref, r, sizeof(*r) );
@@ -2436,11 +2439,9 @@ int main(int argc, char **argv) {
         }
         i++;
     }
-    fprintf(stdout, "How about this??\n"); fflush(stdout);
     // Daemonize
     hubo_daemonize();
     
-    fprintf(stdout, "See if this prints\n"); fflush(stdout);
 
     // Initialize Hubo Structs
     struct hubo_ref H_ref;

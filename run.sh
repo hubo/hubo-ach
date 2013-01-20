@@ -1,7 +1,23 @@
-#!/bin/bash
+#!/bin/sh
+
+### BEGIN INIT INFOR
+# Provides:             hubo-daemon control-daemon
+# Required-Start:       N/A
+# Required-Stop:        N/A
+# Should-Start:         N/A
+# Should-Stop:          N/A
+# Short-Description:    Startup for operating Hubo
+# Description:          Opens Ach channels, configures pcan
+#           settings, and turns on basic daemons for operating
+#           a Hubo2+ robot using peak-can cards based on
+#           socket can.
+
+
+
 
 # M.X. Grey ( mxgrey@gatech.edu )
-# Last updated: 11/11/2012
+# Last updated: 01/20/2013
+# Contact the author for support or questions regarding operation.
 
 HUBO_BITRATE=0x0014 # 1 Mbit/s
 #HUBO_BITRATE=0x001C #  500 kbit/s

@@ -97,6 +97,7 @@ void hubo_daemonize()
 		{
 			syslog( LOG_ERR, "Unable to create lock file %s, code=%d (%s)",
 				LOCKFILE, errno, strerror(errno) );
+            syslog( LOG_ERR, " -- Run the kill script and try again!");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -219,6 +220,7 @@ void hubo_daemonize()
 	{
 		syslog( LOG_ERR, "Unable to create log files, code=%d (%s)",
 			errno, strerror(errno) );
+        syslog( LOG_ERR, " -- Make sure /var/log/hubo-daemon directory exists!" );
 		exit(EXIT_FAILURE);
 	}
 
@@ -256,7 +258,6 @@ void hubo_daemonize()
 	stack_prefault();
 
 	syslog( LOG_NOTICE, "Daemonization finished - Process Beginning" );
-    fprintf(stdout, "Printing the daemonizer!\n"); fflush(stdout);
 }
 
 
