@@ -36,9 +36,7 @@ MakeAch()
 
 Kill()
 {
-	cd ..
 	sudo kill -9 $(pidof /usr/local/bin/hubo-*)
-	cd scripts
 }
 
 KillAll()
