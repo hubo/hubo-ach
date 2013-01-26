@@ -135,7 +135,7 @@ uint32_t getEncRef(int jnt, struct hubo_ref *r , struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, struct hubo_param *h);
-void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
+void hGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f);
 void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getSensorAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
@@ -406,9 +406,9 @@ void getEncAll(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) 
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		jmc = h->joint[i].jmc;
 		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
-			hGetEncValue(i, h, f);
-//			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-//			decodeFrame(s, h, f);
+			hGetEncValue(i,0x00, h, f);
+			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+			decodeFrame(s, h, f);
 			c[jmc] = 1;
 		}
 	}}
@@ -438,9 +438,16 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
 	for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
 		jmc = h->joint[i].jmc;
 		if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
-	    hGetEncValue(i, h, f);
+	    		hGetEncValue(i, 0x00, h, f);
 			readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
 			decodeFrame(s, h, f);
+			if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
+			   LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
+	    			hGetEncValue(i, 0x01, h, f);
+				readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+				decodeFrame(s, h, f);
+			}
+
 			c[jmc] = 1;
 		}
 	}}
@@ -778,17 +785,18 @@ void fSetPositionController(int jnt, struct hubo_ref *r, struct hubo_param *h, s
 	f->can_dlc = 3;
 }
 
-void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
+void fGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
 	f->can_id       = CMD_TXDF;     // Set ID
 	 __u8 data[3];
 	f->data[0]      = h->joint[jnt].jmc;
 	f->data[1]              = SendEncoder;
-	f->data[2]              = 0x00;
+	//f->data[2]              = 0x00;
+	f->data[2]              = encChoice;
 	f->can_dlc = 3; //= strlen( data );     // Set DLC
 }
 
-void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
-	fGetEncValue( jnt, h, f);
+void hGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
+	fGetEncValue( jnt, encChoice, h, f);
 	sendCan(hubo_socket[h->joint[jnt].can], f);
 }
 
@@ -1090,20 +1098,21 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 		else if( motNo == 5 & f->can_dlc == 6 ) {
 			for( i = 0; i < 3 ; i++ ) {
 				enc16 = 0;
-				enc16 = (enc << 8) + f->data[1 + i*4];
-				enc16 = (enc << 8) + f->data[0 + i*4];
+				enc16 = (enc16 << 8) + f->data[1 + i*2];
+				enc16 = (enc16 << 8) + f->data[0 + i*2];
 				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
-				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+//i				enc = 0x8000 & enc16;
+				s->joint[jnt].pos = enc2rad(jnt, enc16, h);
 			}
 		}
 
 		else if( motNo == 5 & f->can_dlc == 4 ) {
 			for( i = 0; i < 2; i++ ) {
 				enc16 = 0;
-				enc16 = (enc << 8) + f->data[1 + i*4];
-				enc16 = (enc << 8) + f->data[0 + i*4];
-				int jnt = h->driver[jmc].jmc[i];          // motor on the same drive
-				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+				enc16 = (enc << 8) + f->data[1 + i*2];
+				enc16 = (enc << 8) + f->data[0 + i*2];
+				int jnt = h->driver[jmc].jmc[i+3];          // motor on the same drive
+				s->joint[jnt].pos =  enc2rad(jnt,(int)enc16, h);
 			}
 		}
 

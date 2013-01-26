@@ -39,6 +39,11 @@ Kill()
 	sudo kill -9 $(pidof /usr/local/bin/hubo-*)
 }
 
+Read()
+{
+	sudo hubo-read
+}
+
 KillAll()
 {
 	StopHubo $2
@@ -498,6 +503,10 @@ case "$1" in
 		StopHubo $2
 	;;
 
+# Open read
+	'read' )
+		Read $2
+	;;
 # Kill all hubo processies
 	'killprocess' )
 		Kill
