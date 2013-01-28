@@ -7,35 +7,36 @@ init_ddir = $(sysconfdir)/init.d
 init_d_SCRIPTS = scripts/hubo-ach
 
 # installed under $prefix/include/
-include_HEADERS = include/hubo.h
+include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemon.h include/hubo-daemonID.h
 
 # installed under $prefix/include/hubo-ach/
-pkginclude_HEADERS = 	                \
+otherincludedir = $(includedir)/hubo
+otherinclude_HEADERS = 	                \
 	include/hubo/hubo-esdcan.h      \
 	include/hubo/hubo-socketcan.h   \
-	include/hubo/canID.h
+	include/hubo/canID.h            
 
 # not installed
-noinst_HEADERS =                        \
-	include/hubo-daemon.h           \
-	include/hubo-ref-filter.h       \
-	include/hubo-jointparams.h
 
 huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = joint.table
+huboachconf_DATA = tables/joint.table
 
-bin_PROGRAMS = hubo-daemon hubo-console hubo-loop hubo-read hubo-ref-filter
+bin_PROGRAMS = hubo-daemon hubo-console hubo-loop hubo-read
 
-hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-jointparams.c src/hubo-socketcan.c
-hubo_daemon_LDADD = -lm
+hubo_jointparamsdir = $(prefix)/lib
+hubo_jointparams_LTLIBRARIES = libhuboparams.la
+libhuboparams_la_SOURCES = src/hubo-jointparams.c
 
-hubo_console_SOURCES = src/hubo-jointparams.c src/hubo-console.cpp
-hubo_console_LDADD = -lreadline
+hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-socketcan.c
+hubo_daemon_LDADD = -lm libhuboparams.la
 
-hubo_loop_SOURCES = src/hubo-jointparams.c src/hubo-loop.c
-hubo_loop_LDADD = -lm
+hubo_console_SOURCES = src/hubo-console.cpp
+hubo_console_LDADD = -lreadline libhuboparams.la
 
-hubo_read_SOURCES = src/hubo-jointparams.c src/hubo-read.c
+hubo_loop_SOURCES = src/hubo-loop.c
+hubo_loop_LDADD = -lm libhuboparams.la
 
-hubo_ref_filter_SOURCES = src/hubo-jointparams.c src/hubo-ref-filter.c
+hubo_read_SOURCES = src/hubo-read.c
+hubo_read_LDADD = libhuboparams.la
+

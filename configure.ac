@@ -25,7 +25,7 @@ AC_CHECK_HEADERS([string.h sys/ioctl.h sys/socket.h])
 AC_C_INLINE
 
 # Checks for library functions.
-AC_CHECK_FUNCS([clock_gettime memset socket])
+AC_CHECK_FUNCS([clock_getTime memset socket])
 
 AC_CONFIG_FILES([ Makefile ])
 AC_OUTPUT
