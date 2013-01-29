@@ -1109,10 +1109,10 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 		else if( motNo == 5 & f->can_dlc == 4 ) {
 			for( i = 0; i < 2; i++ ) {
 				enc16 = 0;
-				enc16 = (enc << 8) + f->data[1 + i*2];
-				enc16 = (enc << 8) + f->data[0 + i*2];
+				enc16 = (enc16 << 8) + f->data[1 + i*2];
+				enc16 = (enc16 << 8) + f->data[0 + i*2];
 				int jnt = h->driver[jmc].jmc[i+3];          // motor on the same drive
-				s->joint[jnt].pos =  enc2rad(jnt,(int)enc16, h);
+				s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
 			}
 		}
 
