@@ -138,7 +138,8 @@ typedef enum {
 	HUBO_FT_L_FOOT    = 3, ///< Index of left foot FT
 	HUBO_IMU0	  = 4, ///< Index of IMU0
 	HUBO_IMU1	  = 5, ///< Index of IMU1
-	HUBO_IMU2	  = 6  ///< Index of IMU2
+	HUBO_IMU2	  = 6,  ///< Index of IMU2
+    SENSOR_INDEX_COUNT
 } hubo_sensor_index_t;
 
 
@@ -165,7 +166,6 @@ struct hubo_sensor_param {
 	uint16_t sensNo;	///< Sensor number
 	uint16_t can;		///< Can channel
 	uint8_t active;		///< Active sensor
-	uint16_t canID;		///< Can I.D. of the sensor
 	uint16_t boardNo;	///< Sensor Board Nuber
 };
 
@@ -220,18 +220,46 @@ struct hubo_joint_state {
 	uint8_t zeroed;		///< checks to see if the motor is zeroed
 }hubo_joint_state_t;
 
-struct hubo_board_msg {
-	hubo_d_msg_t type;		// Type of message. Enumerated in hubo-daemonID.h
-	int board;			// Board number which the message originates from
-	hubo_d_param_t param[8];	// Parameters for the command. Enumerated in hubo-daemonID.h
-	int values[8];			// Content of the message TODO: Figure out if 8 is sufficient
-}hubo_board_msg_t;
+struct hubo_joint_status {
+    // STATx0
+    uint8_t driverOn;
+    uint8_t ctrlOn;
+    uint8_t mode;
+    uint8_t limitSwitch;
+    uint8_t homeFlag;
+
+    // STATx1
+    uint8_t jam;
+    uint8_t pwmSaturated;
+    uint8_t bigError;
+    uint8_t encError;
+    uint8_t driverFault;
+    uint8_t motorFail0;
+    uint8_t motorFail1;
+    
+    // STATx2
+    uint8_t posMinError;
+    uint8_t posMaxError;
+    uint8_t velError;
+    uint8_t accError;
+    uint8_t tempError;
+};
 
 struct hubo_jmc_state {
 	double temp;	///< temperature (dec C)
 	// TODO: Add more things, such as whether an alarm is on
 	//	 or whether motor control / FETs are on
 }hubo_jmc_state_t;
+
+struct hubo_state {
+	struct hubo_imu imu[HUBO_IMU_COUNT];	///< IMU
+	struct hubo_ft ft[4];   ///< ft sensors
+	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
+    struct hubo_joint_status status[HUBO_JOINT_COUNT];
+	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
+    double time;
+	int refWait;
+}hubo_state_t;
 
 struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
@@ -240,15 +268,6 @@ struct hubo_ref {
 	int paused;
 	struct timespec time;           ///< time message sent
 }hubo_ref_t;
-
-struct hubo_state {
-	struct hubo_imu imu[HUBO_IMU_COUNT];	///< IMU
-	struct hubo_ft ft[4];   ///< ft sensors
-	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
-	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
-    double time;
-	int refWait;
-}hubo_state_t;
 
 struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive

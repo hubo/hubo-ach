@@ -31,7 +31,8 @@
 
 // Make sure that the daemon has the permissions it needs
 #define RUN_AS_USER "root"
-#define LOCKFILE "/var/lock/hubo-daemon"
+#define LOCKDIR  "/var/lock/hubo"
+#define LOCKFILE "/var/lock/hubo/hubo-daemon"
 
 // Priority
 #define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
@@ -88,6 +89,10 @@ void hubo_daemonize()
 	// Already a daemon:
 	if( getppid() == 1 ) return; // A value of 1 indicates that there is no parent process
 
+    // Make sure lock directory exists
+    struct stat st = {0};
+    if( stat(LOCKDIR, &st) == -1 )
+        mkdir(LOCKDIR, 0700);
 
 	// Create the lockfile
 	if( LOCKFILE && LOCKFILE[0] )
@@ -215,18 +220,18 @@ void hubo_daemonize()
 
 
 	// Create files for logging, in case they don't exist already
-    if(	!fopen( "/var/log/hubo-daemon/daemon-output", "w" ) ||
-        !fopen( "/var/log/hubo-daemon/daemon-error", "w" ) )
+    if(	!fopen( "/var/log/hubo/hubo-daemon-output", "w" ) ||
+        !fopen( "/var/log/hubo/hubo-daemon-error", "w" ) )
 	{
 		syslog( LOG_ERR, "Unable to create log files, code=%d (%s)",
 			errno, strerror(errno) );
-        syslog( LOG_ERR, " -- Make sure /var/log/hubo-daemon directory exists!" );
+        syslog( LOG_ERR, " -- Make sure /var/log/hubo/ directory exists!" );
 		exit(EXIT_FAILURE);
 	}
 
 	// Redirect standard files to /dev/hubo-daemon
-    if(	!freopen( "/var/log/hubo-daemon/daemon-output", "w", stdout ) ||
-        !freopen( "/var/log/hubo-daemon/daemon-error", "w", stderr ) )
+    if(	!freopen( "/var/log/hubo/hubo-daemon-output", "w", stdout ) ||
+        !freopen( "/var/log/hubo/hubo-daemon-error", "w", stderr ) )
 	{
 		syslog( LOG_ERR, "Unable to stream output, code=%d (%s)",
 			errno, strerror(errno) );

@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-EXTRA_DIST = joint.table scripts/hubo-ach
+EXTRA_DIST = joint.table sensor.table scripts/hubo-ach
 
 init_ddir = $(sysconfdir)/init.d
 init_d_SCRIPTS = scripts/hubo-ach
@@ -20,13 +20,14 @@ otherinclude_HEADERS = 	                \
 
 huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = tables/joint.table
-
-bin_PROGRAMS = hubo-daemon hubo-console hubo-loop hubo-read
+huboachconf_DATA = tables/joint.table tables/sensor.table
 
 hubo_jointparamsdir = $(prefix)/lib
 hubo_jointparams_LTLIBRARIES = libhuboparams.la
 libhuboparams_la_SOURCES = src/hubo-jointparams.c
+libhuboparams_la_LDFLAGS = -module -avoid-version -shared
+
+bin_PROGRAMS = hubo-daemon hubo-console hubo-loop hubo-read
 
 hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-socketcan.c
 hubo_daemon_LDADD = -lm libhuboparams.la

@@ -59,7 +59,8 @@
 #define ADOFFSET_BASE_RXDF		0x320
 #define OFFSET_BASE_RXDF		0x330
 
-#define STAT_BASE_RXDF			0x150
+#define H_STAT_BASE_RXDF		0x150
+#define H_STAT_MAX_RXDF         H_STAT_BASE_RXDF+HUBO_JMC_COUNT
 
 // For JMC0 sub-controller
 // Right Hip Yaw-Roll
@@ -444,7 +445,8 @@
 #define H_GET_PARAM_I		22
 
 
-
+// Error status stuff
+#define H_HOME_SUCCESS      0x06
 
 
 #endif

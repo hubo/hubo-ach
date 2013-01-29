@@ -23,27 +23,112 @@
 #include "config.h"
 
 //set number of parameters per joint in the parameters file
-#define	NUM_OF_PARAMETERS 13
+#define	NUM_OF_JOINT_PARAMETERS 13
+#define NUM_OF_SENSOR_PARAMETERS 4
 
 //set file location
-static char *fileLocation = "/etc/" PACKAGE_NAME "/joint.table";
+static char *jointFileLocation = "/etc/" PACKAGE_NAME "/joint.table";
+static char *sensorFileLocation = "/etc/" PACKAGE_NAME "/sensor.table";
 
-// ach channels
-ach_channel_t chan_hubo_ref;
-ach_channel_t chan_hubo_board_cmd;
+
+
+
+int setSensorDefaults( struct hubo_param *h ) {
+    
+	FILE *ptr_file;
+
+	// open file for read access and if it fails, return -1
+	if (!(ptr_file=fopen(sensorFileLocation, "r")))
+    {
+        fprintf(stderr, "Unable to locate %s\n -- Try reinstalling or reconfiguring!\n",sensorFileLocation);
+		return -1;
+    }
+	// instantiate stucts for getting values from joint.table
+	// file and copying them to
+	struct hubo_sensor_param tp;	//hubo_jubo_param struct for file parsing
+
+	// initialize all structs with zeros
+	memset(&tp,      0, sizeof(tp));
+
+
+    hubo_sensor_index_t index[] = { HUBO_FT_R_FOOT, HUBO_FT_L_FOOT, HUBO_FT_R_HAND, HUBO_FT_L_HAND, HUBO_IMU0, HUBO_IMU1, HUBO_IMU2 };
+
+    char *sensorNameStrings[] =
+            {"RFFT", "LFFT", "RHFT", "LHFT",
+             "IMU0", "IMU1", "IMU2" };
+
+	char *charPointer;
+	char buff[1024];
+    size_t sensorNameCount = 0;
+    size_t i;
+
+	// read in each non-commented line of the config file corresponding to each joint
+	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
+
+		// set first occurrence of comment character, '#' to the
+		// null character, '\0'.
+		charPointer = strchr(buff, '#');
+		if (NULL != charPointer) {
+			*charPointer = '\0';
+		}
+
+		// check if a line is longer than the buffer, 'buff', and return -1 if so.
+		if ( strlen(buff) == sizeof(buff)-1 ) {
+			fprintf(stderr, "Hubo-Parser: Line length overflow in sensor.table");
+			return -1; // parsing failed
+		}
+
+		// read in the buffered line from fgets, matching the following pattern
+		// to get all the parameters for the joint on this line.
+		if (NUM_OF_SENSOR_PARAMETERS == sscanf(buff, "%s%hu%hhu%hu",
+			tp.name,
+			&tp.can,
+			&tp.active,
+			&tp.boardNo	) ) // check that all values are found
+		{
+
+			// check to make sure jointName is valid
+			size_t x;
+			for (x = 0; x < sizeof(sensorNameStrings)/sizeof(sensorNameStrings[0]); x++) {
+				if (0 == strcmp(tp.name, sensorNameStrings[x])) {
+					i = index[x];
+					sensorNameCount = 1;
+					break;
+				}
+			}
+
+			// if joint name is invalid print error and return -1
+			if (sensorNameCount != 1) {
+				fprintf(stderr, "joint name '%s' is incorrect\n", tp.name);
+				return -1; // parsing failed
+			}
+
+			tp.sensNo = i;		// define i to be the sensor number
+
+			// copy contents (all member values) of tp into H_param.joint 
+			// substruct which will populate its member variables
+			memcpy(&(h->sensor[i]), &tp, sizeof(tp));
+		}
+	}
+
+	fclose(ptr_file);	// close file stream
+
+	return 0;	// return without errors
+}
+
 
 
 int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
-//	if(strcmp(envVar, fileLocation) != 0) exit(EXIT_FAILURE);
+//	if(strcmp(envVar, jointFileLocation) != 0) exit(EXIT_FAILURE);
 
 	FILE *ptr_file;
 
 	// open file for read access and if it fails, return -1
-	if (!(ptr_file=fopen(fileLocation, "r")))
+	if (!(ptr_file=fopen(jointFileLocation, "r")))
     {
-        fprintf(stderr, "Unable to locate %s\n -- Try reinstalling or reconfiguring!\n",fileLocation);
+        fprintf(stderr, "Unable to locate %s\n -- Try reinstalling or reconfiguring!\n",jointFileLocation);
 		return -1;
     }
 	// instantiate stucts for getting values from joint.table
@@ -115,13 +200,13 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 
 		// check if a line is longer than the buffer, 'buff', and return -1 if so.
 		if ( strlen(buff) == sizeof(buff)-1 ) {
-			fprintf(stderr, "Hubo-Parser: Line length overflow");
+			fprintf(stderr, "Hubo-Parser: Line length overflow in joint.table");
 			return -1; // parsing failed
 		}
 
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (13 == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu",
+		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu",
 			tp.name,
 			&tp.motNo,
 			&tp.refEnc,
@@ -187,39 +272,3 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
 	return 0;	// return without errors
 }
 
-void setPosZeros() {
-	// open ach channel
-//        int r = ach_open(&chan_num, "hubo", NULL);
-//        assert( ACH_OK == r );
-
-	// open hubo reference
-	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-	assert( ACH_OK == r );
-
-	struct hubo_ref H_ref;
-	memset( &H_ref,   0, sizeof(H_ref));
-	size_t fs = 0;
-
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(H_ref) == fs );
-
-	size_t i;
-	for( i = 0; i < HUBO_JOINT_COUNT; i++) {
-		H_ref.ref[i] = 0.0;
-	}
-	ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
-}
-
-void setConsoleFlags() {
-	// initilize control channel
-    int r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-    assert( ACH_OK == r );
-
-    struct hubo_board_cmd C;
-    memset( &C,   0, sizeof(C));
-
-    size_t fs =0;
-    r = ach_get( &chan_hubo_board_cmd, &C, sizeof(C), &fs, NULL, ACH_O_LAST );
-    assert( sizeof(C) == fs );
-    r = ach_put(&chan_hubo_board_cmd, &C, sizeof(C));
-}

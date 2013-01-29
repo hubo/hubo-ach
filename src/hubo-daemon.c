@@ -106,7 +106,9 @@ void fResetEncoderToZero(int jnt, struct hubo_param *h, struct can_frame *f);
 void fGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void hSetBeep(int jnt, struct hubo_param *h, struct can_frame *f, double beepTime);
 void fSetBeep(int jnt, struct hubo_param *h, struct can_frame *f, double beepTime);
-void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f);
+void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_param *h, struct can_frame *f);
+void hGetBoardStatus(int jnt, struct hubo_param *h, struct can_frame *f);
+void getBoardStatusAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void fInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 void fEnableMotorDriver(int jnt, struct hubo_param *h, struct can_frame *f);
 void fDisableMotorDriver(int jnt, struct hubo_param *h, struct can_frame *f);
@@ -250,6 +252,8 @@ ach_channel_t chan_hubo_state;    // hubo-ach-state
 double hubo_noRefTimeAll = 0.0;
 int slowLoop  = 0;
 int slowLoopi = 0;
+
+
 void huboLoop(struct hubo_param *H_param) {
     int i = 0;  // iterator
     // get initial values for hubo
@@ -313,7 +317,7 @@ void huboLoop(struct hubo_param *H_param) {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         /* Get latest ACH message */
-        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         if(ACH_OK != r) {
                 if(debug) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
@@ -328,6 +332,7 @@ void huboLoop(struct hubo_param *H_param) {
             H_state.refWait = 0;
         }
         else{
+            getBoardStatusAllSlow( &H_state, H_param, &frame);
             hubo_noRefTimeAll = hubo_noRefTimeAll - T;
             H_state.refWait = 1;
         }
@@ -493,6 +498,31 @@ void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame 
     }
 }
 
+
+void getBoardStatusAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
+{
+    ///> Requests all encoder and records to hubo_state
+    char c[HUBO_JMC_COUNT];
+    memset( &c, 0, sizeof(c) );
+    int jmc = 0;
+    int i = 0;
+    int canChan = 0;
+    for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++)
+    {
+        for( i = 0; i < HUBO_JOINT_COUNT; i++ )
+        {
+            jmc = h->joint[i].jmc;
+            if((0 == c[jmc]) && (canChan == h->joint[i].can)) 
+            {
+                hGetBoardStatus(i, h, f);
+                readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+                decodeFrame(s, h, f);
+                c[jmc] = 1;
+            }
+        }
+    }
+}
+
 void hGetFT(int board, struct can_frame *f, int can)
 {
     fGetFT(board,f);
@@ -630,6 +660,7 @@ void fSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
     f->can_id     = REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
     uint16_t jmc = h->joint[jnt].jmc;
     if(h->joint[jnt].numMot <= 2) {
+        
         int m0 = h->driver[jmc].joints[0];
         int m1;
         
@@ -650,6 +681,8 @@ void fSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
         f->data[5] =     int_to_bytes(pos1,3);
 
         f->can_dlc = 6; //= strlen( data );    // Set DLC
+
+
     }
 	else if(h->joint[jnt].numMot == 5) { // Fingers
 
@@ -1042,13 +1075,19 @@ void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> mak
     f->can_dlc = 3; //= strlen( data );     // Set DLC
 }
 
-void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_ref *r, struct hubo_param *h, struct can_frame *f)
+void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_param *h, struct can_frame *f)
 {
     f->can_id    = CMD_TXDF;
     f->data[0]    = h->joint[jnt].jmc;
     f->data[1]    = H_GET_STATUS;
-    f->data[2]    = H_BLANK;
     f->can_dlc    = 3;
+}
+
+
+void hGetBoardStatus(int jnt, struct hubo_param *h, struct can_frame *f)
+{
+    fGetBoardStatusAndErrorFlags( jnt, h, f );
+    sendCan(getSocket(h,jnt), f);
 }
 
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the motor current in amps (10mA resolution)
@@ -1484,7 +1523,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
     sendCan( getSocket(h,jnt), f );
     fprintf(stdout," -- Homing Joint #%d\n",jnt);
     r->ref[jnt] = 0;
-    s->joint[jnt].zeroed = true;
+    s->joint[jnt].zeroed = 2; ///< 2 means it needs confirmation
 
     hubo_noRefTimeAll = hubo_home_noRef_delay;
 
@@ -1534,8 +1573,38 @@ void hInitializeBoardAll( struct hubo_param *h, struct hubo_state *s, struct can
 }
 
 void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
-    fSetEncRef(jnt, s, h, f);
-    sendCan(getSocket(h,jnt), f);
+
+    int check = h->joint[jnt].numMot;
+    uint16_t jmc = h->joint[jnt].jmc;
+    if(h->joint[jnt].numMot <= 2)
+    {    
+        int i;
+        for(i=0; i<h->joint[jnt].numMot; i++)
+        {
+            int j = h->driver[jmc].joints[i];
+            if( s->joint[j].zeroed==2)
+            {
+                if( s->status[j].homeFlag==H_HOME_SUCCESS && s->status[j].bigError==0 )
+                {
+                    s->joint[j].zeroed=1;
+                }
+                else
+                {
+                    s->joint[j].zeroed=0;
+                    fprintf(stdout, "Joint number %d was not homed correctly!\n", j );
+                }
+            }
+
+            if( s->joint[j].zeroed==1 )
+                check--;
+        }
+    }
+
+    if( check==0 )
+    {
+        fSetEncRef(jnt, s, h, f);
+        sendCan(getSocket(h,jnt), f);
+    }
 }
 
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
@@ -1623,7 +1692,7 @@ void fDisableFeedbackController(int jnt, struct hubo_param *h, struct can_frame 
 void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
     fResetEncoderToZero(jnt, h, f);
     sendCan(getSocket(h,jnt), f);
-    s->joint[jnt].zeroed == true;        // need to add a can read back to confirm it was zeroed
+    s->joint[jnt].zeroed == 2;        // need to add a can read back to confirm it was zeroed
 }
 
 void fResetEncoderToZero(int jnt, struct hubo_param *h, struct can_frame *f) {
@@ -2417,6 +2486,44 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
         }
     
     }
+    else if( (fs >= H_STAT_BASE_RXDF) && (fs < H_STAT_MAX_RXDF) )
+    {
+        int jmc = fs - H_STAT_BASE_RXDF;
+        int i = 0;
+        int jnt0 = h->driver[jmc].joints[0];    // First joint
+        int numMot = h->joint[jnt0].numMot;     // Number of motors
+
+        if( numMot <= 2 )
+        {
+            int j=0;
+            for(j=0; j<numMot; j++)
+            {
+                jnt0 = h->driver[jmc].joints[j];    // First joint
+                s->status[jnt0].driverOn    = (f->data[4*j+0])      & 0x01;
+                s->status[jnt0].ctrlOn      = (f->data[4*j+0]>>1)   & 0x01;
+                s->status[jnt0].mode        = (f->data[4*j+0]>>2)   & 0x01;
+                s->status[jnt0].limitSwitch = (f->data[4*j+0]>>3)   & 0x01;
+                s->status[jnt0].homeFlag    = (f->data[4*j+0]>>4)   & 0x0F;
+
+                s->status[jnt0].jam         = (f->data[4*j+1])      & 0x01;
+                s->status[jnt0].pwmSaturated= (f->data[4*j+1]>>1)   & 0x01;
+                s->status[jnt0].bigError    = (f->data[4*j+1]>>2)   & 0x01;
+                s->status[jnt0].encError    = (f->data[4*j+1]>>3)   & 0x01;
+                s->status[jnt0].driverFault = (f->data[4*j+1]>>4)   & 0x01;
+                s->status[jnt0].motorFail0  = (f->data[4*j+1]>>5)   & 0x01;
+                s->status[jnt0].motorFail1  = (f->data[4*j+1]>>6)   & 0x01;
+
+                s->status[jnt0].posMinError = (f->data[4*j+2])      & 0x01;
+                s->status[jnt0].posMaxError = (f->data[4*j+2]>>1)   & 0x01;
+                s->status[jnt0].velError    = (f->data[4*j+2]>>2)   & 0x01;
+                s->status[jnt0].accError    = (f->data[4*j+2]>>3)   & 0x01;
+                s->status[jnt0].tempError   = (f->data[4*j+2]>>4)   & 0x01;
+            }
+
+        }
+        // TODO: Implement for 3 and 5 channel boards
+        
+    } 
     
     return 0;
 }
@@ -2455,6 +2562,7 @@ int main(int argc, char **argv) {
 
     // set joint parameters for Hubo
     setJointParams(&H_param, &H_state);
+    setSensorDefaults(&H_param);
 
     // open hubo reference
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
