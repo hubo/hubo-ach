@@ -123,9 +123,10 @@ void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
 void hFeedbackControllerOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
-    struct can_frame *f, int send);
+void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
+        struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
+    struct hubo_state *s, struct can_frame *f, int send);
 int getEncRef(int jnt, struct hubo_state *s, struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
@@ -145,7 +146,8 @@ void hGetIMU(int board, struct can_frame *f);
 void getIMUAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
+    struct hubo_state *s, struct can_frame *f);
 void hInitializeBoardAll(struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void fNullAccFTSensor(int bno, int nullType, struct can_frame *f);
 void hNullFTSensor(hubo_d_param_t board, struct hubo_param *h, struct can_frame *f);
@@ -164,7 +166,6 @@ void hNullAllSensors( struct hubo_param *h, struct can_frame *f );
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
 uint8_t getFingerInt(double n);
 
-void hSetEncRef2(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_state *s, struct hubo_ref *f);
 
 /*   ~~~~   Added by M.X. Grey. Auxiliary CAN functions   ~~~~   */
@@ -338,7 +339,7 @@ void huboLoop(struct hubo_param *H_param) {
         }
 
         /* read hubo console */
-        huboMessage(&H_ref, H_param, &H_state, &H_cmd, &frame);
+        huboMessage(&H_ref, &H_ref_filter, H_param, &H_state, &H_cmd, &frame);
 
         /* Get all Encoder data */
         getEncAllSlow(&H_state, H_param, &frame); 
@@ -465,7 +466,6 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 				else {
 					hSetEncRef(i, s, h, f);
 					c[jmc] = 1;
-//					if(i == RHY){ printf(".%d %d %d %d",jmc,h->joint[RHY].can, canChan, c[jmc]); }
 				}
 			}
 		}
@@ -665,7 +665,7 @@ void fSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
         int m1;
         
         unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
-        f->data[0] =    int_to_bytes(pos0,1);
+        f->data[0] =     int_to_bytes(pos0,1);
         f->data[1] =     int_to_bytes(pos0,2);
         f->data[2] =     int_to_bytes(pos0,3);
 
@@ -676,7 +676,7 @@ void fSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
 
         unsigned long pos1 = signConvention((int)getEncRef(m1, s, h));
 
-        f->data[3] =    int_to_bytes(pos1,1);
+        f->data[3] =     int_to_bytes(pos1,1);
         f->data[4] =     int_to_bytes(pos1,2);
         f->data[5] =     int_to_bytes(pos1,3);
 
@@ -1516,13 +1516,15 @@ void fSetErrorBound(int jnt, struct hubo_param *h, struct can_frame *f, int inpu
 
 
 
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
-                struct can_frame *f, int send)
+void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
+        struct hubo_state *s, struct can_frame *f, int send)
 {
     fGotoLimitAndGoOffset(jnt, h, f);
     sendCan( getSocket(h,jnt), f );
     fprintf(stdout," -- Homing Joint #%d\n",jnt);
-    r->ref[jnt] = 0;
+    r->ref[jnt] = 0.0;
+    r_filt->ref[jnt] = 0.0;
+    s->joint[jnt].ref = 0.0;
     s->joint[jnt].zeroed = 2; ///< 2 means it needs confirmation
 
     hubo_noRefTimeAll = hubo_home_noRef_delay;
@@ -1532,12 +1534,12 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_param *h, st
 
 }
 
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
     fprintf(stdout, "Homing all joints!\n");
     int i = 0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
         if(s->joint[i].active == true) {
-            hGotoLimitAndGoOffset(i, r, h, s, f, 0);
+            hGotoLimitAndGoOffset(i, r, r_filt, h, s, f, 0);
         }
         else
             fprintf(stdout, " -- Joint #%d is inactive!\n",i);
@@ -2107,7 +2109,8 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struc
 }
 
 
-void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f)
+void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
+                struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f)
 {
 
     size_t fs;
@@ -2141,10 +2144,10 @@ void huboMessage(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s,
                     hSetBeep( c->joint, h, f, c->dValues[0] );
                     break;
                 case D_GOTO_HOME_ALL:
-                    hGotoLimitAndGoOffsetAll( r, h, s, f );
+                    hGotoLimitAndGoOffsetAll( r, r_filt, h, s, f );
                     break;
                 case D_GOTO_HOME:
-                    hGotoLimitAndGoOffset( c->joint, r, h, s, f, 1 );
+                    hGotoLimitAndGoOffset( c->joint, r, r_filt, h, s, f, 1 );
                     break;
                 case D_JMC_ALARM:
                     hSetAlarm( c->joint, h, f, c->param[0] );

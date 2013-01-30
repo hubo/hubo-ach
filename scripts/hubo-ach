@@ -21,7 +21,9 @@ HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-init-cmd'
 
 DAEMON_DIR='/etc/hubo-ach'
-DAEMON_LOG='/var/log/hubo-daemon/'
+DAEMON_LOG_DIR='/var/log/hubo'
+LOCK_DIR='/var/lock/hubo'
+
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
