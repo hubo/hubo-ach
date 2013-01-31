@@ -18,7 +18,7 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
-HUBO_INIT_CMD='hubo-init-cmd'
+HUBO_INIT_CMD='hubo-board-cmd'
 
 DAEMON_DIR='/etc/hubo-ach'
 DAEMON_LOG_DIR='/var/log/hubo'
