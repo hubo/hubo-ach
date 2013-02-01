@@ -1,8 +1,6 @@
 /* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 #ifndef HUBO_PRIMARY_H
 #define HUBO_PRIMARY_H
-#include "hubo/canID.h"
-#include "hubo-daemonID.h"
 
 
 //888888888888888888888888888888888888888888
