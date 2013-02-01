@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([hubo-ach], [0.0.0], [dml46@drexel.edu])
+AC_INIT([hubo-ach], [0.0.0], [dan@danlofaro.com])
 AM_INIT_AUTOMAKE([-Wall])
-AC_CONFIG_SRCDIR([include/hubo.h])
+AC_CONFIG_SRCDIR([include/*.h,include/hubo/*.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
