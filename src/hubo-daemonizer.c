@@ -1,4 +1,3 @@
-/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 /*
 
 	THIS IS A DAEMONIZATION UTILITY SPECIFICALLY FOR HUBO.
@@ -32,12 +31,13 @@
 
 // Make sure that the daemon has the permissions it needs
 #define RUN_AS_USER "root"
-#define LOCKFILE "/var/lock/hubo-daemon"
+#define LOCKDIR  "/var/lock/hubo"
+#define LOCKFILE "/var/lock/hubo/hubo-daemon"
 
 // Priority
 #define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
-			    as the priority of kernel tasklets
-			    and interrupt handler by default */
+                            as the priority of kernel tasklets
+                            and interrupt handler by default */
 
 
 
@@ -74,7 +74,7 @@ static void fork_sig_handler(int signum)
 
 void hubo_daemonize()
 {
-	syslog( LOG_NOTICE, "Starting daemonization" );
+    syslog( LOG_NOTICE, "Starting daemonization for CAN" );
 
 
 	// Initialize signal variables
@@ -89,6 +89,10 @@ void hubo_daemonize()
 	// Already a daemon:
 	if( getppid() == 1 ) return; // A value of 1 indicates that there is no parent process
 
+    // Make sure lock directory exists
+    struct stat st = {0};
+    if( stat(LOCKDIR, &st) == -1 )
+        mkdir(LOCKDIR, 0700);
 
 	// Create the lockfile
 	if( LOCKFILE && LOCKFILE[0] )
@@ -98,11 +102,12 @@ void hubo_daemonize()
 		{
 			syslog( LOG_ERR, "Unable to create lock file %s, code=%d (%s)",
 				LOCKFILE, errno, strerror(errno) );
+            syslog( LOG_ERR, " -- Run the kill script and try again!");
 			exit(EXIT_FAILURE);
 		}
 	}
-
-
+	
+	
 	// Drop the user if there is one
 	if( getuid()==0 || geteuid()==0 )
 	{
@@ -114,7 +119,7 @@ void hubo_daemonize()
 		}
 	}
 
-
+	
 	// Redirect the expected signals
 	signal( SIGCHLD, hubo_sig_handler );
 //	signal( SIGUSR1, hubo_sig_handler );
@@ -131,7 +136,7 @@ void hubo_daemonize()
 	// First fork
 	child = fork();
 
-	// Quit if a child process could not be made
+	// Quit if a child process could not be made	
 	if( child<0 )
 	{
 		syslog( LOG_ERR, "Unable to fork daemon, code=%d (%s)",
@@ -146,15 +151,15 @@ void hubo_daemonize()
 		// or forcibly quit after 2 seconds elapse
 		alarm(2);
 		pause();
-
+	
 		exit( EXIT_FAILURE );
 	}
-
+	
 	// If child == 0, then we are in the child process
-
+	
 	//Second fork
 	pid = fork(); // pid will now represent the final process ID of the daemon
-
+	
 	// Quit if the final process could not be made
 	if( pid<0 )
 	{
@@ -168,17 +173,17 @@ void hubo_daemonize()
 		// Kill the useless parent
 		parent = getppid();
 		kill( parent, SIGUSR1 );
-
+		
 		// Wait for confirmation from the daemon
 		// or forcibly quit after 2 seconds elapse
 		alarm(2);
 		pause();
 
-		exit( EXIT_FAILURE );
+		exit( EXIT_FAILURE );	
 	}
 
-	// If pid == 0, then we are in the final process
-
+	// If pid == 0, then we are in the final process	
+	
 	// Now we execute as the final process
 	parent = getppid();
 
@@ -190,8 +195,8 @@ void hubo_daemonize()
 	signal( SIGTTIN, SIG_IGN ); // Trying to read from terminal
 	signal( SIGHUP,  SIG_IGN ); // Hangup signal
 
-	signal( SIGUSR1, hubo_sig_handler ); // Return SIGUSR1 to the standard sig handler
-
+	signal( SIGUSR1, hubo_sig_handler ); // Return SIGUSR1 to the standard sig handler	
+	
 	// Change file mode mask
 	umask(0);
 
@@ -204,28 +209,29 @@ void hubo_daemonize()
 		exit(EXIT_FAILURE);
 	}
 
-
-	// Change the current working directory to prevent the currect directory from being locked
+	
+        // Change the current working directory to prevent the current directory from being locked
 	if( (chdir("/")) < 0 )
 	{
-		syslog( LOG_ERR, "Unable to change directory to %s, code=%d (%s)",
-			"/etc/hubo-daemon", errno, strerror(errno) );
+        syslog( LOG_ERR, "Unable to change directory, code=%d (%s)",
+                errno, strerror(errno) );
 		exit(EXIT_FAILURE);
 	}
 
 
 	// Create files for logging, in case they don't exist already
-	if(	!fopen( "/etc/hubo-daemon/daemon-output", "w" ) ||
-		!fopen( "/etc/hubo-daemon/daemon-error", "w" ) )
+    if(	!fopen( "/var/log/hubo/hubo-daemon-output", "w" ) ||
+        !fopen( "/var/log/hubo/hubo-daemon-error", "w" ) )
 	{
 		syslog( LOG_ERR, "Unable to create log files, code=%d (%s)",
 			errno, strerror(errno) );
+        syslog( LOG_ERR, " -- Make sure /var/log/hubo/ directory exists!" );
 		exit(EXIT_FAILURE);
 	}
 
 	// Redirect standard files to /dev/hubo-daemon
-	if(	!freopen( "/etc/hubo-daemon/daemon-output", "w", stdout ) ||
-		!freopen( "/etc/hubo-daemon/daemon-error", "w", stderr ) )
+    if(	!freopen( "/var/log/hubo/hubo-daemon-output", "w", stdout ) ||
+        !freopen( "/var/log/hubo/hubo-daemon-error", "w", stderr ) )
 	{
 		syslog( LOG_ERR, "Unable to stream output, code=%d (%s)",
 			errno, strerror(errno) );
@@ -256,8 +262,7 @@ void hubo_daemonize()
 	// Pre-fault our stack
 	stack_prefault();
 
-	syslog( LOG_NOTICE, "Daemonization finished" );
-
+	syslog( LOG_NOTICE, "Daemonization finished - Process Beginning" );
 }
 
 
@@ -273,17 +278,17 @@ void hubo_daemon_close()
 }
 
 
-void stack_prefault(void) {
-	unsigned char dummy[MAX_SAFE_STACK];
-	memset( dummy, 0, MAX_SAFE_STACK );
+void stack_prefault(void) { 
+        unsigned char dummy[MAX_SAFE_STACK]; 
+        memset( dummy, 0, MAX_SAFE_STACK ); 
 }
 
 
-void hubo_assert( int result )
+void hubo_assert( int result, int line )
 {
 	if(!result)
 	{
-		fprintf(stderr, "Assertion failed. code=%d (%s)\n", errno, strerror(errno));
+		fprintf(stderr, "Assertion failed on line %d: code=%d (%s)\n", line, errno, strerror(errno));
 		hubo_daemon_close();
 		exit(EXIT_FAILURE);
 	}

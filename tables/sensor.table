@@ -1,0 +1,15 @@
+# Table for sensor parameters
+
+
+#Name   CAN     active      BoardNumber
+RFFT    0       1           1
+LFFT    0       1           2
+RHFT    1       1           6
+LHFT    1       1           7
+IMU0    0       1           3
+IMU1    0       0           4
+IMU2    0       0           5
+
+
+
+

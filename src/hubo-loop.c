@@ -35,6 +35,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <linux/can/raw.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 // for timer
 #include <time.h>
@@ -48,6 +49,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // for hubo
 #include "hubo.h"
+#include "hubo-jointparams.h"
 
 // for ach
 #include <errno.h>
@@ -77,12 +79,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Priority
 #define MY_PRIORITY (49)/* we use 49 as the PRREMPT_RT use 50
-			    as the priority of kernel tasklets
-			    and interrupt handler by default */
+                            as the priority of kernel tasklets
+                            and interrupt handler by default */
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
-				   guaranteed safe to access without
-				   faulting */
+                                   guaranteed safe to access without
+                                   faulting */
 
 
 // Timing info
@@ -106,12 +108,7 @@ void huboLoop(struct hubo_param *h);
 int ftime(struct timeb *tp);
 
 
-
-
-
-
-
-
+int debug = 0;
 
 
 // ach message type
@@ -119,34 +116,32 @@ int ftime(struct timeb *tp);
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
-ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
+ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
-ach_channel_t chan_hubo_param;    // hubo-ach-param
-
-int debug = 0;
-int hubo_debug = 0;
 
 void huboLoop(struct hubo_param *H_param) {
-	// get initial values for hubo
-	struct hubo_ref H_ref;
+    // get initial values for hubo
+    struct hubo_ref H_ref;
 	struct hubo_state H_state;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
 
-	size_t fs;
-	//int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
-	//assert( sizeof(H) == fs );
+	int debug = 1;
+
+    size_t fs;
+    //int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
+    //assert( sizeof(H) == fs );
 	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
-		if(hubo_debug) {
-			printf("Ref ini r = %s\n",ach_result_to_string(r));}
+		if(debug) {
+           	printf("Ref ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{   assert( sizeof(H_ref) == fs ); }
 
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
-		if(hubo_debug) {
-			printf("State ini r = %s\n",ach_result_to_string(r));}
+		if(debug) {
+           	printf("State ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{
 		assert( sizeof(H_state) == fs );
@@ -175,14 +170,14 @@ void huboLoop(struct hubo_param *H_param) {
 		/* Get latest ACH message */
 		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
-				printf("Ref r = %s\n",ach_result_to_string(r));}
+			if(debug) {
+                        	printf("Ref r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_ref) == fs ); }
 		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
-				printf("State r = %s\n",ach_result_to_string(r));}
+			if(debug) {
+            	printf("State r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
@@ -238,10 +233,10 @@ int main(int argc, char **argv) {
 
 	int vflag = 0;
 	int c;
+    debug = 0;
 
-
-	char* ach_chan = HUBO_CHAN_REF_FILTER_NAME;
-	int i = 1;
+    int i = 1;
+    char* ach_chan = HUBO_CHAN_REF_FILTER_NAME;
 	while(argc > i) {
 		if(strcmp(argv[i], "-d") == 0) {
 			debug = 1;
@@ -280,24 +275,23 @@ int main(int argc, char **argv) {
 	assert( ACH_OK == r );
 
 
-        // get initial values for hubo
-        struct hubo_ref H_ref;
-        struct hubo_init_cmd H_init;
-        struct hubo_state H_state;
-        struct hubo_param H_param;
-        memset( &H_ref,   0, sizeof(H_ref));
-        memset( &H_init,  0, sizeof(H_init));
-        memset( &H_state, 0, sizeof(H_state));
-        memset( &H_param, 0, sizeof(H_param));
+    // get initial values for hubo
+    struct hubo_ref H_ref;
+    struct hubo_board_cmd H_cmd;
+    struct hubo_state H_state;
+    struct hubo_param H_param;
+    memset( &H_ref,   0, sizeof(H_ref));
+    memset( &H_cmd,  0, sizeof(H_cmd));
+    memset( &H_state, 0, sizeof(H_state));
+    memset( &H_param, 0, sizeof(H_param));
 
-        usleep(250000);
+    usleep(250000);
 
-        // set default values for Hubo
-        setJointParams(&H_param, &H_state);
-
-        huboLoop(&H_param);
-
-	pause();
-	return 0;
+    // set default values for Hubo
+    setJointParams(&H_param, &H_state);
+      
+	huboLoop(&H_param);
+    pause();
+    return 0;
 
 }

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([hubo-ach], [0.0.0], [dan@danlofaro.com])
+AC_INIT([hubo-ach], [0.0.0], [dml46@drexel.edu])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_SRCDIR([include/hubo.h])
 AC_CONFIG_HEADERS([config.h])
@@ -13,6 +13,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LIBTOOL
+LT_INIT
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lach':
@@ -25,7 +26,7 @@ AC_CHECK_HEADERS([string.h sys/ioctl.h sys/socket.h])
 AC_C_INLINE
 
 # Checks for library functions.
-AC_CHECK_FUNCS([clock_gettime memset socket])
+AC_CHECK_FUNCS([clock_getTime memset socket])
 
 AC_CONFIG_FILES([ Makefile ])
 AC_OUTPUT

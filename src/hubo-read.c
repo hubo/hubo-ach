@@ -120,7 +120,6 @@ int ftime(struct timeb *tp);
 ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
-ach_channel_t chan_hubo_param;    // hubo-ach-param
 
 int debug = 0;
 int hubo_debug = 1;
@@ -152,7 +151,7 @@ void huboLoop() {
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {
 		if(hubo_debug) {
-			printf("State ini r = %s\n",ach_result_to_string(r));}
+           	printf("State ini r = %s\n",ach_result_to_string(r));}
 		}
 	else{
 		assert( sizeof(H_state) == fs );
@@ -193,16 +192,16 @@ void huboLoop() {
 		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
 		/* Get latest ACH message */
-		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+		r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
-				printf("Ref r = %s\n",ach_result_to_string(r));}
+			if(debug) {
+            	printf("Ref r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_ref) == fs ); }
-		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
+		r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 		if(ACH_OK != r) {
-			if(hubo_debug) {
-				printf("State r = %s\n",ach_result_to_string(r));}
+			if(debug) {
+            	printf("State r = %s\n",ach_result_to_string(r));}
 			}
 		else{   assert( sizeof(H_state) == fs ); }
 
@@ -211,7 +210,7 @@ void huboLoop() {
 		int jnt = 0;
 
 		clock_gettime( 0,&t2);
-		printf("t = %i.%09i\n",t2.tv_sec,t2.tv_nsec);
+		printf("t = %i.%09i\n",(int)t2.tv_sec,(int)t2.tv_nsec);
 		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 			jnt = i;
 			if(H_param.joint[jnt].name[0] != 0){
