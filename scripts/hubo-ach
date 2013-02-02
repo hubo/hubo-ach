@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Daniel M. Lofaro (dan@danlofaro.com)
 # M.X. Grey ( mxgrey@gatech.edu )
-# Last updated: 2013-01-31
+# Daniel M. Lofaro (dan@danlofaro.com)
+# Last updated: 2013-01-30
 
-export LD_LIBRARY_PATH=/usr/local/lib:
+export LD_LIBRARY_PATH=/usr/lib:
 
 
 HUBO_BITRATE=0x0014 # 1 Mbit/s
@@ -19,9 +19,12 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
-HUBO_INIT_CMD='hubo-init-cmd'
+HUBO_INIT_CMD='hubo-board-cmd'
 
-DAEMON_DIR='/etc/hubo-daemon'
+DAEMON_DIR='/etc/hubo-ach'
+DAEMON_LOG_DIR='/var/log/hubo'
+LOCK_DIR='/var/lock/hubo'
+
 
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -30,19 +33,13 @@ MakeAch()
 {
 
 	ach -1 -C hubo-ref -m 10 -n 3000
-	ach -1 -C hubo-ref-filter -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
-	ach -1 -C hubo-init-cmd -m 10 -n 3000
+	ach -1 -C hubo-board-cmd -m 10 -n 3000
 }
 
 Kill()
 {
-	sudo kill -9 $(pidof /usr/local/bin/hubo-*)
-}
-
-Read()
-{
-	sudo hubo-read
+	sudo kill -9 $(pidof hubo*)
 }
 
 KillAll()
@@ -303,11 +300,11 @@ LogHubo()
 		echo "_______________________________"
 		echo
 		echo "Hubo Output:"
-		cat $DAEMON_DIR/daemon-output
+		cat $DAEMON_LOG/daemon-output
 		echo "_______________________________"
 		echo
 		echo "Hubo Errors:"
-		cat $DAEMON_DIR/daemon-error
+		cat $DAEMON_LOG/daemon-error
 		echo
 	;;
 	esac
@@ -339,11 +336,11 @@ SaveLog()
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Output:" >> saved.log
-		cat $DAEMON_DIR/daemon-output >> saved.log
+		cat $DAEMON_LOG/daemon-output >> saved.log
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Errors:" >> saved.log
-		cat $DAEMON_DIR/daemon-error >> saved.log
+		cat $DAEMON_LOG/daemon-error >> saved.log
 	;;
 
 	*)
@@ -352,11 +349,11 @@ SaveLog()
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Output:" >> $1
-		cat $DAEMON_DIR/daemon-output >> $1
+		cat $DAEMON_LOG/daemon-output >> $1
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Errors:" >> $1
-		cat $DAEMON_DIR/daemon-error >> $1
+		cat $DAEMON_LOG/daemon-error >> $1
 	;;
 	esac
 }
@@ -504,10 +501,6 @@ case "$1" in
 		StopHubo $2
 	;;
 
-# Open read
-	'read' )
-		Read $2
-	;;
 # Kill all hubo processies
 	'killprocess' )
 		Kill

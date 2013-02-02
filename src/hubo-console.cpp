@@ -103,9 +103,9 @@ int main() {
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
 
-    // initialize control channel
-    r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-    assert( ACH_OK == r );
+       // initialize control channel
+       r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
+       assert( ACH_OK == r );
 
         // get initial values for hubo
         struct hubo_ref H_ref;
@@ -123,9 +123,9 @@ int main() {
 	setJointParams(&H_param, &H_state);
 
 	size_t fs;
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_state) == fs );
 
     char *buf;

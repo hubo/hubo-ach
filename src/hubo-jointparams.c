@@ -7,6 +7,9 @@
 
 // for hubo
 #include "hubo.h"
+#include "hubo/canID.h"
+#include "hubo-daemonID.h"
+#include "hubo-daemon.h"
 #include "hubo-jointparams.h"
 
 // for ach
