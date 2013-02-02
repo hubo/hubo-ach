@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # M.X. Grey ( mxgrey@gatech.edu )
-# Last updated: 11/11/2012
+# Daniel M. Lofaro (dan@danlofaro.com)
+# Last updated: 2013-01-30
 
-export LD_LIBRARY_PATH=/usr/local/lib:
+export LD_LIBRARY_PATH=/usr/lib:
 
 
 HUBO_BITRATE=0x0014 # 1 Mbit/s
@@ -32,16 +33,13 @@ MakeAch()
 {
 
 	ach -1 -C hubo-ref -m 10 -n 3000
-	ach -1 -C hubo-ref-filter -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
 }
 
 Kill()
 {
-	cd ..
 	sudo kill -9 $(pidof hubo*)
-	cd scripts
 }
 
 KillAll()
