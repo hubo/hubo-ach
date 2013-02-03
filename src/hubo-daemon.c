@@ -1588,7 +1588,7 @@ void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
             int j = h->driver[jmc].joints[i];
             if( s->joint[j].zeroed==2)
             {
-                if( s->status[j].homeFlag==H_HOME_SUCCESS && s->status[j].bigError==0 )
+                if( s->status[j].homeFlag==H_HOME_SUCCESS )//&& s->status[j].bigError==0 )
                 {
                     s->joint[j].zeroed=1;
                 }
