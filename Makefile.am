@@ -25,7 +25,8 @@ huboachconfdir=$(sysconfdir)/hubo-ach
 
 huboachconf_DATA = jointtab
 
-bin_PROGRAMS = hubo-daemon hubo-console hubo-loop hubo-read hubo-ref-filter
+bin_PROGRAMS = hubo-daemon hubo-console
+noinst_PROGRAMS =  hubo-loop hubo-read hubo-ref-filter
 
 hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-jointparams.c src/hubo-socketcan.c
 hubo_daemon_LDADD = -lm
