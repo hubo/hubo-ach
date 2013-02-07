@@ -1588,7 +1588,7 @@ void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
             int j = h->driver[jmc].joints[i];
             if( s->joint[j].zeroed==2)
             {
-                if( s->status[j].homeFlag==H_HOME_SUCCESS && s->status[j].bigError==0 )
+                if( s->status[j].homeFlag==H_HOME_SUCCESS) // && s->status[j].bigError==0 )
                 {
                     s->joint[j].zeroed=1;
                 }
@@ -2161,13 +2161,13 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
                     hSetAlarm( c->joint, h, f, c->param[0] );
                     break;
                 case D_SET_POS_GAIN:
-                    hSetPosGain( c, h, f );
+// Not tested DML 2013-02-07                    hSetPosGain( c, h, f );
                     break;
                 case D_SET_CUR_GAIN:
-                    hSetCurGain( c, h, f );
+// Not tested DML 2013-02-07                    hSetCurGain( c, h, f );
                     break;
                 case D_OPENLOOP_PWM:
-                    hOpenLoopPWM( c, h, f );
+// Not tested DML 2013-02-07                    hOpenLoopPWM( c, h, f );
                     break;
                 case D_CTRL_ON_OFF:
                     if(true == s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
@@ -2184,41 +2184,41 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
                     hFeedbackControllerOnOff( c->joint, r, s, h, f, D_DISABLE);
                     break;
                 case D_CTRL_MODE:
-                    hSetControlMode( c->joint, h, s, f, c->param[0] );
+// Not tested DML 2013-02-07                    hSetControlMode( c->joint, h, s, f, c->param[0] );
                     break;
                 case D_SET_DEAD_ZONE:
-                    hSetDeadZone( c->joint, h, f, c->iValues[0] );
+// Not tested DML 2013-02-07                    hSetDeadZone( c->joint, h, f, c->iValues[0] );
                     break;
                 case D_SET_HOME_PARAMS:
-                    hSetHomeSearchParams( c, h, f );
+// Not tested DML 2013-02-07                    hSetHomeSearchParams( c, h, f );
                     break;
                 case D_SET_ENC_RESOLUTION:
-                    hSetEncoderResolution( c, h, f );
+// Not tested DML 2013-02-07                    hSetEncoderResolution( c, h, f );
                     break;
                 case D_SET_MAX_ACC_VEL:
-                    hSetMaxAccVel( c->joint, h, f, c->iValues[0], c->iValues[1] );
+// Not tested DML 2013-02-07                    hSetMaxAccVel( c->joint, h, f, c->iValues[0], c->iValues[1] );
                     break;
                 case D_SET_LOW_POS_LIM:
-                    hSetLowerPosLimit( c, h, f );
+// Not tested DML 2013-02-07                    hSetLowerPosLimit( c, h, f );
                     break;
                 case D_SET_UPP_POS_LIM:
-                    hSetUpperPosLimit( c, h, f );
+// Not tested DML 2013-02-07                    hSetUpperPosLimit( c, h, f );
                     break;
                 case D_SET_HOME_VEL_ACC:
-                    hSetHomeAccVel( c, h, f);
+// Not tested DML 2013-02-07                    hSetHomeAccVel( c, h, f);
                     break;
                 case D_SET_GAIN_SCALE:
-                    hSetGainOverride(c->joint, h, f, c->iValues[0],
-                            c->iValues[1], c->dValues[0]); break;
+// Not tested DML 2013-02-07                    hSetGainOverride(c->joint, h, f, c->iValues[0],
+// Not tested DML 2013-02-07                            c->iValues[1], c->dValues[0]); break;
                 case D_SET_BOARD_NUM:
-                    hSetBoardNumber(c->joint, h, f, c->iValues[0], c->iValues[1]);
-                    break;
+// Not tested DML 2013-02-07 - This should NOT be used when multiple controllers are connected                    hSetBoardNumber(c->joint, h, f, c->iValues[0], c->iValues[1]);
+// Not tested DML 2013-02-07                    break;
                 case D_SET_JAM_SAT_LIMIT:
-                    hSetJamPwmLimits( c, h, f );
+// Not tested DML 2013-02-07                    hSetJamPwmLimits( c, h, f );
                     break;
                 case D_SET_ERR_BOUND:
-                    hSetErrorBound( c->joint, h, f, c->iValues[0], c->iValues[1],
-                            c->iValues[2] ); break;
+// Not tested DML 2013-02-07                    hSetErrorBound( c->joint, h, f, c->iValues[0], c->iValues[1],
+// Not tested DML 2013-02-07                            c->iValues[2] ); break;
                 case D_NULL_SENSOR:
                     hNullSensor( c->param[0], h, f );
                     break;

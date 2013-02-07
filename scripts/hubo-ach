@@ -39,7 +39,10 @@ MakeAch()
 
 Kill()
 {
-	sudo kill -9 $(pidof hubo*)
+#	sudo kill -9 $(pidof hubo*)
+	sudo kill -9 $(pidof hubo-daemon)
+	sudo kill -9 $(pidof hubo-read)
+	sudo kill -9 $(pidof hubo-console)
 }
 
 KillAll()
