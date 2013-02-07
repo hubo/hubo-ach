@@ -85,7 +85,7 @@ void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 int name2sensor(char* name, struct hubo_param *h);
 double hubo_set(char*s, struct hubo_param *p);
-char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors",
+char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 
 
