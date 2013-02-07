@@ -123,7 +123,7 @@ void hSetEncRefAll(struct hubo_ref *r, struct hubo_param *h, struct can_frame *f
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
-void hFeedbackControllerOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
+void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
         struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
@@ -1660,13 +1660,19 @@ void fDisableMotorDriver(int jnt, struct hubo_param *h,  struct can_frame *f) {
     f->can_dlc    = 3;
 }
 
-void hFeedbackControllerOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff) {
-    if(onOff == D_ENABLE) { // turn on 
+void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff) {
+    if(onOff == D_ENABLE) { // ctrl on FET
+        r->ref[jnt] = s->joint[jnt].pos; 
+        r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
+        ach_put( &chan_hubo_ref, r, sizeof(*r));
         fEnableFeedbackController(jnt, h, f);
-        sendCan(getSocket(h,jnt), f); }
-    else if(onOff == D_DISABLE) { // turn off FET
+        sendCan(hubo_socket[h->joint[jnt].can], f); }
+    else if(onOff == D_DISABLE) { // turn ctrol off
+        r->mode[jnt] = HUBO_REF_MODE_COMPLIANT;
+        ach_put( &chan_hubo_ref, r, sizeof(*r));
         fDisableFeedbackController(jnt, h, f);
-        sendCan(getSocket(h,jnt), f); }
+        sendCan(hubo_socket[h->joint[jnt].can], f); }
+
     else
         fprintf(stderr, "Controller Switch Error: Invalid param[0] (%d)\n\t"
                     "Must be D_ENABLE (%d) or D_DISABLE (%d)", onOff,
@@ -2117,7 +2123,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
 
     size_t fs;
     int status = 0;
-
+    int i = 0;
     while ( status == 0 | status == ACH_OK | status == ACH_MISSED_FRAME ) {
     
         status = ach_get( &chan_hubo_board_cmd, c, sizeof(*c), &fs, NULL, 0 );
@@ -2137,7 +2143,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
                     hMotorDriverOnOff( c->joint, h, f, c->param[0] );
                     break;
                 case D_CTRL_SWITCH:
-                    hFeedbackControllerOnOff( c->joint, h, f, c->param[0] );
+                    hFeedbackControllerOnOff( c->joint, r, s, h, f, c->param[0] );
                     break;
                 case D_ZERO_ENCODER:
                     hResetEncoderToZero( c->joint, h, s, f );
@@ -2163,11 +2169,19 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
                 case D_OPENLOOP_PWM:
                     hOpenLoopPWM( c, h, f );
                     break;
+                case D_CTRL_ON_OFF:
+                    if(true == s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    break;
+                case D_CTRL_ON_OFF_ALL:
+                   for(i = 0; i < HUBO_JOINT_COUNT; i++) {
+                       if(true == s->joint[i].active & true == s->joint[i].zeroed ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       }
+                   break;
                 case D_CTRL_ON:
-                    hFeedbackControllerOnOff( c->joint, h, f, D_ENABLE);
+                    hFeedbackControllerOnOff( c->joint, r, s, h, f, D_ENABLE);
                     break;
                 case D_CTRL_OFF:
-                    hFeedbackControllerOnOff( c->joint, h, f, D_DISABLE);
+                    hFeedbackControllerOnOff( c->joint, r, s, h, f, D_DISABLE);
                     break;
                 case D_CTRL_MODE:
                     hSetControlMode( c->joint, h, s, f, c->param[0] );

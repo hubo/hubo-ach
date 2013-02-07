@@ -24,6 +24,7 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #include <stdio.h>
 #include <stdlib.h>
 #include <readline/readline.h>
@@ -84,8 +85,8 @@ void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 int name2sensor(char* name, struct hubo_param *h);
 double hubo_set(char*s, struct hubo_param *p);
-char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
-                "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
+char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors",
+                "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
 
 
 int main() {
@@ -179,6 +180,46 @@ int main() {
             tsleep = 5;
             
         }
+
+	else if (strcmp(buf0,"ctrl")==0) {
+		int hOnOff = atof(getArg(buf,2));
+		if(hOnOff == 0 | hOnOff == 1) {
+			H_cmd.type = D_CTRL_ON_OFF;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if( hOnOff == 1)
+			    H_cmd.param[0] = D_ENABLE;         // 1 = on
+			if( hOnOff == 0)
+			    H_cmd.param[0] = D_DISABLE;         // 0 = off
+                        if( hOnOff == 1 | hOnOff == 0 )
+                            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if( hOnOff == 0) {
+				printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+			else {
+				printf("%s - Turning On CTRL\n",getArg(buf,1));}
+		}
+
+	}
+
+	else if (strcmp(buf0,"ctrlAll")==0) {
+		int hOnOff = atof(getArg(buf,1));
+		if( hOnOff == 0 | hOnOff == 1) {
+			H_cmd.type = D_CTRL_ON_OFF_ALL;
+			if( hOnOff == 1)
+			    H_cmd.param[0] = D_ENABLE;         // 1 = on
+			if( hOnOff == 2)
+			    H_cmd.param[0] = D_DISABLE;         // 0 = off
+                        if( hOnOff == 1 | hOnOff == 0 )
+                            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if( hOnOff == 0) {
+				printf("Turning Off ALL CTRL\n");}
+			else {
+				printf("Turning On ALL CTRL\n");}
+		}
+
+	}
+
+
+
         else if (strcmp(buf0,"reset")==0) {
             hubo_enc_reset(&H_param, &H_cmd, buf);
             printf("%s - Resetting Encoder \n",getArg(buf,1));
@@ -248,7 +289,7 @@ int main() {
             }
             ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
         }
-        else if (strcmp(buf0,"zeracc")==0) {
+        else if (strcmp(buf0,"zeroacc")==0) {
             int ft = name2sensor(getArg(buf,1), &H_param);
             H_cmd.type = D_NULL_SENSOR;
             switch(ft){

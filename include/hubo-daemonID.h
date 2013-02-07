@@ -171,7 +171,10 @@ typedef enum {
 		Only for 5  channel boards  >		[3] = Percent PWM Duty for channel 3
 		Only for 5  channel boards  >		[4] = Percent PWM Duty for channel 4
 					dValues: N/A	*/	
-
+        D_CTRL_ON_OFF           ,///>turn on and off control to motor XXX.  If Y = 0 then Off, if Y = 1 then On 
+                                /* Note: must home joint first*/
+        D_CTRL_ON_OFF_ALL       ,///>turn on and off control to all motors. If Y = 0 then Off, if Y = 1 then On 
+                                /*Note: must home joint first.*/
 	D_CTRL_ON		,///> Turn motor control on
 			/*		joint: Any joint number on the board
 	// Note: This is redundant	param: N/A
