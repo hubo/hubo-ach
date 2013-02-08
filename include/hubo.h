@@ -174,7 +174,7 @@ struct hubo_ft {
 };
 
 struct hubo_joint_state {
-    double ref;         ///< Last reference value sent
+        double ref;         ///< Last reference value sent
 	double pos;     	///< actual position (rad)
 	double cur;     	///< actual current (amps)
 	double vel;     	///< actual velocity (rad/sec)

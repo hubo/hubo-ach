@@ -94,7 +94,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define slowLoopSplit   5		// slow loop is X times slower then
 
-#define hubo_home_noRef_delay 6.0	// delay before trajectories can be sent while homeing in sec
+#define hubo_home_noRef_delay 3.0	// delay before trajectories can be sent while homeing in sec
 
 
 /* functions */
@@ -109,7 +109,7 @@ void fGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f);
 void hSetBeep(int jnt, struct hubo_param *h, struct can_frame *f, double beepTime);
 void fSetBeep(int jnt, struct hubo_param *h, struct can_frame *f, double beepTime);
 void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_param *h, struct can_frame *f);
-void hGetBoardStatus(int jnt, struct hubo_param *h, struct can_frame *f);
+void hGetBoardStatus(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getBoardStatusAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void fInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 void fEnableMotorDriver(int jnt, struct hubo_param *h, struct can_frame *f);
@@ -124,7 +124,7 @@ void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, str
 void huboLoop(struct hubo_param *H_param);
 void hMotorDriverOnOff(int jnt, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
 void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff);
-void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
+void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f);
 void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
         struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h,
@@ -226,7 +226,8 @@ void fGetBoardParamH( int jnt, struct hubo_param *h, struct can_frame *f );
 void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f );
 
-
+int isError( int jnt, struct hubo_state *s);
+uint8_t isHands(int jnt);
 uint8_t getJMC( struct hubo_param *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; }
 uint8_t getCAN( struct hubo_param *h, int jnt ) { return h->joint[jnt].can; }
 hubo_can_t getSocket( struct hubo_param *h, int jnt ) { return hubo_socket[h->joint[jnt].can]; }
@@ -400,21 +401,23 @@ void refFilterMode(struct hubo_ref *r, int L, struct hubo_param *h, struct hubo_
     double e = 0.0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
         int c = r->mode[i];
-        switch (c) {
-            case 0: // slow ref to ref no encoder
-                f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
-                break;
-            case 1: // sets reference directly
-               f->ref[i] = r->ref[i];
-               break;
-            case 2: // compliant mode
-               f->ref[i] = s->joint[i].pos;
-               break;
-            case 3: // sets filter reference encoder feedback
-                //f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
-                e = f->ref[i] - s->joint[i].pos;
-                f->ref[i] = (s->joint[i].pos * ((double)L-1.0) + r->ref[i]) / ((double)L);
-                break;
+      switch (c) {
+        case HUBO_REF_MODE_REF: // sets reference directly
+          f->ref[i] = r->ref[i];
+          break;
+        case HUBO_REF_MODE_COMPLIANT: // complient mode
+          f->ref[i] = s->joint[i].pos;
+          break;
+        case HUBO_REF_MODE_REF_FILTER: // slow ref to ref no encoder
+          f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          break;
+        case HUBO_REF_MODE_ENC_FILTER: // sets filter reference encoder feedback
+          //f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          e = f->ref[i] - s->joint[i].pos;
+          f->ref[i] = (s->joint[i].pos * ((double)L-1.0) + r->ref[i]) / ((double)L);
+          
+          break;
+
             default:
                 fprintf(stderr, "Unsupported filter mode for joint #%d\n", i);
                 break;
@@ -522,7 +525,7 @@ void getBoardStatusAllSlow(struct hubo_state *s, struct hubo_param *h, struct ca
             jmc = h->joint[i].jmc;
             if((0 == c[jmc]) && (canChan == h->joint[i].can)) 
             {
-                hGetBoardStatus(i, h, f);
+                hGetBoardStatus(i, s, h, f);
                 readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
                 decodeFrame(s, h, f);
                 c[jmc] = 1;
@@ -1092,10 +1095,12 @@ void fGetBoardStatusAndErrorFlags(int jnt, struct hubo_param *h, struct can_fram
 }
 
 
-void hGetBoardStatus(int jnt, struct hubo_param *h, struct can_frame *f)
+void hGetBoardStatus(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
 {
     fGetBoardStatusAndErrorFlags( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
+    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    decodeFrame(s, h, f);
 }
 
 void hGetCurrentValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the motor current in amps (10mA resolution)
@@ -1611,8 +1616,8 @@ void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
     }
 
 //    if( check==0 | jnt == RF1 | jnt == LF1 )
-      if( jnt != RF2 & jnt != RF3 & jnt != RF3 & jnt != RF4 & jnt !=RF5 &
-          jnt != LF2 & jnt != LF3 & jnt != LF3 & jnt != LF4 & jnt !=LF5) 
+      if( jnt != RF2 & jnt != RF3 & jnt != RF4 & jnt !=RF5 &
+          jnt != LF2 & jnt != LF3 & jnt != LF4 & jnt !=LF5) 
       {
         fSetEncRef(jnt, s, h, f);
         sendCan(getSocket(h,jnt), f);
@@ -1669,12 +1674,24 @@ void fDisableMotorDriver(int jnt, struct hubo_param *h,  struct can_frame *f) {
 }
 
 void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, struct hubo_param *h, struct can_frame *f, hubo_d_param_t onOff) {
+
+if(isHands(jnt) == 0) {
     if(onOff == D_ENABLE) { // ctrl on FET
+
+
         r->ref[jnt] = s->joint[jnt].pos; 
+        s->joint[jnt].ref = s->joint[jnt].pos;
         r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
         ach_put( &chan_hubo_ref, r, sizeof(*r));
+
+        /* set new position reference */
+//        hSetEncRef(jnt, s, h, f);
+//        fSetEncRef(jnt, s, h, f);
+//        sendCan(getSocket(h,jnt), f);
         fEnableFeedbackController(jnt, h, f);
-        sendCan(hubo_socket[h->joint[jnt].can], f); }
+        sendCan(hubo_socket[h->joint[jnt].can], f); 
+//        hubo_noRefTimeAll = 0.01;
+        }
     else if(onOff == D_DISABLE) { // turn ctrol off
         r->mode[jnt] = HUBO_REF_MODE_COMPLIANT;
         ach_put( &chan_hubo_ref, r, sizeof(*r));
@@ -1685,6 +1702,7 @@ void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s,
         fprintf(stderr, "Controller Switch Error: Invalid param[0] (%d)\n\t"
                     "Must be D_ENABLE (%d) or D_DISABLE (%d)", onOff,
                     D_ENABLE, D_DISABLE);
+}
 }
 
 void fEnableFeedbackController(int jnt, struct hubo_param *h, struct can_frame *f)
@@ -1707,10 +1725,22 @@ void fDisableFeedbackController(int jnt, struct hubo_param *h, struct can_frame 
     f->can_dlc    = 2;
 }
 
-void hResetEncoderToZero(int jnt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
-    fResetEncoderToZero(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
-    s->joint[jnt].zeroed == 2;        // need to add a can read back to confirm it was zeroed
+void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
+    /* Get Board Status */
+    hGetBoardStatus(jnt, s, h, f);
+    if( 1 == isError(jnt, s)){
+        fResetEncoderToZero(jnt, h, f);
+
+        /* Set New Ref to Zero */
+        r->ref[jnt] = 0.0;
+        s->joint[jnt].ref = 0.0;
+//    s->joint[jnt].pos = 0;
+        ach_put( &chan_hubo_ref, r, sizeof(*r) );
+//    ach_put( &chan_hubo_ref, r, sizeof(*r) );
+
+        sendCan(getSocket(h,jnt), f);
+        s->joint[jnt].zeroed == 2;        // need to add a can read back to confirm it was zeroed
+    }
 }
 
 void fResetEncoderToZero(int jnt, struct hubo_param *h, struct can_frame *f) {
@@ -2154,7 +2184,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
                     hFeedbackControllerOnOff( c->joint, r, s, h, f, c->param[0] );
                     break;
                 case D_ZERO_ENCODER:
-                    hResetEncoderToZero( c->joint, h, s, f );
+                    hResetEncoderToZero( c->joint, r, h, s, f );
                     break;
                 case D_JMC_BEEP:
                     hSetBeep( c->joint, h, f, c->dValues[0] );
@@ -2556,6 +2586,24 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
     return 0;
 }
 
+int isError( int jnt, struct hubo_state *s) {
+    int v = 0;
+    struct hubo_joint_status e = s->status[jnt];
+    v = e.jam + 
+        e.pwmSaturated + 
+        e.bigError + 
+        e.encError + 
+        e.driverFault + 
+        e.posMinError +
+        e.posMaxError +
+        e.velError + 
+        e.accError +
+        e.tempError;
+    
+    if( v > 0 ) return 1;
+    else return 0;
+
+}
 
 int main(int argc, char **argv) {
 
@@ -2626,3 +2674,13 @@ uint8_t duty_to_byte(int dir, int duty)
 {
     return (uint8_t)(duty | (dir<<8) );
 }
+
+uint8_t isHands(int jnt)
+{
+    if( (jnt == RF1) | (jnt == RF2) | (jnt == RF3) | (jnt == RF4) | (jnt == RF5) |
+        (jnt == LF1) | (jnt == LF2) | (jnt == LF3) | (jnt == LF4) | (jnt == LF5) )     
+        return 1;
+    else
+        return 0;
+}
+

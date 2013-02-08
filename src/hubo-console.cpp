@@ -81,12 +81,13 @@ void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
-void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, int jnt);
 void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 int name2sensor(char* name, struct hubo_param *h);
 double hubo_set(char*s, struct hubo_param *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
-                "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
+                "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
+                "resetAll"}; //,
 
 
 int main() {
@@ -218,10 +219,17 @@ int main() {
 
 	}
 
-
+        else if (strcmp(buf0,"resetAll")==0) {
+            for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
+                hubo_enc_reset(&H_param, &H_cmd, i);
+                printf("%s - Resetting Encoder \n", &H_param.joint[i].name);
+                usleep(10*1000);
+            }
+	}
 
         else if (strcmp(buf0,"reset")==0) {
-            hubo_enc_reset(&H_param, &H_cmd, buf);
+            int jnt = name2mot(getArg(buf, 1), &H_param); 
+            hubo_enc_reset(&H_param, &H_cmd, jnt);
             printf("%s - Resetting Encoder \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"startup")==0) {
@@ -353,9 +361,10 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
-void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
+void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, int jnt) {
         c->type = D_ZERO_ENCODER;
-        c->joint = name2mot(getArg(buff, 1), h);
+//        c->joint = name2mot(getArg(buff, 1), h);
+        c->joint = jnt;
         int r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 }
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
