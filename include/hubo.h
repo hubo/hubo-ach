@@ -26,46 +26,6 @@
 //-----[Static Definitions and Offsets]-----
 //888888888888888888888888888888888888888888
 
-
-/* Tx Message ID */
-
-// Motor Command Message ID
-#define txMoCmdId		0x01
-
-// Sensor Command Message ID
-#define txSeCmdId		0x02
-
-// Reference Message ID 	(txReMsID + BNO)
-#define txReMesId		0x10
-
-
-
-/* Rx Message ID */
-
-// FT sensor data Message ID 		(rxFtMsgId + SBNO)
-#define rxFtMsgId		0x40
-
-// IMU and Tilt Sensor data Message ID 	(rxImuMsgId + SBNO)
-#define rxImuMsgId		0x50
-
-// Encoder Value Message ID 		(rxEncValId + BNO)
-#define rxEncValId 		0x60
-
-// Status Message ID 			(rxStaMsgId + BNO)
-#define rxStaMsgId		0x150
-
-// Board Information Message ID 	(rxBrdInfoId + BNO + BOFF)
-#define rxBrdInfoId		0x190
-
-// Board para and Current Message ID 	(rxBrdCurMsgId + BNO)
-#define rxBrdCurMsgId 		0x1C0
-
-// BNO = Board number
-// SBNO = sensor board number SBNO=BNO-0x2F
-// BOFF=0 	for BNO < 0x30
-// BOFF=0x80 	for BNO >= 0x30
-
-
 /* Joint Numbers/Index values */
 #define		RHY		26		//	Right Hip Yaw
 #define		RHR		27		//	Right Hip Roll
@@ -125,7 +85,8 @@
 #define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
-#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
+//#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
+#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 
 
@@ -214,7 +175,7 @@ struct hubo_ft {
 };
 
 struct hubo_joint_state {
-    double ref;         ///< Last reference value sent
+        double ref;         ///< Last reference value sent
 	double pos;     	///< actual position (rad)
 	double cur;     	///< actual current (amps)
 	double vel;     	///< actual velocity (rad/sec)

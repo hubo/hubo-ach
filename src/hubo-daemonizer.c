@@ -74,6 +74,7 @@ static void fork_sig_handler(int signum)
 
 void hubo_daemonize()
 {
+printf("1 . ");
     syslog( LOG_NOTICE, "Starting daemonization for CAN" );
 
 
@@ -90,6 +91,7 @@ void hubo_daemonize()
 	if( getppid() == 1 ) return; // A value of 1 indicates that there is no parent process
 
     // Make sure lock directory exists
+printf("1 . ");
     struct stat st = {0};
     if( stat(LOCKDIR, &st) == -1 )
         mkdir(LOCKDIR, 0700);
@@ -109,6 +111,7 @@ void hubo_daemonize()
 	
 	
 	// Drop the user if there is one
+printf("2 . ");
 	if( getuid()==0 || geteuid()==0 )
 	{
 		struct passwd *pw = getpwnam(RUN_AS_USER);
@@ -131,12 +134,14 @@ void hubo_daemonize()
 
 
 	//Specific to the fork
+printf("3 . ");
 	signal( SIGUSR1, fork_sig_handler );
 
 	// First fork
 	child = fork();
 
 	// Quit if a child process could not be made	
+printf("4 . ");
 	if( child<0 )
 	{
 		syslog( LOG_ERR, "Unable to fork daemon, code=%d (%s)",
@@ -145,6 +150,7 @@ void hubo_daemonize()
 	}
 
 	// Quit if we get a good Process ID
+printf("5 . ");
 	if( child>0 )
 	{
 		// Wait for confirmation from the child
@@ -161,6 +167,7 @@ void hubo_daemonize()
 	pid = fork(); // pid will now represent the final process ID of the daemon
 	
 	// Quit if the final process could not be made
+printf("6 . ");
 	if( pid<0 )
 	{
 		syslog( LOG_ERR, "Unable to fork daemon, code=%d (%s)",
@@ -168,6 +175,7 @@ void hubo_daemonize()
 		exit( EXIT_FAILURE );
 	}
 
+printf("7 . ");
 	if( pid>0 )
 	{
 		// Kill the useless parent
@@ -201,7 +209,9 @@ void hubo_daemonize()
 	umask(0);
 
 	// Create a new Session ID for the child process
+printf("8 . ");
 	sid = setsid();
+printf("9 . ");
 	if( sid<0 )
 	{
 		syslog( LOG_ERR, "Unable to create a new session, code=%d (%s)",
@@ -211,6 +221,7 @@ void hubo_daemonize()
 
 	
         // Change the current working directory to prevent the current directory from being locked
+printf("10 . ");
 	if( (chdir("/")) < 0 )
 	{
         syslog( LOG_ERR, "Unable to change directory, code=%d (%s)",
@@ -220,8 +231,9 @@ void hubo_daemonize()
 
 
 	// Create files for logging, in case they don't exist already
-    if(	!fopen( "/var/log/hubo/hubo-daemon-output", "w" ) ||
-        !fopen( "/var/log/hubo/hubo-daemon-error", "w" ) )
+printf("11 . ");
+    if(	!fopen( "/var/log/hubo/daemon-output", "w" ) ||
+        !fopen( "/var/log/hubo/daemon-error", "w" ) )
 	{
 		syslog( LOG_ERR, "Unable to create log files, code=%d (%s)",
 			errno, strerror(errno) );
@@ -230,8 +242,9 @@ void hubo_daemonize()
 	}
 
 	// Redirect standard files to /dev/hubo-daemon
-    if(	!freopen( "/var/log/hubo/hubo-daemon-output", "w", stdout ) ||
-        !freopen( "/var/log/hubo/hubo-daemon-error", "w", stderr ) )
+printf("12 . ");
+    if(	!freopen( "/var/log/hubo/daemon-output", "w", stdout ) ||
+        !freopen( "/var/log/hubo/daemon-error", "w", stderr ) )
 	{
 		syslog( LOG_ERR, "Unable to stream output, code=%d (%s)",
 			errno, strerror(errno) );
@@ -240,6 +253,7 @@ void hubo_daemonize()
 
 
 	// Tell parent process that everything is okay
+printf("13 . ");
 	kill( parent, SIGUSR1 );
 
 	// RT
@@ -262,6 +276,7 @@ void hubo_daemonize()
 	// Pre-fault our stack
 	stack_prefault();
 
+printf("14 . \n");
 	syslog( LOG_NOTICE, "Daemonization finished - Process Beginning" );
 }
 
