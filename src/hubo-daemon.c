@@ -226,6 +226,7 @@ void fGetBoardParamH( int jnt, struct hubo_param *h, struct can_frame *f );
 void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f );
 
+void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 int isError( int jnt, struct hubo_state *s);
 uint8_t isHands(int jnt);
 uint8_t getJMC( struct hubo_param *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; }
@@ -256,7 +257,7 @@ ach_channel_t chan_hubo_state;    // hubo-ach-state
 double hubo_noRefTimeAll = 0.0;
 int slowLoop  = 0;
 int slowLoopi = 0;
-
+int statusJnt = 0;
 
 void huboLoop(struct hubo_param *H_param) {
     int i = 0;  // iterator
@@ -357,6 +358,9 @@ void huboLoop(struct hubo_param *H_param) {
         /* Get IMU data */
         getIMUAllSlow(&H_state, H_param, &frame);
 
+        /* Update next joint status (one each loop) */
+        getStatusItterate( &H_state, &H_param, &frame);
+
         /* Get all Current data */
 //        getCurrentAllSlow(&H_state, &H_param, &frame);
 
@@ -375,6 +379,14 @@ void huboLoop(struct hubo_param *H_param) {
         fflush(stderr);
     }
 
+}
+
+void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+    if(1 == s->joint[statusJnt].active ) {
+        hGetBoardStatus(statusJnt, s, h, f);
+    }
+    statusJnt = statusJnt + 1;
+    if(statusJnt >= HUBO_JOINT_COUNT-40) statusJnt = 0;
 }
 
 
@@ -2171,6 +2183,9 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
         
             switch (c->type)
             {
+                case D_GET_STATUS:
+                     hGetBoardStatus(c->joint, s, h, f);
+                     break;
                 case D_JMC_INITIALIZE_ALL:
                     hInitializeBoardAll( h, s, f );
                     break;

@@ -23,7 +23,8 @@ typedef enum {
 	D_BLANK			= 0,	///> Null value
 
 
-
+        D_GET_STATUS            ,///> Updates the status for given motor driver
+			/*		joint: Any joint number on the board */
 	D_SENSOR_STARTUP	,///> Starts up and nulls all sensor values
 			/*		joint: Any joint number on the board
 					param: N/A

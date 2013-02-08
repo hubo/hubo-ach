@@ -87,7 +87,7 @@ int name2sensor(char* name, struct hubo_param *h);
 double hubo_set(char*s, struct hubo_param *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
-                "resetAll"}; //,
+                "resetAll","status"}; //,
 
 
 int main() {
@@ -219,6 +219,26 @@ int main() {
 
 	}
 
+        else if (strcmp(buf0,"status")==0) {
+            H_cmd.type = D_GET_STATUS;
+            H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+            printf("%s - Getting Status \n", &H_param.joint[H_cmd.joint].name);
+            usleep(50*1000);
+            hubo_update(&H_ref, &H_state);
+            struct hubo_joint_status e = H_state.status[H_cmd.joint];
+            printf("Jam          : %d \n", e.jam);
+            printf("PWM Saturated: %d \n", e.pwmSaturated);
+            printf("Big Error    : %d \n", e.bigError);
+            printf("Enc Error    : %d \n", e.encError);
+            printf("Drive Fault  : %d \n", e.driverFault);
+            printf("Pos Err (min): %d \n", e.posMinError);
+            printf("Pos Err (max): %d \n", e.posMaxError);
+            printf("Velos Error  : %d \n", e.velError);
+            printf("Acc Error    : %d \n", e.accError);
+            printf("Temp Error   : %d \n", e.tempError);
+            printf("Active       : %d \n", H_state.joint[H_cmd.joint].active);
+      	}
         else if (strcmp(buf0,"resetAll")==0) {
             for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
                 hubo_enc_reset(&H_param, &H_cmd, i);
