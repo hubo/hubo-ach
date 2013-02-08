@@ -266,7 +266,7 @@ KillHubo()
 		sudo killall -e -s SIGKILL hubo-daemon
 
 		# This forcibly unlocks hubo-daemon
-		sudo rm /var/lock/hubo-daemon
+		sudo rm /var/lock/hubo/hubo-daemon
 	;;
 	esac
 }
