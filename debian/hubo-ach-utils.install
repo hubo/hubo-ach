@@ -1,0 +1,3 @@
+usr/bin/hubo-daemon
+usr/bin/hubo-console
+etc/hubo-ach/jointtab

@@ -33,3 +33,11 @@ hubo-ach-*.tar.gz
 /hubo-daemon
 /hubo-read
 /hubo-ref-filter
+/debian/tmp
+/debian/hubo-ach-utils
+/debian/hubo-ach-dev
+/debian/hubo-ach-dev.debhelper.log
+/debian/hubo-ach-dev.substvars
+/debian/hubo-ach-utils.debhelper.log
+/debian/hubo-ach-utils.substvars
+/debian/files
