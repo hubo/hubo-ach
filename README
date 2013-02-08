@@ -11,9 +11,20 @@ Run Hubo-Ach
 	$ hubo-ach start
 (3) To stop hubo-ach daemon 
 	$ hubo-ach stop
+(4) To kill all hubo-ach basic processes
+        $ hubo-ach killall
 
 Install ACH
 ===========
+First-time install,
+If you have a PEAK CAN Card installed the script below will install 
+Hubo-Ach and all of it's dependencies for you automatically 
+
+Just run: 
+        $ ./first-time-install-hubo-ach.sh
+
+Or:
+
 
 (1) Add this line to /etc/apt/sources.list:
 

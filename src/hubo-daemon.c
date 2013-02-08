@@ -226,6 +226,7 @@ void fGetBoardParamH( int jnt, struct hubo_param *h, struct can_frame *f );
 void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f );
 
+void clearCanBuff(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 int isError( int jnt, struct hubo_state *s);
 uint8_t isHands(int jnt);
@@ -258,6 +259,9 @@ double hubo_noRefTimeAll = 0.0;
 int slowLoop  = 0;
 int slowLoopi = 0;
 int statusJnt = 0;
+int statusJntItt = 5;
+int statusJnti = 0;
+int readBuffi = 3;
 
 void huboLoop(struct hubo_param *H_param) {
     int i = 0;  // iterator
@@ -359,7 +363,11 @@ void huboLoop(struct hubo_param *H_param) {
         getIMUAllSlow(&H_state, H_param, &frame);
 
         /* Update next joint status (one each loop) */
-        getStatusItterate( &H_state, &H_param, &frame);
+//        getStatusItterate( &H_state, &H_param, &frame);
+
+        /* Read any aditional data left on the buffer */
+        clearCanBuff(&H_state, &H_param, &frame);
+
 
         /* Get all Current data */
 //        getCurrentAllSlow(&H_state, &H_param, &frame);
@@ -381,12 +389,31 @@ void huboLoop(struct hubo_param *H_param) {
 
 }
 
-void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
-    if(1 == s->joint[statusJnt].active ) {
-        hGetBoardStatus(statusJnt, s, h, f);
+void clearCanBuff(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+    int i = 0;
+    for(i = 0; i < readBuffi; i++) {
+        readCan(0, f, HUBO_CAN_TIMEOUT_DEFAULT/3.0);
+        decodeFrame(s, h, f);
+        readCan(1, f, HUBO_CAN_TIMEOUT_DEFAULT/3.0);
+        decodeFrame(s, h, f);
     }
-    statusJnt = statusJnt + 1;
-    if(statusJnt >= HUBO_JOINT_COUNT-40) statusJnt = 0;
+}
+
+void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+
+int statusJntItt = 5;
+int statusJnti = 0;
+    if(statusJnti == 0) {
+        if(1 == s->joint[statusJnt].active ) {
+            hGetBoardStatus(statusJnt, s, h, f);
+        }
+        statusJnt = statusJnt + 1;
+        if(statusJnt >= HUBO_JOINT_COUNT-40) statusJnt = 0;
+    }
+    else {
+        statusJnti = statusJnti + 1;
+        if( statusJnti >= statusJntItt ) statusJnti = 0;
+    }
 }
 
 
@@ -1461,7 +1488,7 @@ void fSetGainOverride(int jnt, struct hubo_param *h, struct can_frame *f, int ga
 
 void hSetBoardNumber(int jnt, struct hubo_param *h, struct can_frame *f, int boardNum, int rate)
 {
-    fprintf(stdout, "WARNING: Changing board number %d to %d with baud rate %d\n",
+    fprintf(stdout, "WARNING: Changing board number %d to %d with baud rate %d\n\t",
             getJMC(h,jnt), boardNum, rate);
     fSetBoardNumber(jnt, h, f, boardNum, rate);
     sendCan(getSocket(h,jnt),f);
@@ -1546,7 +1573,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt,
 {
     fGotoLimitAndGoOffset(jnt, h, f);
     sendCan( getSocket(h,jnt), f );
-    fprintf(stdout," -- Homing Joint #%d\n",jnt);
+    fprintf(stdout," -- Homing Joint #%d\n\t",jnt);
     r->ref[jnt] = 0.0;
     r_filt->ref[jnt] = 0.0;
     s->joint[jnt].ref = 0.0;
@@ -1560,14 +1587,14 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt,
 }
 
 void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
-    fprintf(stdout, "Homing all joints!\n");
+    fprintf(stdout, "Homing all joints!\n\t");
     int i = 0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
         if(s->joint[i].active == true) {
             hGotoLimitAndGoOffset(i, r, r_filt, h, s, f, 0);
         }
         else
-            fprintf(stdout, " -- Joint #%d is inactive!\n",i);
+            fprintf(stdout, " -- Joint #%d is inactive!\n\t",i);
     }
     
     ach_put( &chan_hubo_ref, r, sizeof(*r) );
@@ -1618,7 +1645,7 @@ void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
                 else
                 {
                     s->joint[j].zeroed=0;
-                    fprintf(stdout, "Joint number %d was not homed correctly!\n", j );
+                    fprintf(stdout, "Joint number %d was not homed correctly!\n\t", j );
                 }
             }
 
@@ -1857,7 +1884,7 @@ void hInitAccFTSensor( hubo_d_param_t board, struct hubo_param *h, struct can_fr
             fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
                     "Must be D_R_FOOT_FT (%d), D_L_FOOT_FT(%d),\n\t"
                     "        D_R_HAND_FT (%d), D_L_HAND_FT(%d)\n\t"
-                    "        D_R_FOOT_ACC (%d), D_L_FOOT_ACC (%d)\n",
+                    "        D_R_FOOT_ACC (%d), D_L_FOOT_ACC (%d)\n\t",
                     (int)board,
                     (int)D_R_FOOT_FT, (int)D_L_FOOT_FT,
                     (int)D_R_HAND_FT, (int)D_L_HAND_FT,
@@ -1910,7 +1937,7 @@ void hNullSensor( hubo_d_param_t board, struct hubo_param *h, struct can_frame *
                     "        D_R_HAND_FT (%d), D_L_HAND_FT(%d),\n\t"
                     "        D_R_FOOT_ACC (%d), or D_L_FOOT_ACC(%d),\n\t"
                     "        D_IMU_SENSOR_0 (%d), D_IMU_SENSOR_1 (%d),\n\t"
-                    "        or D_IMU_SENSOR_2 (%d)\n",
+                    "        or D_IMU_SENSOR_2 (%d)\n\t",
                     (int)board,
                     (int)D_R_FOOT_FT, (int)D_L_FOOT_FT,
                     (int)D_R_HAND_FT, (int)D_L_HAND_FT,
@@ -1945,10 +1972,10 @@ void hNullFTSensor( hubo_d_param_t board, struct hubo_param *h, struct can_frame
         default:
             fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
                     "Must be D_R_FOOT_FT (%d), D_L_FOOT_FT(%d),\n\t"
-                    "        D_R_HAND_FT (%d), D_L_HAND_FT(%d)\n",
+                    "        D_R_HAND_FT (%d), D_L_HAND_FT(%d)\n\t",
                     (int)board,
                     (int)D_R_FOOT_FT, (int)D_L_FOOT_FT,
-                    (int)D_R_HAND_FT, (int)D_L_HAND_FT );
+                   (int)D_R_HAND_FT, (int)D_L_HAND_FT );
             break;
     }
 }
@@ -1967,9 +1994,9 @@ void hNullAccSensor(hubo_d_param_t board, struct hubo_param *h, struct can_frame
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling Tilt Sensor: %d\n\t"
-                    "Must be D_R_FOOT_ACC (%d) or D_L_FOOT_ACC(%d)\n",
+                    "Must be D_R_FOOT_ACC (%d) or D_L_FOOT_ACC(%d)\n\t",
                     (int)board,
-                    (int)D_R_FOOT_ACC, (int)D_L_FOOT_ACC );
+                    (int)D_R_FOOT_ACC, (int)D_L_FOOT_ACC );  
             break;
     }
 }
@@ -2314,7 +2341,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
                 case 0:
                     break;
                 default:
-                    fprintf(stderr,"Unrecognized command type: %d\n",c->type);
+                    fprintf(stderr,"Unrecognized command type: %d\n\t",c->type);
                     break;
             }
         }

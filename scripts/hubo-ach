@@ -140,7 +140,7 @@ StartHubo()
 			fi
 		done
 
-		sudo hubo-daemon $DAEMON_ARGS
+		sudo hubo-daemon $DAEMON_ARGS 
 		sudo hubo-console
 	;;
 	esac
