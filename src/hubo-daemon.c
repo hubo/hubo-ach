@@ -133,8 +133,8 @@ int getEncRef(int jnt, struct hubo_state *s, struct hubo_param *h);
 void hInitializeBoard(int jnt, struct hubo_param *h, struct can_frame *f);
 int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, struct hubo_param *h);
-void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
-void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f);
+void hGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f);
+void fGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f);
 void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 void hGetFT(int board, struct can_frame *f, int can);
@@ -270,13 +270,13 @@ void huboLoop(struct hubo_param *H_param) {
     memset( &H_state, 0, sizeof(H_state));
 
 	size_t fs;
-	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
 	if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_ref) == fs, __LINE__ );
 	r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
 	if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
 	if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
 	hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
@@ -474,31 +474,37 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 	}
 }
 
-void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
+void getEncAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) 
 {
-    ///> Requests all encoder and records to hubo_state
     char c[HUBO_JMC_COUNT];
-    memset( &c, 0, sizeof(c) );
+    memset( &c, 0, sizeof(c));
     //memset( &c, 1, sizeof(c));
     int jmc = 0;
     int i = 0;
-//    c[h->joint[REB].jmc] = 0;
+//	c[h->joint[REB].jmc] = 0;
     int canChan = 0;
-    for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++)
-    {
-        for( i = 0; i < HUBO_JOINT_COUNT; i++ )
-        {
+    for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
+        for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
             jmc = h->joint[i].jmc;
-            if((0 == c[jmc]) && (canChan == h->joint[i].can))    // check to see if already asked that motor controller
-            {
-                hGetEncValue(i, h, f);
-                readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+            if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+                hGetEncValue(i, 0x00, h, f);
+                readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                 decodeFrame(s, h, f);
+                if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
+                   LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
+                        hGetEncValue(i, 0x01, h, f);
+                        readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                        decodeFrame(s, h, f);
+                }
                 c[jmc] = 1;
             }
         }
     }
 }
+
+
+
+
 
 
 void getBoardStatusAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
@@ -1065,15 +1071,15 @@ void fSetControlMode(int jnt, struct hubo_param *h, struct can_frame *f, int mod
 }
 
 
-void hGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
-    fGetEncValue( jnt, h, f);
+void hGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
+    fGetEncValue( jnt, encChoice, h, f);
     sendCan(getSocket(h,jnt), f);
 }
-void fGetEncValue(int jnt, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
+void fGetEncValue(int jnt, uint8_t encChoice, struct hubo_param *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
     f->can_id       = CMD_TXDF;     // Set ID
     f->data[0]      = h->joint[jnt].jmc;
     f->data[1]    = H_GET_ENCODER;
-    f->data[2]    = H_BLANK;
+    f->data[2]    = encChoice;
     f->can_dlc = 3; //= strlen( data );     // Set DLC
 }
 
@@ -1604,11 +1610,13 @@ void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
         }
     }
 
-    if( check==0 )
-    {
+//    if( check==0 | jnt == RF1 | jnt == LF1 )
+      if( jnt != RF2 & jnt != RF3 & jnt != RF3 & jnt != RF4 & jnt !=RF5 &
+          jnt != LF2 & jnt != LF3 & jnt != LF3 & jnt != LF4 & jnt !=LF5) 
+      {
         fSetEncRef(jnt, s, h, f);
         sendCan(getSocket(h,jnt), f);
-    }
+      }
 }
 
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
@@ -2170,11 +2178,11 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
 // Not tested DML 2013-02-07                    hOpenLoopPWM( c, h, f );
                     break;
                 case D_CTRL_ON_OFF:
-                    if(true == s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    if( 0 < s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
                     break;
                 case D_CTRL_ON_OFF_ALL:
                    for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-                       if(true == s->joint[i].active & true == s->joint[i].zeroed ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       if(true == s->joint[i].active & 0 <  s->joint[i].zeroed ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
                        }
                    break;
                 case D_CTRL_ON:
@@ -2481,28 +2489,29 @@ int decodeFrame(struct hubo_state *s, struct hubo_param *h, struct can_frame *f)
             }
         }
             
-        else if( numMot == 5 && f->can_dlc == 6 )
-        {
+        else if( numMot == 5 & f->can_dlc == 6 ) {
             for( i = 0; i < 3 ; i++ ) {
                 enc16 = 0;
-                enc16 = (enc << 8) + f->data[1 + i*4];
-                enc16 = (enc << 8) + f->data[0 + i*4];
+                enc16 = (enc16 << 8) + f->data[1 + i*2];
+                enc16 = (enc16 << 8) + f->data[0 + i*2];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
-                s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
-            }
+//i				enc = 0x8000 & enc16;
+                s->joint[jnt].pos = enc2rad(jnt, enc16, h);
+             }
         }
-            
-        else if( numMot == 5 && f->can_dlc == 4 )
-        {
-            for( i = 0; i < 2; i++ )
-            {
+
+        else if( numMot == 5 & f->can_dlc == 4 ) {
+            for( i = 0; i < 2; i++ ) {
                 enc16 = 0;
-                enc16 = (enc << 8) + f->data[1 + i*4];
-                enc16 = (enc << 8) + f->data[0 + i*4];
-                int jnt = h->driver[jmc].joints[i];          // motor on the same drive
+                enc16 = (enc16 << 8) + f->data[1 + i*2];
+                enc16 = (enc16 << 8) + f->data[0 + i*2];
+                int jnt = h->driver[jmc].joints[i+3];          // motor on the same drive
                 s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
             }
         }
+
+
+
     
     }
     else if( (fs >= H_STAT_BASE_RXDF) && (fs < H_STAT_MAX_RXDF) )

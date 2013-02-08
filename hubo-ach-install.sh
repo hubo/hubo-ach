@@ -4,3 +4,4 @@ sudo mkdir /var/lock/hubo/
 sudo make clean
 make
 sudo make install
+sudo updatedb

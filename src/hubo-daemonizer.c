@@ -74,7 +74,7 @@ static void fork_sig_handler(int signum)
 
 void hubo_daemonize()
 {
-printf("1\n");
+printf("1 . ");
     syslog( LOG_NOTICE, "Starting daemonization for CAN" );
 
 

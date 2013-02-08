@@ -206,7 +206,7 @@ int main() {
 			H_cmd.type = D_CTRL_ON_OFF_ALL;
 			if( hOnOff == 1)
 			    H_cmd.param[0] = D_ENABLE;         // 1 = on
-			if( hOnOff == 2)
+			if( hOnOff == 0)
 			    H_cmd.param[0] = D_DISABLE;         // 0 = off
                         if( hOnOff == 1 | hOnOff == 0 )
                             r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
