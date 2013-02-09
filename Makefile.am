@@ -6,7 +6,7 @@ EXTRA_DIST = joint.table sensor.table scripts/hubo-ach
 huboscriptdir = /usr/local/bin
 #init_ddir = $(sysconfdir)/init.d
 init_ddir = $(huboscriptdir)
-init_d_SCRIPTS = scripts/hubo-ach
+init_d_SCRIPTS = scripts/hubo-ach 
 
 # installed under $prefix/include/
 include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonID.h

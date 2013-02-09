@@ -300,6 +300,7 @@ void huboLoop(struct hubo_param *H_param) {
     /* set encoder values to ref and state */
     for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
         H_ref.ref[i] = H_state.joint[i].pos;
+        H_ref.mode[i] = HUBO_REF_MODE_REF_FILTER;
         H_ref_filter.ref[i] = H_state.joint[i].pos;
         H_state.joint[i].ref = H_state.joint[i].pos;
 /*
@@ -1612,6 +1613,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt,
     sendCan( getSocket(h,jnt), f );
     fprintf(stdout," -- Homing Joint #%d\n\t",jnt);
     r->ref[jnt] = 0.0;
+    r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
     r_filt->ref[jnt] = 0.0;
     s->joint[jnt].ref = 0.0;
     s->joint[jnt].zeroed = 2; ///< 2 means it needs confirmation
