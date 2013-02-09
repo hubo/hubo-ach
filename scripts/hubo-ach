@@ -115,33 +115,40 @@ StartHubo()
 	;;
 
 	*)
-		sudo ifconfig can0 up
-		sudo ifconfig can1 up
-		sudo ifconfig can2 up
-		sudo ifconfig can3 up
+
+
+		if [ $(pidof hubo-daemon) > 0		]
+                then
+		    sudo hubo-console
+	            exit 0 
+                else
+	    		sudo ifconfig can0 up
+			sudo ifconfig can1 up
+			sudo ifconfig can2 up
+			sudo ifconfig can3 up
 
 #		sudo ach -1 -C hubo-ref -m 10 -n 3000
 #		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		sudo ach -1 -C hubo-state -m 10 -n 3000
 #		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 
-		MakeAch
+			MakeAch
 #		ach -1 -C hubo-ref -m 10 -n 3000
 #		ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		ach -1 -C hubo-state -m 10 -n 3000
 #		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
-		DAEMON_ARGS=''
-		for IN_ARG in $@
-		do
-			if [ $IN_ARG != 'start'          ]
-			then
-				DAEMON_ARGS+=" $IN_ARG"
-			fi
-		done
-
-		sudo hubo-daemon $DAEMON_ARGS 
-		sudo hubo-console
+			DAEMON_ARGS=''
+			for IN_ARG in $@
+			do
+				if [ $IN_ARG != 'start'          ]
+				then
+					DAEMON_ARGS+=" $IN_ARG"
+				fi
+			done
+       	             	    sudo hubo-daemon $DAEMON_ARGS 
+			    sudo hubo-console
+                fi
 	;;
 	esac
 }
