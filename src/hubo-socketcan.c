@@ -142,7 +142,7 @@ static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond p
 			}
 			else if(n_read==0){
 				if( 1 == hubo_ver_can ){
-					printf("n_read=0\n");
+//					printf("n_read=0\n");
 				}
 				break;
 			}
@@ -183,7 +183,7 @@ torDriverOnOff
 // this is the working one with no timeout
 //	int bytes_read = read( skt, f, sizeof(*f));
 	if( (bytes_read < 0) & (1 == hubo_ver_can) ) {
-		perror("bad read");
+//		perror("bad read");
 	} /*else if( debug == 1 ) {
 		printf("%d bytes read -- ", bytes_read);
 		int i = 0;

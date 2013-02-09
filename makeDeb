@@ -1,0 +1,1 @@
+./configure && make && sudo checkinstall

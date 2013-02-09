@@ -24,6 +24,7 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #include <stdio.h>
 #include <stdlib.h>
 #include <readline/readline.h>
@@ -80,12 +81,13 @@ void hubo_jmc_beep(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
-void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
+void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, int jnt);
 void hubo_startup_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff);
 int name2sensor(char* name, struct hubo_param *h);
 double hubo_set(char*s, struct hubo_param *p);
-char* cmd [] ={ "initialize","fet","initializeAll","homeAll",
-                "ctrl","enczero", "goto","get","test","update", "quit","beep", "home"," "}; //,
+char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
+                "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
+                "resetAll","status"}; //,
 
 
 int main() {
@@ -121,6 +123,7 @@ int main() {
 
 	// set default values for Hubo
 	setJointParams(&H_param, &H_state);
+        setSensorDefaults( &H_param );
 
 	size_t fs;
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -179,8 +182,78 @@ int main() {
             tsleep = 5;
             
         }
+
+	else if (strcmp(buf0,"ctrl")==0) {
+		int hOnOff = atof(getArg(buf,2));
+		if(hOnOff == 0 | hOnOff == 1) {
+			H_cmd.type = D_CTRL_ON_OFF;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if( hOnOff == 1)
+			    H_cmd.param[0] = D_ENABLE;         // 1 = on
+			if( hOnOff == 0)
+			    H_cmd.param[0] = D_DISABLE;         // 0 = off
+                        if( hOnOff == 1 | hOnOff == 0 )
+                            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if( hOnOff == 0) {
+				printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+			else {
+				printf("%s - Turning On CTRL\n",getArg(buf,1));}
+		}
+
+	}
+
+	else if (strcmp(buf0,"ctrlAll")==0) {
+		int hOnOff = atof(getArg(buf,1));
+		if( hOnOff == 0 | hOnOff == 1) {
+			H_cmd.type = D_CTRL_ON_OFF_ALL;
+			if( hOnOff == 1)
+			    H_cmd.param[0] = D_ENABLE;         // 1 = on
+			if( hOnOff == 0)
+			    H_cmd.param[0] = D_DISABLE;         // 0 = off
+                        if( hOnOff == 1 | hOnOff == 0 )
+                            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if( hOnOff == 0) {
+				printf("Turning Off ALL CTRL\n");}
+			else {
+				printf("Turning On ALL CTRL\n");}
+		}
+
+	}
+
+        else if (strcmp(buf0,"status")==0) {
+            H_cmd.type = D_GET_STATUS;
+            H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+            printf("%s - Getting Status \n", &H_param.joint[H_cmd.joint].name);
+            usleep(50*1000);
+            hubo_update(&H_ref, &H_state);
+            struct hubo_joint_status e = H_state.status[H_cmd.joint];
+            printf("Mode         : %d \n", H_ref.mode[H_cmd.joint]);
+            printf("Zeroed       : %d \n", H_state.joint[H_cmd.joint].zeroed);
+            printf("Homed        : %d \n", e.homeFlag);
+            printf("Jam          : %d \n", e.jam);
+            printf("PWM Saturated: %d \n", e.pwmSaturated);
+            printf("Big Error    : %d \n", e.bigError);
+            printf("Enc Error    : %d \n", e.encError);
+            printf("Drive Fault  : %d \n", e.driverFault);
+            printf("Pos Err (min): %d \n", e.posMinError);
+            printf("Pos Err (max): %d \n", e.posMaxError);
+            printf("Velos Error  : %d \n", e.velError);
+            printf("Acc Error    : %d \n", e.accError);
+            printf("Temp Error   : %d \n", e.tempError);
+            printf("Active       : %d \n", H_state.joint[H_cmd.joint].active);
+      	}
+        else if (strcmp(buf0,"resetAll")==0) {
+            for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
+                hubo_enc_reset(&H_param, &H_cmd, i);
+                printf("%s - Resetting Encoder \n", &H_param.joint[i].name);
+                usleep(10*1000);
+            }
+	}
+
         else if (strcmp(buf0,"reset")==0) {
-            hubo_enc_reset(&H_param, &H_cmd, buf);
+            int jnt = name2mot(getArg(buf, 1), &H_param); 
+            hubo_enc_reset(&H_param, &H_cmd, jnt);
             printf("%s - Resetting Encoder \n",getArg(buf,1));
         }
         else if (strcmp(buf0,"startup")==0) {
@@ -248,7 +321,7 @@ int main() {
             }
             ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
         }
-        else if (strcmp(buf0,"zeracc")==0) {
+        else if (strcmp(buf0,"zeroacc")==0) {
             int ft = name2sensor(getArg(buf,1), &H_param);
             H_cmd.type = D_NULL_SENSOR;
             switch(ft){
@@ -312,9 +385,10 @@ void hubo_jmc_home(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
-void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {
+void hubo_enc_reset(struct hubo_param *h, struct hubo_board_cmd *c, int jnt) {
         c->type = D_ZERO_ENCODER;
-        c->joint = name2mot(getArg(buff, 1), h);
+//        c->joint = name2mot(getArg(buff, 1), h);
+        c->joint = jnt;
         int r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 }
 void hubo_jmc_home_all(struct hubo_param *h, struct hubo_board_cmd *c, char* buff) {

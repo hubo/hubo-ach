@@ -39,7 +39,11 @@ MakeAch()
 
 Kill()
 {
+#	sudo updatedb
 	sudo kill -9 $(pidof hubo*)
+	sudo kill -9 $(pidof hubo-daemon)
+	sudo kill -9 $(pidof hubo-read)
+	sudo kill -9 $(pidof hubo-console)
 }
 
 KillAll()
@@ -47,6 +51,7 @@ KillAll()
 	StopHubo $2
 	KillHubo
 	Kill
+	sudo rm $LOCK_DIR/hubo-daemon
 	sudo rm /dev/shm/achshm-hubo*
 }
 
@@ -76,7 +81,7 @@ StopHubo()
 
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
-		sudo ach -U hubo-init-cmd
+		sudo ach -U hubo-board-cmd
 
 		sudo ifconfig can0 down
 		sudo ifconfig can1 down
@@ -110,33 +115,40 @@ StartHubo()
 	;;
 
 	*)
-		sudo ifconfig can0 up
-		sudo ifconfig can1 up
-		sudo ifconfig can2 up
-		sudo ifconfig can3 up
+
+
+		if [ $(pidof hubo-daemon) > 0		]
+                then
+		    sudo hubo-console
+	            exit 0 
+                else
+	    		sudo ifconfig can0 up
+			sudo ifconfig can1 up
+			sudo ifconfig can2 up
+			sudo ifconfig can3 up
 
 #		sudo ach -1 -C hubo-ref -m 10 -n 3000
 #		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		sudo ach -1 -C hubo-state -m 10 -n 3000
 #		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
 
-		MakeAch
+			MakeAch
 #		ach -1 -C hubo-ref -m 10 -n 3000
 #		ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		ach -1 -C hubo-state -m 10 -n 3000
 #		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
-		DAEMON_ARGS=''
-		for IN_ARG in $@
-		do
-			if [ $IN_ARG != 'start'          ]
-			then
-				DAEMON_ARGS+=" $IN_ARG"
-			fi
-		done
-
-		sudo hubo-daemon $DAEMON_ARGS
-		sudo hubo-console
+			DAEMON_ARGS=''
+			for IN_ARG in $@
+			do
+				if [ $IN_ARG != 'start'          ]
+				then
+					DAEMON_ARGS+=" $IN_ARG"
+				fi
+			done
+       	             	    sudo hubo-daemon $DAEMON_ARGS 
+			    sudo hubo-console
+                fi
 	;;
 	esac
 }
@@ -261,7 +273,7 @@ KillHubo()
 		sudo killall -e -s SIGKILL hubo-daemon
 
 		# This forcibly unlocks hubo-daemon
-		sudo rm /var/lock/hubo-daemon
+		sudo rm /var/lock/hubo/hubo-daemon
 	;;
 	esac
 }
@@ -300,11 +312,11 @@ LogHubo()
 		echo "_______________________________"
 		echo
 		echo "Hubo Output:"
-		cat $DAEMON_LOG/daemon-output
+		cat $DAEMON_LOG_DIR/daemon-output
 		echo "_______________________________"
 		echo
 		echo "Hubo Errors:"
-		cat $DAEMON_LOG/daemon-error
+		cat $DAEMON_LOG_DIR/daemon-error
 		echo
 	;;
 	esac
@@ -336,11 +348,11 @@ SaveLog()
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Output:" >> saved.log
-		cat $DAEMON_LOG/daemon-output >> saved.log
+		cat $DAEMON_LOG_DIR/daemon-output >> saved.log
 		echo "_______________________________" >> saved.log
 		echo >> saved.log
 		echo "Hubo Errors:" >> saved.log
-		cat $DAEMON_LOG/daemon-error >> saved.log
+		cat $DAEMON_LOG_DIR/daemon-error >> saved.log
 	;;
 
 	*)
@@ -349,11 +361,11 @@ SaveLog()
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Output:" >> $1
-		cat $DAEMON_LOG/daemon-output >> $1
+		cat $DAEMON_LOG_DIR/daemon-output >> $1
 		echo "_______________________________" >> $1
 		echo >> $1
 		echo "Hubo Errors:" >> $1
-		cat $DAEMON_LOG/daemon-error >> $1
+		cat $DAEMON_LOG_DIR/daemon-error >> $1
 	;;
 	esac
 }
