@@ -86,7 +86,8 @@
 #define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
-#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
+//#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
+#define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 
 
@@ -116,11 +117,15 @@ typedef enum {
 } hubo_imu_index_t;
 
 typedef enum {
+   HUBO_HOME_OK = 6
+}hubo_status_return_t;
+
+typedef enum {
 	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
 	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
 	HUBO_REF_MODE_COMPLIANT     = 2, ///< Compliant mode, sets ref to current encoder position. 
 	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
-} hubo_mode_type_t;
+}hubo_mode_type_t;
 
 #define RIGHT 0
 #define LEFT 1

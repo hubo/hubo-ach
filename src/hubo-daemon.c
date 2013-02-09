@@ -275,18 +275,50 @@ void huboLoop(struct hubo_param *H_param) {
     memset( &H_cmd,  0, sizeof(H_cmd));
     memset( &H_state, 0, sizeof(H_state));
 
-	size_t fs;
-	int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
-	if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
-	hubo_assert( sizeof(H_ref) == fs, __LINE__ );
-	r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
-	if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
-	hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
-	if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
-	hubo_assert( sizeof(H_state) == fs, __LINE__ );
+    size_t fs;
+    int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+    if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
+    hubo_assert( sizeof(H_ref) == fs, __LINE__ );
+    r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
+    if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
+    hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
+    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
+    if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
+    hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
-    // put back on channels
+
+    /* Create CAN Frame */
+    struct can_frame frame;
+    sprintf( frame.data, "1234578" );
+    frame.can_dlc = strlen( frame.data );
+
+    /* initilization process */
+
+    /* get encoder values */      
+    getEncAllSlow(&H_state, H_param, &frame); 
+
+    /* set encoder values to ref and state */
+    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+        H_ref.ref[i] = H_state.joint[i].pos;
+        H_ref_filter.ref[i] = H_state.joint[i].pos;
+        H_state.joint[i].ref = H_state.joint[i].pos;
+/*
+        if(true == H_state.joint[i].active) {
+            hGetBoardStatus(i, &H_state, &H_param, &frame);
+            readCan(getSocket(&H_param,i), &frame, HUBO_CAN_TIMEOUT_DEFAULT*100.0);
+            decodeFrame(&H_state, &H_param, &frame);
+            if(((int)H_state.status[i].homeFlag) == (int)HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
+        }
+*/
+    }
+
+
+    
+
+
+
+
+    /* put back on channels */
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
     ach_put(&chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd));
     ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
@@ -303,8 +335,6 @@ void huboLoop(struct hubo_param *H_param) {
 	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
 	printf("T = %1.3f sec\n",T);
 
-    /* Send a message to the CAN bus */
-       struct can_frame frame;
 
     // time info
     struct timespec t, time;
@@ -314,19 +344,17 @@ void huboLoop(struct hubo_param *H_param) {
     //clock_gettime( CLOCK_MONOTONIC,&t);
     clock_gettime( 0,&t);
 
-    sprintf( frame.data, "1234578" );
-    frame.can_dlc = strlen( frame.data );
 
+    int startFlag = 1;
 
-
-	printf("Start Hubo Loop\n");
-	while(!hubo_sig_quit) {
-		fs = 0;
-		// wait until next shot
-		clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+    printf("Start Hubo Loop\n");
+    while(!hubo_sig_quit) {
+        fs = 0;
+        // wait until next shot
+        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         /* Get latest ACH message */
-        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
         if(ACH_OK != r) {
                 if(debug) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
@@ -344,6 +372,15 @@ void huboLoop(struct hubo_param *H_param) {
             getBoardStatusAllSlow( &H_state, H_param, &frame);
             hubo_noRefTimeAll = hubo_noRefTimeAll - T;
             H_state.refWait = 1;
+        }
+
+        /* Only on startup */
+        if( startFlag == 1) {
+            getBoardStatusAllSlow( &H_state, H_param, &frame);
+            for( i = 0; i < HUBO_JOINT_COUNT; i++ ){
+                if(H_state.status[i].homeFlag == HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
+            }
+            startFlag = 0;
         }
 
         /* read hubo console */
@@ -1767,11 +1804,12 @@ void fDisableFeedbackController(int jnt, struct hubo_param *h, struct can_frame 
 void hResetEncoderToZero(int jnt, struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
     /* Get Board Status */
     hGetBoardStatus(jnt, s, h, f);
-    if( 1 == isError(jnt, s)){
+    if( 1 == isError(jnt, s) | jnt == RWP | jnt == LWP){
         fResetEncoderToZero(jnt, h, f);
 
         /* Set New Ref to Zero */
         r->ref[jnt] = 0.0;
+        r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
         s->joint[jnt].ref = 0.0;
 //    s->joint[jnt].pos = 0;
         ach_put( &chan_hubo_ref, r, sizeof(*r) );
@@ -2250,11 +2288,12 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
 // Not tested DML 2013-02-07                    hOpenLoopPWM( c, h, f );
                     break;
                 case D_CTRL_ON_OFF:
-                    if( 0 < s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    if(true == s->joint[c->joint].active & HUBO_HOME_OK == s->status[c->joint].homeFlag) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    //if( 0 < s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
                     break;
                 case D_CTRL_ON_OFF_ALL:
                    for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-                       if(true == s->joint[i].active & 0 <  s->joint[i].zeroed ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       if(true == s->joint[i].active & HUBO_HOME_OK == s->status[i].homeFlag ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
                        }
                    break;
                 case D_CTRL_ON:

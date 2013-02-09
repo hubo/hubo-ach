@@ -227,6 +227,8 @@ int main() {
             usleep(50*1000);
             hubo_update(&H_ref, &H_state);
             struct hubo_joint_status e = H_state.status[H_cmd.joint];
+            printf("Zeroed       : %d \n", H_state.joint[H_cmd.joint].zeroed);
+            printf("Homed        : %d \n", e.homeFlag);
             printf("Jam          : %d \n", e.jam);
             printf("PWM Saturated: %d \n", e.pwmSaturated);
             printf("Big Error    : %d \n", e.bigError);
