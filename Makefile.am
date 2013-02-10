@@ -3,7 +3,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 
 EXTRA_DIST = joint.table sensor.table scripts/hubo-ach
 
-huboscriptdir = /usr/local/bin
+#huboscriptdir = $(sysconfdir)/bin
+huboscriptdir = /usr/bin
 #init_ddir = $(sysconfdir)/init.d
 init_ddir = $(huboscriptdir)
 init_d_SCRIPTS = scripts/hubo-ach 

@@ -1,1 +1,1 @@
-./configure && make && sudo checkinstall
+debuild -us -uc
