@@ -404,7 +404,7 @@ void huboLoop(struct hubo_param *H_param) {
 //        getStatusItterate( &H_state, &H_param, &frame);
 
         /* Read any aditional data left on the buffer */
-        clearCanBuff(&H_state, &H_param, &frame);
+        clearCanBuff(&H_state, H_param, &frame);
 
 
         /* Get all Current data */
