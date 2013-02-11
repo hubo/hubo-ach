@@ -50,27 +50,27 @@ LF5 = 41 # Left Finger
 
 class HUBO_SENSOR_PARAM(Structure):
     _fields_ = [("name"    , c_ubyte*5),
-                ("sensNo"  , c_uint16),
-                ("can"     , c_utnt16),
-                ("active"  , c_uint8),
-                ("boardNo" , c_uint16)]
+                ("sensNo"  , c_uint),
+                ("can"     , c_uint),
+                ("active"  , c_ubyte),
+                ("boardNo" , c_uint)]
 
 class HUBO_JOINT_PARAM(Structure):
-    _fields_ = [("motNo"    , c_uint16),
-                ("jntNo"    , c_uint16), 
+    _fields_ = [("motNo"    , c_uint),
+                ("jntNo"    , c_uint), 
                 ("refEnc"   , c_uint32), 
-                ("drive"    , c_uint16), 
-                ("driven"   , c_uint16), 
-                ("harmonic" , c_uint16), 
-                ("enc"      , c_uint16), 
-                ("dir"      , c_uint8), 
-                ("name"     , c_uint8*4), 
-                ("jmc"      , c_uint16), 
-                ("can"      , c_uint8), 
-                ("numMot"   , c_uint8)] 
+                ("drive"    , c_uint), 
+                ("driven"   , c_uint), 
+                ("harmonic" , c_uint), 
+                ("enc"      , c_uint), 
+                ("dir"      , c_ubyte), 
+                ("name"     , c_ubyte*4), 
+                ("jmc"      , c_uint), 
+                ("can"      , c_ubyte), 
+                ("numMot"   , c_ubyte)] 
 
 class HUBO_JMC_PARAM(Structure):
-    _fields_ = [("joints" , c_uint8*5)]
+    _fields_ = [("joints" , c_ubyte*5)]
 
 
 class HUBO_PARAM(Structure):
@@ -99,27 +99,27 @@ class HUBO_JOINT_STATE(Structure):
                 ("vel"   , c_double),
                 ("heat"  , c_double),
                 ("tmp"   , c_double),
-                ("active", c_uint8),
-                ("zeroed", c_uint8)]
+                ("active", c_ubyte),
+                ("zeroed", c_ubyte)]
 
 class HUBO_JOINT_STATUS(Structure):
-    _fields_ = [("driveOn"      , c_uint8),
-                ("ctrlOn"       , c_uint8),
-                ("mode"         , c_uint8),
-                ("limitSwitch"  , c_uint8),
-                ("homeFlag"     , c_uint8),
-                ("jam"          , c_uint8),
-                ("pwmSaturated" , c_uint8),
-                ("bigError"     , c_uint8),
-                ("encError"     , c_uint8),
-                ("driverFault"  , c_uint8),
-                ("motorFail0"   , c_uint8),
-                ("motorFail1"   , c_uint8),
-                ("posMinError"  , c_uint8),
-                ("posMaxError"  , c_uint8),
-                ("velError"     , c_uint8),
-                ("accError"     , c_uint8),
-                ("tempError"    , c_uint8)]
+    _fields_ = [("driveOn"      , c_ubyte),
+                ("ctrlOn"       , c_ubyte),
+                ("mode"         , c_ubyte),
+                ("limitSwitch"  , c_ubyte),
+                ("homeFlag"     , c_ubyte),
+                ("jam"          , c_ubyte),
+                ("pwmSaturated" , c_ubyte),
+                ("bigError"     , c_ubyte),
+                ("encError"     , c_ubyte),
+                ("driverFault"  , c_ubyte),
+                ("motorFail0"   , c_ubyte),
+                ("motorFail1"   , c_ubyte),
+                ("posMinError"  , c_ubyte),
+                ("posMaxError"  , c_ubyte),
+                ("velError"     , c_ubyte),
+                ("accError"     , c_ubyte),
+                ("tempError"    , c_ubyte)]
 
 class HUBO_JMC_STATE(Structure):
     _fields_ = [("temp" , c_double)]
