@@ -1,3 +1,9 @@
+hubo-ach (0.0.20130210) stable; urgency=low
+
+  * DRC-Hubo Meeting Release
+
+ -- Daniel M. Lofaro <dan@danlofaro.com> Sun, 04 Feb 2013 22:28:00 -0400
+
 hubo-ach (0.0.20130203) unstable; urgency=low
 
   * Initial Release. Local package.
