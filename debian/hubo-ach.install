@@ -7,5 +7,5 @@ etc/hubo-ach/sensor.table
 usr/lib/libhuboparams.la
 usr/lib/libhuboparams.so
 usr/include/hubo.h
-/usr/include/hubo-daemonID.h
-/usr/include/hubo-jointparams.h
+usr/include/hubo-daemonID.h
+usr/include/hubo-jointparams.h
