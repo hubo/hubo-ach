@@ -43,3 +43,4 @@ hubo_console_LDADD = -lrt -lc -lm -lreadline libhuboparams.la
 hubo_read_SOURCES = src/hubo-read.c
 hubo_read_LDADD = -lm -lc -lrt libhuboparams.la
 
+python_PYTHON = python/hubo_ach.py

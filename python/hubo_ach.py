@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from ctypes import *
+import ach
+import sys
 
 HUBO_JOINT_COUNT         = 42
 HUBO_JMC_COUNT           = 0x26

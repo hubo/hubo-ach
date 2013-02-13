@@ -16,6 +16,10 @@ AC_PROG_LIBTOOL
 LT_INIT
 
 # Checks for libraries.
+
+#Check python
+AM_PATH_PYTHON
+
 # FIXME: Replace `main' with a function in `-lach':
 AC_CHECK_LIB([ach], [ach_open])
 
