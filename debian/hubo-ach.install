@@ -9,3 +9,6 @@ usr/lib/libhuboparams.so
 usr/include/hubo.h
 usr/include/hubo-daemonID.h
 usr/include/hubo-jointparams.h
+usr/local/lib/python2.7/dist-packages/hubo_ach.py
+usr/local/lib/python2.7/dist-packages/hubo_ach.pyc
+usr/local/lib/python2.7/dist-packages/hubo_ach.pyo
