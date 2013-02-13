@@ -3,6 +3,7 @@ from ctypes import *
 
 HUBO_JOINT_COUNT         = 42
 HUBO_JMC_COUNT           = 0x26
+HUBO_IMU_COUNT           = 3
 HUBO_CHAN_REF_NAME       = 'hubo-ref'        
 HUBO_CHAN_BOARD_CMD_NAME = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME     = 'hubo-state'     
@@ -125,7 +126,7 @@ class HUBO_JMC_STATE(Structure):
     _fields_ = [("temp" , c_double)]
 
 class HUBO_STATE(Structure):
-    _fields_ = [("imu"    , HUBO_IMU*HUBO_JOINT_COUNT),
+    _fields_ = [("imu"    , HUBO_IMU*HUBO_IMU_COUNT),
                 ("ft"     , HUBO_FT*4),
                 ("joint"  , HUBO_JOINT_STATE*HUBO_JOINT_COUNT),
                 ("status" , HUBO_JOINT_STATUS*HUBO_JOINT_COUNT),
