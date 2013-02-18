@@ -522,6 +522,10 @@ case "$1" in
 	'killall' )
 		KillAll
 	;;
+# Makes the Ach Channels
+	'make' )
+		MakeAch
+	;;
 
 # Close and then reopen all channels and processes
 	'restart' )

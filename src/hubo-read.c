@@ -122,7 +122,7 @@ ach_channel_t chan_hubo_init_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 
 int debug = 0;
-int hubo_debug = 1;
+int16_t hubo_debug = 1;
 
 void huboLoop() {
 	// get initial values for hubo
