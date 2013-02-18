@@ -132,7 +132,7 @@ typedef enum {
 
 
 struct hubo_sensor_param {
-	char name[5];		///< Name of sensor
+	int8_t name[5];		///< Name of sensor
 	uint16_t sensNo;	///< Sensor number
 	uint16_t can;		///< Can channel
 	uint8_t active;		///< Active sensor
@@ -148,7 +148,7 @@ struct hubo_joint_param {
 	uint16_t harmonic;	///< gear ratio of harmonic drive
 	uint16_t enc;		///< encoder size
 	uint8_t dir;		///< direction
-	char name[4];		///< name
+	int8_t name[4];		///< name
 	uint16_t jmc;		///< motor controller number
 	uint8_t can;		///< can channel
 	uint8_t numMot;		///< number of motors

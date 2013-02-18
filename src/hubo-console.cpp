@@ -446,7 +446,7 @@ int name2mot(char* name, struct hubo_param *h) {
     int i = 0;
     int iout = -1;
     for( i = 0; i < HUBO_JOINT_COUNT ; i++ ) {
-        char *mot = h->joint[i].name;
+        char *mot = (char*)h->joint[i].name;
         if (strcmp(name, mot) == 0) {
         	iout = i;
 		}
@@ -460,7 +460,7 @@ int name2sensor(char* name, struct hubo_param *h) {
 	int i = 0;
 	int iout = -1;
 	for( i = 0; i < HUBO_SENSOR_COUNT ; i++ ) {
-	    char *sens = h->sensor[i].name;
+	    char *sens = (char*)h->sensor[i].name;
 	    printf("i = %i, name = %s\n", i,sens);
 	    if (strcmp(name, sens) == 0) {
 		iout = i;}
