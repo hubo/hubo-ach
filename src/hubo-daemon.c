@@ -230,6 +230,8 @@ void clearCanBuff(struct hubo_state *s, struct hubo_param *h, struct can_frame *
 void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 int isError( int jnt, struct hubo_state *s);
 uint8_t isHands(int jnt);
+uint8_t isHandLeft(int jnt);
+uint8_t isHandRight(int jnt);
 uint8_t getJMC( struct hubo_param *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; }
 uint8_t getCAN( struct hubo_param *h, int jnt ) { return h->joint[jnt].can; }
 hubo_can_t getSocket( struct hubo_param *h, int jnt ) { return hubo_socket[h->joint[jnt].can]; }
@@ -276,13 +278,13 @@ void huboLoop(struct hubo_param *H_param) {
     memset( &H_state, 0, sizeof(H_state));
 
     size_t fs;
-    int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+    int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_ref) == fs, __LINE__ );
     r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
-    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
+    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
@@ -355,7 +357,7 @@ void huboLoop(struct hubo_param *H_param) {
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         /* Get latest ACH message */
-        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         if(ACH_OK != r) {
                 if(debug) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
@@ -430,9 +432,9 @@ void huboLoop(struct hubo_param *H_param) {
 void clearCanBuff(struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
     int i = 0;
     for(i = 0; i < readBuffi; i++) {
-        readCan(0, f, HUBO_CAN_TIMEOUT_DEFAULT/3.0);
+        readCan(0, f, HUBO_CAN_TIMEOUT_DEFAULT/5.0);
         decodeFrame(s, h, f);
-        readCan(1, f, HUBO_CAN_TIMEOUT_DEFAULT/3.0);
+        readCan(1, f, HUBO_CAN_TIMEOUT_DEFAULT/5.0);
         decodeFrame(s, h, f);
     }
 }
@@ -539,16 +541,8 @@ void setRefAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, s
 					slowLoopi = slowLoopi+1;
 				}
 
-				if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
-				    (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
-			//	else if( ((i == RF1) | (i == LF1)) & slowLoop == 1) {
-			//		hSetEncRef(i, r, h, f);
-			//		c[jmc] = 1;
-			//	}
-				else {
-					hSetEncRef(i, s, h, f);
-					c[jmc] = 1;
-				}
+				hSetEncRef(i, s, h, f);
+				c[jmc] = 1;
 			}
 		}
 	}
@@ -775,14 +769,14 @@ void fSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
 	else if(h->joint[jnt].numMot == 5) { // Fingers
 
 		int fing[5];
-		if(jnt == RF1) {
+		if(isHandRight(jnt)) {
 			fing[0] = RF1;
 			fing[1] = RF2;
 			fing[2] = RF3;
 			fing[3] = RF4;
 			fing[4] = RF5;
 		}
-		else if(jnt == LF1) {
+		if(isHandLeft(jnt)) {
 			fing[0] = LF1;
 			fing[1] = LF2;
 			fing[2] = LF3;
@@ -1692,14 +1686,8 @@ void hSetEncRef(int jnt, struct hubo_state *s, struct hubo_param *h, struct can_
                 check--;
         }
     }
-
-//    if( check==0 | jnt == RF1 | jnt == LF1 )
-      if( jnt != RF2 & jnt != RF3 & jnt != RF4 & jnt !=RF5 &
-          jnt != LF2 & jnt != LF3 & jnt != LF4 & jnt !=LF5) 
-      {
-        fSetEncRef(jnt, s, h, f);
-        sendCan(getSocket(h,jnt), f);
-      }
+      fSetEncRef(jnt, s, h, f);
+      sendCan(getSocket(h,jnt), f);
 }
 
 void hIniAll(struct hubo_ref *r, struct hubo_param *h, struct hubo_state *s, struct can_frame *f) {
@@ -2767,3 +2755,18 @@ uint8_t isHands(int jnt)
         return 0;
 }
 
+uint8_t isHandRight(int jnt)
+{
+    if( (jnt == RF1) | (jnt == RF2) | (jnt == RF3) | (jnt == RF4) | (jnt == RF5) )
+        return 1;
+    else
+        return 0;
+}
+
+uint8_t isHandLeft(int jnt)
+{
+    if( (jnt == LF1) | (jnt == LF2) | (jnt == LF3) | (jnt == LF4) | (jnt == LF5) )     
+        return 1;
+    else
+        return 0;
+}
