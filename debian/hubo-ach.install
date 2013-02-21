@@ -4,5 +4,4 @@ usr/bin/hubo-read
 usr/bin/hubo-ach
 etc/hubo-ach/joint.table
 etc/hubo-ach/sensor.table
-usr/lib/libhuboparams.la
 usr/lib/libhuboparams.so
