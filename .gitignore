@@ -1,9 +1,10 @@
+*.o
+*.log
+*.Po
 /hubo-main
 /hubo-default
 /hubo-console
 /hubo-loop
-/src/*.o
-/*.log
 /Makefile.in
 /Makefile
 /aclocal.m4
@@ -12,7 +13,6 @@
 /config.guess
 /config.h
 /config.h.in
-/config.log
 /config.status
 /config.sub
 /configure
@@ -23,7 +23,6 @@
 /ltmain.sh
 /missing
 /stamp-h1
-*.Po
 hubo-ach-*.tar.gz
 /m4/libtool.m4
 /m4/ltoptions.m4
@@ -36,8 +35,12 @@ hubo-ach-*.tar.gz
 /debian/tmp
 /debian/hubo-ach-utils
 /debian/hubo-ach-dev
-/debian/hubo-ach-dev.debhelper.log
 /debian/hubo-ach-dev.substvars
-/debian/hubo-ach-utils.debhelper.log
 /debian/hubo-ach-utils.substvars
 /debian/files
+/libhuboparams.la
+/hubo-jointparams.lo
+/debian/hubo-ach
+.libs
+/debian/hubo-ach.debhelper.log
+/debian/hubo-ach.substvars
