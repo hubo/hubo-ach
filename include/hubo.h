@@ -222,7 +222,7 @@ typedef struct hubo_jmc_state {
 }hubo_jmc_state_t;
 
 typedef struct hubo_state {
-	struct hubo_imu imu[HUBO_IMU_COUNT];	///< IMU
+	hubo_imu_t imu[HUBO_IMU_COUNT];	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
     struct hubo_joint_status status[HUBO_JOINT_COUNT];
