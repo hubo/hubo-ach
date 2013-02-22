@@ -2671,7 +2671,7 @@ int decodeFrame(struct hubo_state *s, hubo_param_t *h, struct can_frame *f) {
 
 int isError( int jnt, struct hubo_state *s) {
     int v = 0;
-    struct hubo_joint_status e = s->status[jnt];
+    hubo_joint_status_t e = s->status[jnt];
     v = e.jam + 
         e.pwmSaturated + 
         e.bigError + 
