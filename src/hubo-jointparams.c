@@ -36,7 +36,7 @@ static char *sensorFileLocation = "/etc/" PACKAGE_NAME "/sensor.table";
 
 
 
-int setSensorDefaults( struct hubo_param *h ) {
+int setSensorDefaults( hubo_param_t *h ) {
     
 	FILE *ptr_file;
 
@@ -121,7 +121,7 @@ int setSensorDefaults( struct hubo_param *h ) {
 
 
 
-int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
+int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
 //	if(strcmp(envVar, jointFileLocation) != 0) exit(EXIT_FAILURE);

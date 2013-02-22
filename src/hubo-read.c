@@ -128,7 +128,7 @@ void huboLoop() {
 	// get initial values for hubo
 	struct hubo_ref H_ref;
 	struct hubo_state H_state;
-	struct hubo_param H_param;
+	hubo_param_t H_param;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
 	memset( &H_param, 0, sizeof(H_param));
