@@ -161,7 +161,7 @@ typedef struct hubo_jmc_param {
 typedef struct hubo_param {
 	struct hubo_joint_param joint[HUBO_JOINT_COUNT];	///< Joint param
 	struct hubo_jmc_param driver[HUBO_JMC_COUNT];		///< Motor driver param
-	struct hubo_sensor_param sensor[HUBO_SENSOR_COUNT];	///< Sensor param
+	hubo_sensor_param_t sensor[HUBO_SENSOR_COUNT];	///< Sensor param
 } hubo_param_t;
 
 typedef struct hubo_imu {

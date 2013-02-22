@@ -48,7 +48,7 @@ int setSensorDefaults( struct hubo_param *h ) {
     }
 	// instantiate stucts for getting values from joint.table
 	// file and copying them to
-	struct hubo_sensor_param tp;	//hubo_jubo_param struct for file parsing
+	hubo_sensor_param_t tp;	//hubo_jubo_param struct for file parsing
 
 	// initialize all structs with zeros
 	memset(&tp,      0, sizeof(tp));
