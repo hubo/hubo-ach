@@ -77,12 +77,12 @@ char* getArg(string s, int argNum);
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state);
 int name2mot(char*s, hubo_param_t *h);
 double hubo_get(char*s, struct hubo_ref *h, hubo_param_t *p);
-void hubo_jmc_beep(hubo_param_t *h, struct hubo_board_cmd *c, char* buff);
-void hubo_jmc_home(hubo_param_t *h, struct hubo_board_cmd *c, char* buff);
+void hubo_jmc_beep(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
+void hubo_jmc_home(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
-void hubo_jmc_home_all(hubo_param_t *h, struct hubo_board_cmd *c, char* buff);
-void hubo_enc_reset(hubo_param_t *h, struct hubo_board_cmd *c, int jnt);
-void hubo_startup_all(hubo_param_t *h, struct hubo_board_cmd *c, char* buff);
+void hubo_jmc_home_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
+void hubo_enc_reset(hubo_param_t *h, hubo_board_cmd_t *c, int jnt);
+void hubo_startup_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 int name2sensor(char* name, hubo_param_t *h);
 double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
@@ -111,7 +111,7 @@ int main() {
 
         // get initial values for hubo
         struct hubo_ref H_ref;
-        struct hubo_board_cmd H_cmd;
+        hubo_board_cmd_t H_cmd;
         struct hubo_state H_state;
         hubo_param_t H_param;
         memset( &H_ref,   0, sizeof(H_ref));
@@ -366,7 +366,7 @@ double hubo_set(char*s, hubo_param_t *p) {
     return jointNo;
 }
 
-void hubo_jmc_beep(hubo_param_t *h, struct hubo_board_cmd *c, char* buff) {
+void hubo_jmc_beep(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
         /* make beep */
         c->type = D_JMC_BEEP;
         c->joint = name2mot(getArg(buff, 1), h);
@@ -376,7 +376,7 @@ void hubo_jmc_beep(hubo_param_t *h, struct hubo_board_cmd *c, char* buff) {
 
 }
 
-void hubo_jmc_home(hubo_param_t *h, struct hubo_board_cmd *c, char* buff) {
+void hubo_jmc_home(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
         /* make beiep */
         c->type = D_GOTO_HOME;
         c->joint = name2mot(getArg(buff, 1), h);
@@ -384,13 +384,13 @@ void hubo_jmc_home(hubo_param_t *h, struct hubo_board_cmd *c, char* buff) {
 //	printf(">> Home %s \n",getArg(buff,1));
 }
 
-void hubo_enc_reset(hubo_param_t *h, struct hubo_board_cmd *c, int jnt) {
+void hubo_enc_reset(hubo_param_t *h, hubo_board_cmd_t *c, int jnt) {
         c->type = D_ZERO_ENCODER;
 //        c->joint = name2mot(getArg(buff, 1), h);
         c->joint = jnt;
         int r= ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 }
-void hubo_jmc_home_all(hubo_param_t *h, struct hubo_board_cmd *c, char* buff) {
+void hubo_jmc_home_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
     /* make beiep */
     c->type = D_GOTO_HOME_ALL;
     int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
@@ -408,7 +408,7 @@ void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state) {
     // posix rt signal can give signal number and an interger
 }
 
-void hubo_startup_all(hubo_param_t *h, struct hubo_board_cmd *c, char* buff) {
+void hubo_startup_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
 
 	c->type = D_SENSOR_STARTUP;
 	int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c));

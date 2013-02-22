@@ -126,7 +126,7 @@ void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_par
 void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, struct hubo_state *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, struct hubo_ref *r, hubo_param_t *h, struct hubo_state *s, struct can_frame *f);
 void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
-        struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f);
+        struct hubo_state *s, hubo_board_cmd_t *c, struct can_frame *f);
 void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
     struct hubo_state *s, struct can_frame *f, int send);
 int getEncRef(int jnt, struct hubo_state *s, hubo_param_t *h);
@@ -171,13 +171,13 @@ uint8_t getFingerInt(double n);
 void refFilterMode(struct hubo_ref *r, int L, hubo_param_t *h, struct hubo_state *s, struct hubo_ref *f);
 
 /*   ~~~~   Added by M.X. Grey. Auxiliary CAN functions   ~~~~   */
-void hSetPosGain(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hSetPosGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetPosGain0(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki, int Kd);
 void fSetPosGain1(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki, int Kd);
-void hSetCurGain(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hSetCurGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetCurGain0(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki, int Kd);
 void fSetCurGain1(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki, int Kd);
-void hOpenLoopPWM(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fOpenLoopPWM_2CH(int jnt, hubo_param_t *h, struct can_frame *f,
             int dir0, int duty0, int dir1, int duty1);
 void fOpenLoopPWM_3CH(int jnt, hubo_param_t *h, struct can_frame *f,
@@ -191,18 +191,18 @@ void hSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t sou
 void fSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, int sound);
 void hSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone);
 void fSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone);
-void hSetHomeSearchParams( struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f );
+void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f );
 void fSetHomeSearchParams(int jnt, hubo_param_t *h, struct can_frame *f, int limit,
                 unsigned int dir, unsigned int offset);
-void hSetEncoderResolution(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hSetEncoderResolution(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetEncoderResolution(int jnt, hubo_param_t *h, struct can_frame *f, int res);
 void hSetMaxAccVel(int jnt, hubo_param_t *h, struct can_frame *f, int maxAcc, int maxVel);
 void fSetMaxAccVel(int jnt, hubo_param_t *h, struct can_frame *f, int maxAcc, int maxVel);
-void hSetLowerPosLimit(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetLowerPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit);
-void hSetUpperPosLimit(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetUpperPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit);
-void hSetHomeAccVel(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f);
+void hSetHomeAccVel(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetHomeAccVel(int jnt, hubo_param_t *h, struct can_frame *f, float mAcc, int mVelS,
             int mVelP, int mode, int mDuty);
 void hSetGainOverride(int jnt, hubo_param_t *h, struct can_frame *f, int gain0, int gain1, double dur);
@@ -268,7 +268,7 @@ void huboLoop(hubo_param_t *H_param) {
     // get initial values for hubo
     struct hubo_ref H_ref;
     struct hubo_ref H_ref_filter;
-    struct hubo_board_cmd H_cmd;
+    hubo_board_cmd_t H_cmd;
     struct hubo_state H_state;
     memset( &H_ref,   0, sizeof(H_ref));
     memset( &H_ref_filter, 0, sizeof(H_ref_filter) );
@@ -822,7 +822,7 @@ uint8_t getFingerInt(double n){
 	return t;
 }
 
-void hSetPosGain(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetPosGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     int jnt = c->joint;
     if(h->joint[jnt].motNo == 0 || h->joint[jnt].numMot > 2)
@@ -866,7 +866,7 @@ void fSetPosGain1(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki,
     f->can_dlc    = 8;
 }
 
-void hSetCurGain(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetCurGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     int jnt = c->joint;
     if(h->joint[jnt].motNo == 0 || h->joint[jnt].numMot > 2)
@@ -959,7 +959,7 @@ void fSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, int sound)
 }
 
 
-void hOpenLoopPWM(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     int jnt = c->joint;
     
@@ -1245,7 +1245,7 @@ void fSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone)
     f->can_dlc    = 3;
 }
 
-void hSetHomeSearchParams( struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f )
+void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f )
 {
     unsigned int dir, offset;
     
@@ -1285,7 +1285,7 @@ void fSetHomeSearchParams(int jnt, hubo_param_t *h, struct can_frame *f, int lim
     f->can_dlc    = 8;
 }
 
-void hSetEncoderResolution(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetEncoderResolution(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     uint16_t res;
     
@@ -1366,7 +1366,7 @@ void fSetMaxAccVel(int jnt, hubo_param_t *h, struct can_frame *f, int maxAcc, in
     f->can_dlc    = 6;
 }
 
-void hSetLowerPosLimit(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     uint8_t enable, update;
     
@@ -1413,7 +1413,7 @@ void fSetLowerPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable
 
 
 
-void hSetUpperPosLimit(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     uint8_t enable, update;
     
@@ -1458,7 +1458,7 @@ void fSetUpperPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable
     f->can_dlc    = 7;
 }
 
-void hSetHomeAccVel(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetHomeAccVel(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     int mode;
 
@@ -1545,7 +1545,7 @@ void fSetBoardNumber(int jnt, hubo_param_t *h, struct can_frame *f, int boardNum
     f->can_dlc = 4;
 }
 
-void hSetJamPwmLimits(struct hubo_board_cmd *c, hubo_param_t *h, struct can_frame *f)
+void hSetJamPwmLimits(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
     fprintf(stdout, "Changing Jam and PWM Saturation limits:\n\t"
             "Jam Duty: %d \t Sat Duty: %d\n\t"
@@ -2235,7 +2235,7 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, struct hub
 
 
 void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
-                struct hubo_state *s, struct hubo_board_cmd *c, struct can_frame *f)
+                struct hubo_state *s, hubo_board_cmd_t *c, struct can_frame *f)
 {
 
     size_t fs;
@@ -2711,7 +2711,7 @@ int main(int argc, char **argv) {
 
     // Initialize Hubo Structs
     struct hubo_ref H_ref;
-    struct hubo_board_cmd H_cmd;
+    hubo_board_cmd_t H_cmd;
     struct hubo_state H_state;
     hubo_param_t H_param;
     memset( &H_ref,   0, sizeof(H_ref));
