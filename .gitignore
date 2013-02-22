@@ -2,7 +2,7 @@
 /hubo-default
 /hubo-console
 /hubo-loop
-/src/*.o
+*.o
 /*.log
 /Makefile.in
 /Makefile
@@ -41,3 +41,9 @@ hubo-ach-*.tar.gz
 /debian/hubo-ach-utils.debhelper.log
 /debian/hubo-ach-utils.substvars
 /debian/files
+/libhuboparams.la
+/hubo-jointparams.lo
+/debian/hubo-ach
+.libs
+/debian/hubo-ach.debhelper.log
+/debian/hubo-ach.substvars
