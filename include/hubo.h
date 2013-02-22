@@ -179,7 +179,7 @@ struct hubo_ft {
 	double f_z;	///< Force in Z (Fz)
 };
 
-struct hubo_joint_state {
+typedef struct hubo_joint_state {
         double ref;         ///< Last reference value sent
 	double pos;     	///< actual position (rad)
 	double cur;     	///< actual current (amps)
@@ -215,13 +215,13 @@ struct hubo_joint_status {
     uint8_t tempError;
 };
 
-struct hubo_jmc_state {
+typedef struct hubo_jmc_state {
 	double temp;	///< temperature (dec C)
 	// TODO: Add more things, such as whether an alarm is on
 	//	 or whether motor control / FETs are on
 }hubo_jmc_state_t;
 
-struct hubo_state {
+typedef struct hubo_state {
 	struct hubo_imu imu[HUBO_IMU_COUNT];	///< IMU
 	struct hubo_ft ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
@@ -231,7 +231,7 @@ struct hubo_state {
 	int refWait;
 }hubo_state_t;
 
-struct hubo_ref {
+typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
 }hubo_ref_t;
