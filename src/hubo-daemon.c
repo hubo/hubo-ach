@@ -732,7 +732,7 @@ void getCurrentAllSlow(struct hubo_state *s, struct hubo_param *h, struct can_fr
 
 int getEncRef(int jnt, struct hubo_state *s , struct hubo_param *h) {
     // set encoder from reference
-    struct hubo_joint_param *p = &h->joint[jnt];
+    hubo_joint_param_t *p = &h->joint[jnt];
     return (int32_t)((double)p->driven/(double)p->drive*(double)p->harmonic*
                 (double)p->enc*(double)s->joint[jnt].ref/2.0/M_PI);
 }
@@ -2391,7 +2391,7 @@ void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, struct hubo_param 
 
 
 double enc2rad(int jnt, int enc, struct hubo_param *h) {
-    struct hubo_joint_param *p = &h->joint[jnt];
+    hubo_joint_param_t *p = &h->joint[jnt];
         return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*M_PI);
 }
 
