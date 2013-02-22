@@ -89,12 +89,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NSEC_PER_SEC    1000000000
 
 
-struct timeb {
+typedef struct timeb {
 	time_t   time;
 	unsigned short millitm;
 	short    timezone;
 	short    dstflag;
-};
+} timeb_t;
 
 
 
@@ -103,7 +103,7 @@ void stack_prefault(void);
 static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
 void huboLoop();
-int ftime(struct timeb *tp);
+int ftime(timeb_t *tp);
 
 
 
