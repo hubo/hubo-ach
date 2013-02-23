@@ -225,15 +225,15 @@ typedef struct hubo_state {
 	hubo_imu_t imu[HUBO_IMU_COUNT];	///< IMU
 	hubo_ft_t ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
-    hubo_joint_status_t status[HUBO_JOINT_COUNT];
+        hubo_joint_status_t status[HUBO_JOINT_COUNT];
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
-    double time;
-	int refWait;
+        double time;
+	int16_t refWait;
 }hubo_state_t;
 
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
-	int mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
+	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
 }hubo_ref_t;
 
 typedef struct jmcDriver{
@@ -246,7 +246,7 @@ typedef struct hubo_board_cmd {
 	hubo_d_cmd_t type;		// Type of command. This value is REQUIRED. 
 					// Enumerated in hubo-daemonID.h
 
-	int joint;			// Target joint. If the message is meant for an entire board,
+	int16_t joint;			// Target joint. If the message is meant for an entire board,
 					// then fill this value with any joint number belonging to that
 					// board. This value is REQUIRED (with a few exceptions).
 
@@ -254,7 +254,7 @@ typedef struct hubo_board_cmd {
 					// Note: This might or might not be used depending on the 
 					// type of message. TODO: Figure out if 8 is sufficient (or excessive)
 
-	int iValues[8];			// Integer values for the message. This may or may not be used
+	int16_t iValues[8];			// Integer values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 10 is sufficient
 	
 	double dValues[8];		// Double values for the message. This may or may not be used
