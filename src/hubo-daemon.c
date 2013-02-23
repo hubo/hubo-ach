@@ -227,7 +227,7 @@ void fGetBoardParamI( int jnt, struct hubo_param *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, struct hubo_param *h, struct hubo_state *s, struct can_frame *f );
 
 void clearCanBuff(struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
-void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
+void getStatusIterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f);
 int isError( int jnt, struct hubo_state *s);
 uint8_t isHands(int jnt);
 uint8_t getJMC( struct hubo_param *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; }
@@ -401,7 +401,7 @@ void huboLoop(struct hubo_param *H_param) {
         getIMUAllSlow(&H_state, H_param, &frame);
 
         /* Update next joint status (one each loop) */
-//        getStatusItterate( &H_state, &H_param, &frame);
+//        getStatusIterate( &H_state, &H_param, &frame);
 
         /* Read any aditional data left on the buffer */
         clearCanBuff(&H_state, H_param, &frame);
@@ -437,7 +437,7 @@ void clearCanBuff(struct hubo_state *s, struct hubo_param *h, struct can_frame *
     }
 }
 
-void getStatusItterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
+void getStatusIterate( struct hubo_state *s, struct hubo_param *h, struct can_frame *f) {
 
 int statusJntItt = 5;
 int statusJnti = 0;
