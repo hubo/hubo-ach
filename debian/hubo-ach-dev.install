@@ -1,1 +1,3 @@
 usr/include/hubo.h
+usr/include/hubo-daemonID.h
+usr/include/hubo-jointparams.h

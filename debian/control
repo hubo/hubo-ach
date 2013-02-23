@@ -1,14 +1,14 @@
 Source: hubo-ach
 Priority: extra
-Maintainer: Dan Lofaro <dan@danlofaro.com>
-Build-Depends: debhelper (>= 9.20120909), autotools-dev, libach-dev, libreadline-dev
+Maintainer: Danel M. Lofaro <dan@danlofaro.com>
+Build-Depends: debhelper (>= 9.0), autotools-dev, libach-dev, libreadline-dev
 Standards-Version: 3.9.4
 Section: libs
 Homepage: http://github.com/hubo/hubo-ach
 Vcs-Git: git://github.com/hubo/hubo-ach
 Vcs-Browser: https://github.com/hubo/hubo-ach
 
-Package: hubo-ach-utils
+Package: hubo-ach
 Section: libs
 Architecture: any
 Depends: libach1, ${shlibs:Depends}, ${misc:Depends}
@@ -18,6 +18,6 @@ Description: Low level controller programs for the Hubo 2 and Hubo 2+ platforms.
 Package: hubo-ach-dev
 Section: libs
 Architecture: any
-Depends: ${misc:Depends}
+Depends: hubo-ach, ${misc:Depends}
 Description: Low level controller headers for the Hubo 2 and Hubo 2+ platforms.
  Header files for hubo-ach.

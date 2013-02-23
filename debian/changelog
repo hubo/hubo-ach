@@ -1,3 +1,15 @@
+hubo-ach (0.0.20130220) stable; urgency=low
+
+  * Fixed hubo-ach-dev include errors in deb file - thanks saulrh
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Sun, 20 Feb 2013 16:23:00 -0400
+
+hubo-ach (0.0.20130210) stable; urgency=low
+
+  * DRC-Hubo Meeting Release
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Sun, 04 Feb 2013 22:28:00 -0400
+
 hubo-ach (0.0.20130203) unstable; urgency=low
 
   * Initial Release. Local package.

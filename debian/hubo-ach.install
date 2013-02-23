@@ -1,0 +1,7 @@
+usr/bin/hubo-daemon
+usr/bin/hubo-console
+usr/bin/hubo-read
+usr/bin/hubo-ach
+etc/hubo-ach/joint.table
+etc/hubo-ach/sensor.table
+usr/lib/libhuboparams.so
