@@ -36,7 +36,7 @@ static char *sensorFileLocation = "/etc/" PACKAGE_NAME "/sensor.table";
 
 
 
-int setSensorDefaults( struct hubo_param *h ) {
+int setSensorDefaults( hubo_param_t *h ) {
     
 	FILE *ptr_file;
 
@@ -48,7 +48,7 @@ int setSensorDefaults( struct hubo_param *h ) {
     }
 	// instantiate stucts for getting values from joint.table
 	// file and copying them to
-	struct hubo_sensor_param tp;	//hubo_jubo_param struct for file parsing
+	hubo_sensor_param_t tp;	//hubo_jubo_param struct for file parsing
 
 	// initialize all structs with zeros
 	memset(&tp,      0, sizeof(tp));
@@ -121,7 +121,7 @@ int setSensorDefaults( struct hubo_param *h ) {
 
 
 
-int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
+int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
 //	if(strcmp(envVar, jointFileLocation) != 0) exit(EXIT_FAILURE);
@@ -136,8 +136,8 @@ int setJointParams(struct hubo_param *H_param, struct hubo_state *H_state) {
     }
 	// instantiate stucts for getting values from joint.table
 	// file and copying them to
-	struct hubo_joint_param tp;	//hubo_jubo_param struct for file parsing
-	struct hubo_jmc_param tp2;	//jmcDriver struct member for file parsing
+	hubo_joint_param_t tp;	//hubo_jubo_param struct for file parsing
+	hubo_jmc_param_t tp2;	//jmcDriver struct member for file parsing
 	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
 
 	// initialize all structs with zeros
