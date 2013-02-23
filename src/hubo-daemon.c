@@ -276,13 +276,13 @@ void huboLoop(hubo_param_t *H_param) {
     memset( &H_state, 0, sizeof(H_state));
 
     size_t fs;
-    int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+    int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_ref) == fs, __LINE__ );
     r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
-    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_COPY );
+    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
@@ -355,7 +355,7 @@ void huboLoop(hubo_param_t *H_param) {
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         /* Get latest ACH message */
-        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_COPY );
+        r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         if(ACH_OK != r) {
                 if(debug) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
@@ -392,7 +392,6 @@ void huboLoop(hubo_param_t *H_param) {
         
         /* Get FT Sensor data */
         getFTAllSlow(&H_state, H_param, &frame);
-                
 
         /* Get foot acceleration data */
         getAccAllSlow(&H_state, H_param, &frame);
@@ -430,9 +429,9 @@ void huboLoop(hubo_param_t *H_param) {
 void clearCanBuff(struct hubo_state *s, hubo_param_t *h, struct can_frame *f) {
     int i = 0;
     for(i = 0; i < readBuffi; i++) {
-        readCan(0, f, HUBO_CAN_TIMEOUT_DEFAULT/3.0);
+        readCan(0, f, 0);
         decodeFrame(s, h, f);
-        readCan(1, f, HUBO_CAN_TIMEOUT_DEFAULT/3.0);
+        readCan(1, f, 0);
         decodeFrame(s, h, f);
     }
 }
