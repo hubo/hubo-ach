@@ -129,8 +129,17 @@ static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond p
 	timeout.tv_usec = timeo;
 	FD_ZERO(&fds);
 	FD_SET(sockfd, &fds);
+  
 
-	while(n_left>0){
+        /* read buffer only no wait */ 
+        char zeroFlag = 0;
+        if(0 == timeo) {
+            n_read=read(sockfd,ptr,n_left);
+            zeroFlag = 1;
+        }
+
+
+	while(n_left>0 & zeroFlag == 0){
 
 		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){
 			if((n_read=read(sockfd,ptr,n_left))<0){
