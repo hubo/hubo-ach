@@ -133,11 +133,11 @@ static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond p
 
         /* read buffer only no wait */ 
         char zeroFlag = 0;
-        if(0 == timeo) {
+/*        if(0 == timeo) {
             n_read=read(sockfd,ptr,n_left);
             zeroFlag = 1;
         }
-
+*/
 
 	while(n_left>0 & zeroFlag == 0){
 

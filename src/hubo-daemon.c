@@ -400,10 +400,10 @@ void huboLoop(hubo_param_t *H_param) {
         getIMUAllSlow(&H_state, H_param, &frame);
 
         /* Update next joint status (one each loop) */
-//        getStatusIterate( &H_state, &H_param, &frame);
+        getStatusIterate( &H_state, H_param, &frame);
 
         /* Read any aditional data left on the buffer */
-        clearCanBuff(&H_state, H_param, &frame);
+//        clearCanBuff(&H_state, H_param, &frame);
 
 
         /* Get all Current data */

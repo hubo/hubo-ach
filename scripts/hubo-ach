@@ -94,6 +94,12 @@ StopHubo()
 
 StartHubo()
 {
+   RunDaemon
+   StartConsole
+}
+
+RunDaemon()
+{
 	case "$2" in
 	'help')
 		echo
@@ -119,7 +125,6 @@ StartHubo()
 
 		if [ $(pidof hubo-daemon) > 0		]
                 then
-		    sudo hubo-console
 	            exit 0 
                 else
 	    		sudo ifconfig can0 up
@@ -147,10 +152,14 @@ StartHubo()
 				fi
 			done
        	             	    sudo hubo-daemon $DAEMON_ARGS 
-			    sudo hubo-console
                 fi
 	;;
 	esac
+}
+
+StartConsole()
+{
+   hubo-console
 }
 
 VirtualHubo()
@@ -479,9 +488,12 @@ RestartHelp()
 ShowUsage()
 {
 	echo
-	echo 'start         : Start all channels and processes'
+	echo 'start         : Start all channels and processes and consle'
+	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
+        echo 'console       : Starts the hubo conole'
+        echo 'make          : makes all the hubo channels'
 	echo 'kill          : Emergency kill the daemon process'
 	echo 'killprocess   : Kill all processes starting with hubo'
 	echo 'killall       : Killprocess and rm all achshm-hubo ACH channels'
@@ -503,9 +515,24 @@ ShowUsage()
 
 
 case "$1" in
+# Start hubo-console
+	'console' )
+		StartConsole $@
+	;;
+
 # Start all channels and processes
+	'make' )
+		MakeAch $@
+	;;
+
+# Start all channels and processes and Console
 	'start' )
 		StartHubo $@
+	;;
+
+# Start all channels and processes
+	'run' )
+		RunDaemon $@
 	;;
 
 # Close all channels and processes
