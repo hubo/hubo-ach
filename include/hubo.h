@@ -3,6 +3,11 @@
 #define HUBO_PRIMARY_H
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 // for Hubo
 #include "hubo-daemonID.h"
 
@@ -262,6 +267,13 @@ struct hubo_board_cmd {
 
 
 extern int hubo_debug;
+
+
+#ifdef __cplusplus
+}
+#endif
+
+
 
 #endif //HUBO_PRIMARY_H
 
