@@ -121,7 +121,7 @@ int setSensorDefaults( hubo_param_t *h ) {
 
 
 
-int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
+int setJointParams(hubo_param_t *H_param, hubo_state_t *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
 //	if(strcmp(envVar, jointFileLocation) != 0) exit(EXIT_FAILURE);

@@ -3,7 +3,7 @@
 
 // sets all the joint parameters for Hubo in a 
 // hubo_param struct which is define  hubo.h. See ./include/hubo.h
-int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state);
+int setJointParams(hubo_param_t *H_param, hubo_state_t *H_state);
 
 int setSensorDefaults(hubo_param_t* H);
 // sets all the hubo_ref.ref[HUBO_JOINT_COUNT]
