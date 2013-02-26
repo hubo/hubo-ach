@@ -226,7 +226,7 @@ typedef struct hubo_state {
 	hubo_ft_t ft[4];   ///< ft sensors
 	hubo_joint_state_t joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
     hubo_joint_status_t status[HUBO_JOINT_COUNT];
-	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
+	hubo_jmc_state_t driver[HUBO_JMC_COUNT];
     double time;
 	int refWait;
 }hubo_state_t;
