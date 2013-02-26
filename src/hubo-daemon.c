@@ -101,8 +101,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void stack_prefault(void);
 static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
-void setEncRef(int jnt, struct hubo_ref *r, hubo_param_t *h);
-void setEncRefAll( struct hubo_ref *r, hubo_param_t *h);
+void setEncRef(int jnt, hubo_ref_t *r, hubo_param_t *h);
+void setEncRefAll( hubo_ref_t *r, hubo_param_t *h);
 void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void fResetEncoderToZero(int jnt, hubo_param_t *h, struct can_frame *f);
 void fGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f);
@@ -117,17 +117,17 @@ void fDisableMotorDriver(int jnt, hubo_param_t *h, struct can_frame *f);
 void fEnableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f);
 void fDisableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f);
 void fGotoLimitAndGoOffset(int jnt, hubo_param_t *h, struct can_frame *f);
-void hInitilizeBoard(int jnt, struct hubo_ref *r, hubo_param_t *h, struct can_frame *f);
+void hInitilizeBoard(int jnt, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
-void hSetEncRefAll(struct hubo_ref *r, hubo_param_t *h, struct can_frame *f);
-void hIniAll(struct hubo_ref *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
+void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
+void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
 void huboLoop(hubo_param_t *H_param);
 void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
-void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
-void hResetEncoderToZero(int jnt, struct hubo_ref *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
-void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
+void hFeedbackControllerOnOff(int jnt, hubo_ref_t *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
+void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
+void huboMessage(hubo_ref_t *r, struct hubo_ref *r_filt, hubo_param_t *h,
         hubo_state_t *s, hubo_board_cmd_t *c, struct can_frame *f);
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
+void hGotoLimitAndGoOffset(int jnt, hubo_ref_t *r, struct hubo_ref *r_filt, hubo_param_t *h,
     hubo_state_t *s, struct can_frame *f, int send);
 int getEncRef(int jnt, hubo_state_t *s, hubo_param_t *h);
 void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f);
@@ -147,8 +147,8 @@ void fGetIMU(int board, struct can_frame *f);
 void hGetIMU(int board, struct can_frame *f);
 void getIMUAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f);
-void setRefAll(struct hubo_ref *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
+void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
+void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, struct hubo_ref *r_filt, hubo_param_t *h,
     hubo_state_t *s, struct can_frame *f);
 void hInitializeBoardAll(hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
 void fNullAccFTSensor(int bno, int nullType, struct can_frame *f);
@@ -168,7 +168,7 @@ void hNullAllSensors( hubo_param_t *h, struct can_frame *f );
 double doubleFromBytePair(uint8_t data0, uint8_t data1);
 uint8_t getFingerInt(double n);
 
-void refFilterMode(struct hubo_ref *r, int L, hubo_param_t *h, hubo_state_t *s, struct hubo_ref *f);
+void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, struct hubo_ref *f);
 
 /*   ~~~~   Added by M.X. Grey. Auxiliary CAN functions   ~~~~   */
 void hSetPosGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
@@ -266,8 +266,8 @@ int readBuffi = 3;
 void huboLoop(hubo_param_t *H_param) {
     int i = 0;  // iterator
     // get initial values for hubo
-    struct hubo_ref H_ref;
-    struct hubo_ref H_ref_filter;
+    hubo_ref_t H_ref;
+    hubo_ref_t H_ref_filter;
     hubo_board_cmd_t H_cmd;
     hubo_state_t H_state;
     memset( &H_ref,   0, sizeof(H_ref));
@@ -473,7 +473,7 @@ static inline void tsnorm(struct timespec *ts){
 
 
 
-void refFilterMode(struct hubo_ref *r, int L, hubo_param_t *h, hubo_state_t *s, struct hubo_ref *f) {
+void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, struct hubo_ref *f) {
     int i = 0;
     double e = 0.0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
@@ -517,7 +517,7 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 }
 */
 
-void setRefAll(struct hubo_ref *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
+void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
 	int c[HUBO_JMC_COUNT];
 	memset( &c, 0, sizeof(c));
@@ -1606,7 +1606,7 @@ void fSetErrorBound(int jnt, hubo_param_t *h, struct can_frame *f, int inputDiff
 
 
 
-void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
+void hGotoLimitAndGoOffset(int jnt, hubo_ref_t *r, struct hubo_ref *r_filt, hubo_param_t *h,
         hubo_state_t *s, struct can_frame *f, int send)
 {
     fGotoLimitAndGoOffset(jnt, h, f);
@@ -1625,7 +1625,7 @@ void hGotoLimitAndGoOffset(int jnt, struct hubo_ref *r, struct hubo_ref *r_filt,
 
 }
 
-void hGotoLimitAndGoOffsetAll(struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
+void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, struct hubo_ref *r_filt, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
     fprintf(stdout, "Homing all joints!\n\t");
     int i = 0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
@@ -1702,7 +1702,7 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f) 
       }
 }
 
-void hIniAll(struct hubo_ref *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
+void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
 // --std=c99
         printf("2\n");
     int i = 0;
@@ -1751,7 +1751,7 @@ void fDisableMotorDriver(int jnt, hubo_param_t *h,  struct can_frame *f) {
     f->can_dlc    = 3;
 }
 
-void hFeedbackControllerOnOff(int jnt, struct hubo_ref *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff) {
+void hFeedbackControllerOnOff(int jnt, hubo_ref_t *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff) {
 
 if(isHands(jnt) == 0) {
     if(onOff == D_ENABLE) { // ctrl on FET
@@ -1803,7 +1803,7 @@ void fDisableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f)
     f->can_dlc    = 2;
 }
 
-void hResetEncoderToZero(int jnt, struct hubo_ref *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
+void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
     /* Get Board Status */
     hGetBoardStatus(jnt, s, h, f);
     if( 1 == isError(jnt, s) | jnt == RWP | jnt == LWP){
@@ -2234,7 +2234,7 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, hubo_state
 }
 
 
-void huboMessage(struct hubo_ref *r, struct hubo_ref *r_filt, hubo_param_t *h,
+void huboMessage(hubo_ref_t *r, struct hubo_ref *r_filt, hubo_param_t *h,
                 hubo_state_t *s, hubo_board_cmd_t *c, struct can_frame *f)
 {
 
@@ -2710,7 +2710,7 @@ int main(int argc, char **argv) {
     
 
     // Initialize Hubo Structs
-    struct hubo_ref H_ref;
+    hubo_ref_t H_ref;
     hubo_board_cmd_t H_cmd;
     hubo_state_t H_state;
     hubo_param_t H_param;

@@ -126,7 +126,7 @@ int hubo_debug = 1;
 
 void huboLoop() {
 	// get initial values for hubo
-	struct hubo_ref H_ref;
+	hubo_ref_t H_ref;
 	hubo_state_t H_state;
 	hubo_param_t H_param;
 	memset( &H_ref,   0, sizeof(H_ref));

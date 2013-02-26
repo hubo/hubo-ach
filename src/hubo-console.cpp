@@ -74,9 +74,9 @@ void *xmalloc (int);
 void parse(char *s);
 int test(char *s , struct hubo *h);
 char* getArg(string s, int argNum);
-void hubo_update(struct hubo_ref *h_ref, hubo_state_t *h_state);
+void hubo_update(hubo_ref_t *h_ref, hubo_state_t *h_state);
 int name2mot(char*s, hubo_param_t *h);
-double hubo_get(char*s, struct hubo_ref *h, hubo_param_t *p);
+double hubo_get(char*s, hubo_ref_t *h, hubo_param_t *p);
 void hubo_jmc_beep(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 void hubo_jmc_home(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
@@ -110,7 +110,7 @@ int main() {
        assert( ACH_OK == r );
 
         // get initial values for hubo
-        struct hubo_ref H_ref;
+        hubo_ref_t H_ref;
         hubo_board_cmd_t H_cmd;
         hubo_state_t H_state;
         hubo_param_t H_param;
@@ -351,7 +351,7 @@ int main() {
     return 0;
 }
 
-double hubo_get(char*s, struct hubo_ref *h, hubo_param_t *p) {
+double hubo_get(char*s, hubo_ref_t *h, hubo_param_t *p) {
 
 	/* get joint number */
 	int jointNo = name2mot(getArg(s,1),p);
@@ -396,7 +396,7 @@ void hubo_jmc_home_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
     int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
-void hubo_update(struct hubo_ref *h_ref, hubo_state_t *h_state) {
+void hubo_update(hubo_ref_t *h_ref, hubo_state_t *h_state) {
     size_t fs;
     int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );
     if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
