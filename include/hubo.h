@@ -256,12 +256,12 @@ typedef struct hubo_state {
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
         double time;
 	int16_t refWait;
-}hubo_state_t;
+} hubo_state_t;
 
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
-}hubo_ref_t;
+} hubo_ref_t;
 
 typedef struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive
