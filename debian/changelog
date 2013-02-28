@@ -1,8 +1,14 @@
+hubo-ach (0.0.20130224) stable; urgency=low
+
+  * Added motor driver status update
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Sun, 24 Feb 2013 18:04:00 -0400
+
 hubo-ach (0.0.20130223) stable; urgency=low
 
   * added typedef to the hubo.h to work better with c++
 
- -- Daniel M. Lofaro <dan@danlofaro.com>  Sun, 23 Feb 2013 18:05:00 -0400
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Sat, 23 Feb 2013 18:05:00 -0400
 
 hubo-ach (0.0.20130220) stable; urgency=low
 
