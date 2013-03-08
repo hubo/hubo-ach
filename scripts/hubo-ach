@@ -35,6 +35,7 @@ MakeAch()
 	ach -1 -C hubo-ref -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
+        sudo chmod 777 /dev/shm/achshm-hubo-*
 }
 
 Kill()
