@@ -133,7 +133,7 @@ typedef enum {
 	HUBO_IMU1	  = 5, ///< Index of IMU1
 	HUBO_IMU2	  = 6,  ///< Index of IMU2
     SENSOR_INDEX_COUNT
-} hubo_sensor_index_t;
+}__attribute__((packed)) hubo_sensor_index_t;
 
 
 #define HUBO_IMU_COUNT 3
@@ -141,18 +141,18 @@ typedef enum {
     TILT_R  = 0,
     TILT_L  = 1,
     IMU     = 2
-} hubo_imu_index_t;
+}__attribute__((packed)) hubo_imu_index_t;
 
 typedef enum {
    HUBO_HOME_OK = 6
-}hubo_status_return_t;
+}__attribute__((packed)) hubo_status_return_t;
 
 typedef enum {
 	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
 	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
 	HUBO_REF_MODE_COMPLIANT     = 2, ///< Compliant mode, sets ref to current encoder position. 
 	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
-}hubo_mode_type_t;
+}__attribute__((packed)) hubo_mode_type_t;
 
 #define RIGHT 0
 #define LEFT 1
@@ -164,7 +164,7 @@ typedef struct hubo_sensor_param {
 	uint16_t can;		///< Can channel
 	uint8_t active;		///< Active sensor
 	uint16_t boardNo;	///< Sensor Board Nuber
-} hubo_sensor_param_t;
+}__attribute__((packed)) hubo_sensor_param_t;
 
 typedef struct hubo_joint_param {
 	uint16_t motNo;		///< Onboard channel number
@@ -179,17 +179,17 @@ typedef struct hubo_joint_param {
 	uint16_t jmc;		///< motor controller number
 	uint8_t can;		///< can channel
 	uint8_t numMot;		///< number of motors
-} hubo_joint_param_t;
+}__attribute__((packed)) hubo_joint_param_t;
 
 typedef struct hubo_jmc_param {
 	uint8_t joints[5]; // other motors on the same drive
-} hubo_jmc_param_t;
+}__attribute__((packed)) hubo_jmc_param_t;
 
 typedef struct hubo_param {
 	hubo_joint_param_t joint[HUBO_JOINT_COUNT];	///< Joint param
 	hubo_jmc_param_t driver[HUBO_JMC_COUNT];		///< Motor driver param
 	hubo_sensor_param_t sensor[HUBO_SENSOR_COUNT];	///< Sensor param
-} hubo_param_t;
+}__attribute__((packed)) hubo_param_t;
 
 typedef struct hubo_imu {
 	double a_x;     ///< angular position around x (rad)
@@ -198,13 +198,13 @@ typedef struct hubo_imu {
 	double w_x;     ///< rotational velocity in x (rad/s)
 	double w_y;     ///< rotational velocity in y (rad/s)
 	double w_z;     ///< rotational velocity in z (rad/s)
-} hubo_imu_t;
+}__attribute__((packed)) hubo_imu_t;
 
 typedef struct hubo_ft {
 	double m_x;	///< Moment in X (Mx)
 	double m_y;	///< Moment in Y (My)
 	double f_z;	///< Force in Z (Fz)
-} hubo_ft_t;
+}__attribute__((packed)) hubo_ft_t;
 
 typedef struct hubo_joint_state {
         double ref;         ///< Last reference value sent
@@ -215,7 +215,7 @@ typedef struct hubo_joint_state {
         double tmp;
 	uint8_t active; 	///< checks if the joint is active or not
 	uint8_t zeroed;		///< checks to see if the motor is zeroed
-}hubo_joint_state_t;
+}__attribute__((packed)) hubo_joint_state_t;
 
 typedef struct hubo_joint_status {
     // STATx0
@@ -240,13 +240,13 @@ typedef struct hubo_joint_status {
     uint8_t velError;
     uint8_t accError;
     uint8_t tempError;
-} hubo_joint_status_t;
+}__attribute__((packed)) hubo_joint_status_t;
 
 typedef struct hubo_jmc_state {
 	double temp;	///< temperature (dec C)
 	// TODO: Add more things, such as whether an alarm is on
 	//	 or whether motor control / FETs are on
-}hubo_jmc_state_t;
+}__attribute__((packed)) hubo_jmc_state_t;
 
 typedef struct hubo_state {
 	hubo_imu_t imu[HUBO_IMU_COUNT];	///< IMU
@@ -256,7 +256,7 @@ typedef struct hubo_state {
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
         double time;
 	int16_t refWait;
-}hubo_state_t;
+}__attribute__((packed)) hubo_state_t;
 
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
@@ -265,7 +265,7 @@ typedef struct hubo_ref {
 
 typedef struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive
-} jmcDriver_t;
+}__attribute__((packed)) jmcDriver_t;
 
 // Structure for sending board commands to the daemon
 typedef struct hubo_board_cmd {
@@ -286,7 +286,7 @@ typedef struct hubo_board_cmd {
 	
 	double dValues[8];		// Double values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 8 is sufficient
-} hubo_board_cmd_t;
+}__attribute__((packed)) hubo_board_cmd_t;
 
 
 extern int hubo_debug;
