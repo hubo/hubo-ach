@@ -159,26 +159,26 @@ typedef enum {
 
 
 typedef struct hubo_sensor_param {
-	char name[5];		///< Name of sensor
 	uint16_t sensNo;	///< Sensor number
 	uint16_t can;		///< Can channel
-	uint8_t active;		///< Active sensor
 	uint16_t boardNo;	///< Sensor Board Nuber
+	uint8_t active;		///< Active sensor
+	char name[5];		///< Name of sensor
 }__attribute__((packed)) hubo_sensor_param_t;
 
 typedef struct hubo_joint_param {
+	uint32_t refEnc; 	///< encoder reference
 	uint16_t motNo;		///< Onboard channel number
 	uint16_t jntNo;		///< what overall number joint is it i.e. what RSP=23
-	uint32_t refEnc; 	///< encoder reference
 	uint16_t drive;		///< size of drive wheel
 	uint16_t driven;	///< size of driven wheel
 	uint16_t harmonic;	///< gear ratio of harmonic drive
 	uint16_t enc;		///< encoder size
-	uint8_t dir;		///< direction
-	char name[4];		///< name
 	uint16_t jmc;		///< motor controller number
+	uint8_t dir;		///< direction
 	uint8_t can;		///< can channel
 	uint8_t numMot;		///< number of motors
+	char name[4];		///< name
 }__attribute__((packed)) hubo_joint_param_t;
 
 typedef struct hubo_jmc_param {
