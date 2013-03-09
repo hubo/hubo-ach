@@ -261,7 +261,7 @@ typedef struct hubo_state {
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
-}hubo_ref_t;
+}__attribute__((packed)) hubo_ref_t;
 
 typedef struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive
