@@ -57,6 +57,11 @@ achd -r pull $1 hubo-board-cmd &
 
 }
 
+KillRemote()
+{
+	sudo kill -9 $(pidof achd)
+}
+
 KillAll()
 {
 	StopHubo $2
@@ -64,7 +69,7 @@ KillAll()
 	Kill
 	sudo rm $LOCK_DIR/hubo-daemon
 	sudo rm /dev/shm/achshm-hubo*
-	sudo kill -9 $(pidof achd)
+	KillRemote
 }
 
 StopHubo()
@@ -516,6 +521,7 @@ ShowUsage()
 	echo 'debug         : Run the daemon in debug mode'
 	echo 'virtual       : Run the daemon without using CAN'
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
+	echo 'killremote    : kills the remote connection'
 	echo 'config        : Do a first-time setup'
 	echo
 	echo 'Type help after any of the above commands for'
@@ -546,6 +552,11 @@ case "$1" in
 # Start remote via achd
 	'remote' )
 		Remote $2
+	;;
+
+# Kills remote connection
+	'killremote' )
+		KillRemote
 	;;
 
 
