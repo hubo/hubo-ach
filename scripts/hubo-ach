@@ -47,6 +47,16 @@ Kill()
 	sudo kill -9 $(pidof hubo-console)
 }
 
+Remote()
+{
+
+MakeAch
+achd -r pull $1 hubo-ref &
+achd -r pull $1 hubo-state &
+achd -r pull $1 hubo-board-cmd &
+
+}
+
 KillAll()
 {
 	StopHubo $2
@@ -505,6 +515,7 @@ ShowUsage()
 	echo "default       : Sets Hubo's params to default values"
 	echo 'debug         : Run the daemon in debug mode'
 	echo 'virtual       : Run the daemon without using CAN'
+	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'config        : Do a first-time setup'
 	echo
 	echo 'Type help after any of the above commands for'
@@ -531,6 +542,12 @@ case "$1" in
 	'start' )
 		StartHubo $@
 	;;
+
+# Start remote via achd
+	'remote' )
+		Remote $2
+	;;
+
 
 # Start all channels and processes
 	'run' )
