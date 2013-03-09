@@ -1,3 +1,9 @@
+hubo-ach (0.0.20130309) stable; urgency=low
+
+  * Added cpp lib and added remote functionality
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Sat, 9 Mar 2013 12:12:00 -0400
+
 hubo-ach (0.0.20130224) stable; urgency=low
 
   * Added motor driver status update
