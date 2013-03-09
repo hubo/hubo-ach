@@ -2,6 +2,10 @@
 #ifndef CAN_ID_H
 #define CAN_ID_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define		LOWER_CAN		0
 #define		UPPER_CAN		1
 
@@ -448,5 +452,8 @@
 // Error status stuff
 #define H_HOME_SUCCESS      0x06
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

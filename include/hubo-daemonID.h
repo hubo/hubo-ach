@@ -14,6 +14,11 @@
 #define HUBO_DAEMONID_H
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* D_ = Daemon-related parameter */
 // hubo_d_cmd_t are used to specify board commands being sent to the hubo daemon
 //	They should be placed hubo_board_cmd_t.
@@ -385,7 +390,9 @@ typedef enum {
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 
 
 
