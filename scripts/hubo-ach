@@ -54,6 +54,7 @@ KillAll()
 	Kill
 	sudo rm $LOCK_DIR/hubo-daemon
 	sudo rm /dev/shm/achshm-hubo*
+	sudo kill -9 $(pidof achd)
 }
 
 StopHubo()
