@@ -2519,6 +2519,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             {
                 int jnt = h->driver[jmc].joints[i];
                 s->joint[jnt].cur = f->data[0+i*1]/100.0;
+		int cur0 = (f->data[0+i]<<2) | ( (f->data[3] >> (i*2))  & 0x03 );
+		float cur0f = (float)cur0/100.0f;
+		s->joint[jnt].cur = (double)cur0f;
             }
             s->driver[jmc].temp = f->data[2]; // TODO: Check if this is correct. I changed "3" to "2"
             //temp = temp/100.0; // I don't see anywhere in the docs that it says to do this
