@@ -328,8 +328,8 @@ void huboLoop(hubo_param_t *H_param) {
 /* period */
 //	int interval = 500000000; // 2hz (0.5 sec)
 //	int interval = 20000000; // 50 hz (0.02 sec)
-//	int interval = 10000000; // 100 hz (0.01 sec)
-	int interval = 5000000; // 200 hz (0.005 sec)
+	int interval = 10000000; // 100 hz (0.01 sec)
+//	int interval = 5000000; // 200 hz (0.005 sec)
 //	int interval = 4000000; // 250 hz (0.004 sec)
 //	int interval = 2000000; // 500 hz (0.002 sec)
 
@@ -407,7 +407,7 @@ void huboLoop(hubo_param_t *H_param) {
 
 
         /* Get all Current data */
-        getCurrentAllSlow(&H_state, &H_param, &frame);
+        getCurrentAllSlow(&H_state, H_param, &frame);
 
         // Get current timestamp to send out with the state struct
         clock_gettime( CLOCK_MONOTONIC, &time );
@@ -2522,6 +2522,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 		int cur0 = (f->data[0+i]<<2) | ( (f->data[3] >> (i*2))  & 0x03 );
 		float cur0f = (float)cur0/100.0f;
 		s->joint[jnt].cur = (double)cur0f;
+
             }
             s->driver[jmc].temp = f->data[2]; // TODO: Check if this is correct. I changed "3" to "2"
             //temp = temp/100.0; // I don't see anywhere in the docs that it says to do this
