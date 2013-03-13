@@ -52,25 +52,25 @@ LF5 = 41 # Left Finger
 
 
 class HUBO_SENSOR_PARAM(Structure):
-    _fields_ = [("name"    , c_ubyte*5),
-                ("sensNo"  , c_uint),
+    _fields_ = [("sensNo"  , c_uint),
                 ("can"     , c_uint),
+                ("boardNo" , c_uint),
                 ("active"  , c_ubyte),
-                ("boardNo" , c_uint)]
+                ("name"    , c_ubyte*5)]
 
 class HUBO_JOINT_PARAM(Structure):
-    _fields_ = [("motNo"    , c_uint),
+    _fields_ = [("refEnc"   , c_uint32),
+                ("motNo"    , c_uint),
                 ("jntNo"    , c_uint), 
-                ("refEnc"   , c_uint32), 
                 ("drive"    , c_uint), 
                 ("driven"   , c_uint), 
                 ("harmonic" , c_uint), 
                 ("enc"      , c_uint), 
-                ("dir"      , c_ubyte), 
-                ("name"     , c_ubyte*4), 
                 ("jmc"      , c_uint), 
+                ("dir"      , c_ubyte), 
                 ("can"      , c_ubyte), 
-                ("numMot"   , c_ubyte)] 
+                ("numMot"   , c_ubyte),
+                ("name"     , c_ubyte*4)]
 
 class HUBO_JMC_PARAM(Structure):
     _fields_ = [("joints" , c_ubyte*5)]
