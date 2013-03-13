@@ -51,9 +51,9 @@ Remote()
 {
 
 MakeAch
-achd -r pull $1 hubo-ref &
+achd -r push $1 hubo-ref &
 achd -r pull $1 hubo-state &
-achd -r pull $1 hubo-board-cmd &
+achd -r push $1 hubo-board-cmd &
 
 }
 
