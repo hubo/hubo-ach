@@ -1,3 +1,11 @@
+hubo-ach (0.0.20130313) stable; urgency=high
+
+  * Added remote access.  
+  * Fix x86 and amd64 connectivity issue
+  * Added python support (2.7)
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Thursday, 13 Mar 2013 01:22:00 -0400
+
 hubo-ach (0.0.20130309) stable; urgency=low
 
   * Added cpp lib and added remote functionality
