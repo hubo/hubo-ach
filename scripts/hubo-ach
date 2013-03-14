@@ -57,6 +57,18 @@ achd -r push $1 hubo-board-cmd &
 
 }
 
+Read()
+{
+	case "$1" in 
+	'kill')
+		sudo kill -9 $(pidof hubo-read)
+	;;
+	*)
+       		sudo hubo-read
+	;;
+	esac
+}
+
 KillRemote()
 {
 	sudo kill -9 $(pidof achd)
@@ -510,6 +522,7 @@ ShowUsage()
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
         echo 'console       : Starts the hubo conole'
+        echo 'read          : Starts the hubo read application to read state data'
         echo 'make          : makes all the hubo channels'
 	echo 'kill          : Emergency kill the daemon process'
 	echo 'killprocess   : Kill all processes starting with hubo'
@@ -542,6 +555,11 @@ case "$1" in
 # Start all channels and processes
 	'make' )
 		MakeAch $@
+	;;
+
+# Start hubo-read
+	'read' )
+		Read $2
 	;;
 
 # Start all channels and processes and Console
