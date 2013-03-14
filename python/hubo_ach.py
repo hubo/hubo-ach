@@ -53,22 +53,22 @@ LF5 = 41 # Left Finger
 
 class HUBO_SENSOR_PARAM(Structure):
     _pack_ = 1
-    _fields_ = [("sensNo"  , c_uint),
-                ("can"     , c_uint),
-                ("boardNo" , c_uint),
+    _fields_ = [("sensNo"  , c_uint16),
+                ("can"     , c_uint16),
+                ("boardNo" , c_uint16),
                 ("active"  , c_ubyte),
                 ("name"    , c_ubyte*5)]
 
 class HUBO_JOINT_PARAM(Structure):
     _pack_ = 1
     _fields_ = [("refEnc"   , c_uint32),
-                ("motNo"    , c_uint),
-                ("jntNo"    , c_uint), 
-                ("drive"    , c_uint), 
-                ("driven"   , c_uint), 
-                ("harmonic" , c_uint), 
-                ("enc"      , c_uint), 
-                ("jmc"      , c_uint), 
+                ("motNo"    , c_uint16),
+                ("jntNo"    , c_uint16), 
+                ("drive"    , c_uint16), 
+                ("driven"   , c_uint16), 
+                ("harmonic" , c_uint16), 
+                ("enc"      , c_uint16), 
+                ("jmc"      , c_uint16), 
                 ("dir"      , c_ubyte), 
                 ("can"      , c_ubyte), 
                 ("numMot"   , c_ubyte),
@@ -144,7 +144,7 @@ class HUBO_STATE(Structure):
                 ("status" , HUBO_JOINT_STATUS*HUBO_JOINT_COUNT),
                 ("driver" , HUBO_JMC_STATE*HUBO_JMC_COUNT),
                 ("time"   , c_double),
-                ("refWait", c_int)]
+                ("refWait", c_int16)]
 
 
 
@@ -152,5 +152,5 @@ class HUBO_STATE(Structure):
 class HUBO_REF(Structure):
     _pack_ = 1
     _fields_ = [("ref",  c_double*HUBO_JOINT_COUNT),
-                ("mode", c_int*HUBO_JOINT_COUNT)]
+                ("mode", c_int16*HUBO_JOINT_COUNT)]
 
