@@ -50,10 +50,17 @@ Kill()
 Remote()
 {
 
-MakeAch
-achd -r push $1 hubo-ref &
-achd -r pull $1 hubo-state &
-achd -r push $1 hubo-board-cmd &
+case "$1" in 
+'kill')
+	KillRemote
+;;
+*)
+	MakeAch
+	achd -r push $1 hubo-ref &
+	achd -r pull $1 hubo-state &
+	achd -r push $1 hubo-board-cmd &
+;;
+esac
 
 }
 

@@ -27,9 +27,9 @@ while(flag<3):
 #    print "stat: ", framesizes, " : ", sizeof(state)
 #    flag = flag+1
     if ref.ref[ha.WST] > 0:
-        ref.ref[ha.WST] = -0.5
+        ref.ref[ha.WST] = -0.2
     else:
-        ref.ref[ha.WST] = 0.5
+        ref.ref[ha.WST] = 0.2
     r.put(ref)
     print "WST: ref = ", state.joint[ha.WST].ref
     time.sleep(1.0)
