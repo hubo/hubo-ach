@@ -52,6 +52,7 @@ LF5 = 41 # Left Finger
 
 
 class HUBO_SENSOR_PARAM(Structure):
+    _pack_ = 1
     _fields_ = [("sensNo"  , c_uint),
                 ("can"     , c_uint),
                 ("boardNo" , c_uint),
@@ -59,6 +60,7 @@ class HUBO_SENSOR_PARAM(Structure):
                 ("name"    , c_ubyte*5)]
 
 class HUBO_JOINT_PARAM(Structure):
+    _pack_ = 1
     _fields_ = [("refEnc"   , c_uint32),
                 ("motNo"    , c_uint),
                 ("jntNo"    , c_uint), 
@@ -73,16 +75,19 @@ class HUBO_JOINT_PARAM(Structure):
                 ("name"     , c_ubyte*4)]
 
 class HUBO_JMC_PARAM(Structure):
+    _pack_ = 1
     _fields_ = [("joints" , c_ubyte*5)]
 
 
 class HUBO_PARAM(Structure):
+    _pack_ = 1
     _fields_ = [("joint"  , HUBO_JOINT_PARAM*HUBO_JOINT_COUNT),
                 ("driver" , HUBO_JMC_PARAM*HUBO_JOINT_COUNT),
                 ("sensor" , HUBO_SENSOR_PARAM*HUBO_JOINT_COUNT)]
 
 
 class HUBO_IMU(Structure):
+    _pack_ = 1
     _fields_ = [("a_x", c_double),
                 ("a_y", c_double),
                 ("a_z", c_double),
@@ -91,11 +96,13 @@ class HUBO_IMU(Structure):
                 ("w_z", c_double)]
 
 class HUBO_FT(Structure):
+    _pack_ = 1
     _fields_ = [("m_x", c_double),
                 ("m_y", c_double),
                 ("f_z", c_double)]
 
 class HUBO_JOINT_STATE(Structure):
+    _pack_ = 1
     _fields_ = [("ref"   , c_double),
                 ("pos"   , c_double),
                 ("cur"   , c_double),
@@ -106,6 +113,7 @@ class HUBO_JOINT_STATE(Structure):
                 ("zeroed", c_ubyte)]
 
 class HUBO_JOINT_STATUS(Structure):
+    _pack_ = 1
     _fields_ = [("driveOn"      , c_ubyte),
                 ("ctrlOn"       , c_ubyte),
                 ("mode"         , c_ubyte),
@@ -125,9 +133,11 @@ class HUBO_JOINT_STATUS(Structure):
                 ("tempError"    , c_ubyte)]
 
 class HUBO_JMC_STATE(Structure):
+    _pack_ = 1
     _fields_ = [("temp" , c_double)]
 
 class HUBO_STATE(Structure):
+    _pack_ = 1
     _fields_ = [("imu"    , HUBO_IMU*HUBO_IMU_COUNT),
                 ("ft"     , HUBO_FT*4),
                 ("joint"  , HUBO_JOINT_STATE*HUBO_JOINT_COUNT),
@@ -140,6 +150,7 @@ class HUBO_STATE(Structure):
 
 
 class HUBO_REF(Structure):
+    _pack_ = 1
     _fields_ = [("ref",  c_double*HUBO_JOINT_COUNT),
                 ("mode", c_int*HUBO_JOINT_COUNT)]
 
