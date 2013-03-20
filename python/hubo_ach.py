@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # /* -*-  indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 # /*
-# Copyright (c) 2012, Daniel M. Lofaro
+# Copyright (c) 2013, Daniel M. Lofaro
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
