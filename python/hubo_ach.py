@@ -3,6 +3,15 @@ from ctypes import *
 import ach
 import sys
 
+
+HUBO_FT_R_HAND    = 0 # Index of right hand FT
+HUBO_FT_L_HAND    = 1 # Index of left hand FT
+HUBO_FT_R_FOOT    = 2 # Index of right foot FT
+HUBO_FT_L_FOOT    = 3 # Index of left foot FT
+HUBO_IMU0	  = 4 # Index of IMU0
+HUBO_IMU1	  = 5 # Index of IMU1
+HUBO_IMU2	  = 6 # Index of IMU2
+
 HUBO_JOINT_COUNT         = 42
 HUBO_JMC_COUNT           = 0x26
 HUBO_IMU_COUNT           = 3

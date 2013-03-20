@@ -1,3 +1,10 @@
+hubo-ach (0.0.20130319) stable; urgency=low
+
+  * Fixed python install.  Now installs to /usr/lib/python2.7/dist-packages/
+  * Added IMU and FT indexes to hubo_ach.py 
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Thuesday, 19 Mar 2013 23:59:00 -0400
+
 hubo-ach (0.0.20130314) stable; urgency=high
 
   * Added remote access.  
