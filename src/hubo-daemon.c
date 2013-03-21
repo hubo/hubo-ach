@@ -360,8 +360,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
         fs = 0;
-        // wait until next shot
-        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         /* Get latest ACH message */
         if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
@@ -379,6 +377,10 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                         fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
                 }
             else{    hubo_assert( sizeof(H_state) == fs, __LINE__ ); }
+        }
+        else {
+            // wait until next shot
+            clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
         }
         r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         if(ACH_OK != r) {
@@ -412,6 +414,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /* read hubo console */
         huboMessage(&H_ref, &H_ref_filter, H_param, &H_state, &H_cmd, &frame);
 
+
         /* Get all Encoder data */
         getEncAllSlow(&H_state, H_param, &frame); 
         
@@ -435,9 +438,13 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 //        getCurrentAllSlow(&H_state, H_param, &frame);
 
         // Get current timestamp to send out with the state struct
+
+
+    if(HUBO_VIRTUAL_MODE_OPENHUBO != vflag) {
         clock_gettime( CLOCK_MONOTONIC, &time );
         tsec = (double)time.tv_sec;
         tsec += (double)(time.tv_nsec)/1.0e9;
+    }
 
         if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
             /* added time */
@@ -453,9 +460,11 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
             ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
         }
+
+    if(HUBO_VIRTUAL_MODE_OPENHUBO != vflag) {
         t.tv_nsec+=interval;
         tsnorm(&t);
-
+    }
         fflush(stdout);
         fflush(stderr);
     }
