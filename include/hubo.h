@@ -127,7 +127,11 @@ extern "C" {
 				   guaranteed safe to access without
 				   faulting */
 
-
+typedef enum {
+    HUBO_VIRTUAL_MODE_NONE        = 0, ///< not virtual mode
+    HUBO_VIRTUAL_MODE_VIRTUAL     = 1, ///< virtual mode just uses vcan
+    HUBO_VIRTUAL_MODE_OPENHUBO    = 2  ///< changes timing for use with openhubo
+}__attribute__((packed)) hubo_virtual_mode_index_t;
 
 typedef enum {
 	HUBO_FT_R_HAND    = 0, ///< Index of right hand FT

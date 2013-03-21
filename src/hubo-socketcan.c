@@ -72,7 +72,7 @@ static int openCAN(char* name) {
 void openAllCAN(int vCan) {
 	int skt1;
 	int skt0;
-	if(vCan == 1){
+	if(HUBO_VIRTUAL_MODE_VIRTUAL == vCan | HUBO_VIRTUAL_MODE_OPENHUBO == vCan){
 		skt1    =       openCAN("vcan1");
 		skt0	=	openCAN("vcan0");
 	}

@@ -121,7 +121,7 @@ void hInitilizeBoard(int jnt, hubo_ref_t *r, hubo_param_t *h, struct can_frame *
 void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
-void huboLoop(hubo_param_t *H_param);
+void huboLoop(hubo_param_t *H_param, int vflag);
 void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hFeedbackControllerOnOff(int jnt, hubo_ref_t *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
@@ -263,7 +263,7 @@ int statusJntItt = 5;
 int statusJnti = 0;
 int readBuffi = 3;
 
-void huboLoop(hubo_param_t *H_param) {
+void huboLoop(hubo_param_t *H_param, int vflag) {
     int i = 0;  // iterator
     // get initial values for hubo
     hubo_ref_t H_ref;
@@ -350,6 +350,16 @@ void huboLoop(hubo_param_t *H_param) {
 
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
+
+        if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
+            r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
+            if(ACH_OK != r) {
+                    if(debug) {
+                        fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
+                }
+            else{    hubo_assert( sizeof(H_state) == fs, __LINE__ ); }
+        }
+
         fs = 0;
         // wait until next shot
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -2694,7 +2704,7 @@ int isError( int jnt, hubo_state_t *s) {
 int main(int argc, char **argv) {
 
     // Parse user input
-    int vflag = 0;
+    int vflag = HUBO_VIRTUAL_MODE_NONE;
     debug = 0;
 
     int i = 1;
@@ -2704,7 +2714,10 @@ int main(int argc, char **argv) {
             debug = 1;
         }
         if(strcmp(argv[i], "-v") == 0){
-            vflag = 1;
+            vflag = HUBO_VIRTUAL_MODE_VIRTUAL;
+        }
+        if(strcmp(argv[i], "-o") == 0){
+            vflag = HUBO_VIRTUAL_MODE_OPENHUBO;
         }
         i++;
     }
@@ -2744,7 +2757,7 @@ int main(int argc, char **argv) {
     ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
 
     // run hubo main loop
-    huboLoop(&H_param);
+    huboLoop(&H_param, vflag);
 
     hubo_daemon_close();
     
