@@ -210,7 +210,8 @@ void huboLoop() {
 		int jnt = 0;
 
 		clock_gettime( 0,&t2);
-		printf("t = %i.%09i\n",(int)t2.tv_sec,(int)t2.tv_nsec);
+		//printf("t = %i.%09i\n",(int)t2.tv_sec,(int)t2.tv_nsec);
+		printf("t = %f\n",H_state.time);
 		for( i = 0; i < HUBO_JOINT_COUNT; i++) {
 			jnt = i;
 			if(H_param.joint[jnt].name[0] != 0){

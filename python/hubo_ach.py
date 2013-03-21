@@ -46,6 +46,7 @@ HUBO_IMU_COUNT           = 3
 HUBO_CHAN_REF_NAME       = 'hubo-ref'        
 HUBO_CHAN_BOARD_CMD_NAME = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME     = 'hubo-state'     
+HUBO_LOOP_PERIOD         = 0.005
 
 LHY = 19# Left Hip Yaw
 LHR = 20# Left Hip Roll

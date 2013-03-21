@@ -326,14 +326,17 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
 /* period */
+//	int interval = 1000000000; // 1hz (1.0 sec)
 //	int interval = 500000000; // 2hz (0.5 sec)
 //	int interval = 20000000; // 50 hz (0.02 sec)
 //	int interval = 10000000; // 100 hz (0.01 sec)
-	int interval = 5000000; // 200 hz (0.005 sec)
+//	int interval = 5000000; // 200 hz (0.005 sec)
 //	int interval = 4000000; // 250 hz (0.004 sec)
 //	int interval = 2000000; // 500 hz (0.002 sec)
 
-	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
+//	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
+	double T = (double)HUBO_LOOP_PERIOD;
+        int interval = (int)((double)NSEC_PER_SEC/T);
 	printf("T = %1.3f sec\n",T);
 
 
@@ -423,7 +426,14 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         clock_gettime( CLOCK_MONOTONIC, &time );
         tsec = (double)time.tv_sec;
         tsec += (double)(time.tv_nsec)/1.0e9;
-        H_state.time = tsec;
+
+        if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
+            /* added time */
+            H_state.time = H_state.time + T; // add time baesd on period
+        }
+        else {
+            H_state.time = tsec; // add time based on system time
+        }
 
         /* put data back in ACH channel */
         ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
