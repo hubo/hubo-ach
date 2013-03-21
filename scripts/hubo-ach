@@ -198,6 +198,21 @@ StartConsole()
    hubo-console
 }
 
+MakeVCan()
+{
+                sudo rmmod vcan
+                sudo modprobe vcan
+
+                sudo ip link add type vcan
+                sudo ifconfig vcan0 up
+                sudo ip link add type vcan
+                sudo ifconfig vcan1 up
+                sudo ip link add type vcan
+                sudo ifconfig vcan2 up
+                sudo ip link add type vcan
+                sudo ifconfig vcan3 up
+}
+
 VirtualHubo()
 {
 	case "$1" in
@@ -239,21 +254,6 @@ OpenHubo()
 		MakeAch
 		sudo hubo-daemon -o
 		sudo hubo-console
-}
-
-MakeVCan()
-{
-                sudo rmmod vcan
-                sudo modprobe vcan
-
-                sudo ip link add type vcan
-                sudo ifconfig vcan0 up
-                sudo ip link add type vcan
-                sudo ifconfig vcan1 up
-                sudo ip link add type vcan
-                sudo ifconfig vcan2 up
-                sudo ip link add type vcan
-                sudo ifconfig vcan3 up
 }
 
 DebugHubo()
