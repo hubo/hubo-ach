@@ -224,28 +224,36 @@ VirtualHubo()
 	;;
 
 	*)
-		sudo rmmod vcan
-		sudo modprobe vcan
-
-		sudo ip link add type vcan
-		sudo ifconfig vcan0 up
-		sudo ip link add type vcan
-		sudo ifconfig vcan1 up
-		sudo ip link add type vcan
-		sudo ifconfig vcan2 up
-		sudo ip link add type vcan
-		sudo ifconfig vcan3 up
-
+		MakeVCan
 		MakeAch
-#		ach -1 -C hubo-ref -m 10 -n 3000
-#		ach -1 -C hubo-ref-filter -m 10 -n 3000
-#		ach -1 -C hubo-state -m 10 -n 3000
-#		ach -1 -C hubo-init-cmd -m 10 -n 3000
-
 		sudo hubo-daemon -v
 		sudo hubo-console
 	;;
 	esac
+}
+
+OpenHubo()
+{
+
+		MakeVCan
+		MakeAch
+		sudo hubo-daemon -o
+		sudo hubo-console
+}
+
+MakeVCan()
+{
+                sudo rmmod vcan
+                sudo modprobe vcan
+
+                sudo ip link add type vcan
+                sudo ifconfig vcan0 up
+                sudo ip link add type vcan
+                sudo ifconfig vcan1 up
+                sudo ip link add type vcan
+                sudo ifconfig vcan2 up
+                sudo ip link add type vcan
+                sudo ifconfig vcan3 up
 }
 
 DebugHubo()
@@ -540,6 +548,7 @@ ShowUsage()
 	echo "default       : Sets Hubo's params to default values"
 	echo 'debug         : Run the daemon in debug mode'
 	echo 'virtual       : Run the daemon without using CAN'
+	echo 'openhubo      : Run using openhubo simulator (non-real-time)
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'killremote    : kills the remote connection'
 	echo 'config        : Do a first-time setup'
@@ -621,6 +630,11 @@ case "$1" in
 # Run the main daemon in virtual mode (does not require actual CAN communication)
 	'virtual' )
 		VirtualHubo $2
+	;;
+
+# Run OpenHubo simulator
+	'openhubo' )
+		OpenHubo $2
 	;;
 
 # Emergency kill
