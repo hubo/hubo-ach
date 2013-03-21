@@ -40,13 +40,22 @@ HUBO_IMU0	  = 4 # Index of IMU0
 HUBO_IMU1	  = 5 # Index of IMU1
 HUBO_IMU2	  = 6 # Index of IMU2
 
-HUBO_JOINT_COUNT         = 42
-HUBO_JMC_COUNT           = 0x26
-HUBO_IMU_COUNT           = 3
-HUBO_CHAN_REF_NAME       = 'hubo-ref'        
-HUBO_CHAN_BOARD_CMD_NAME = 'hubo-board-cmd'
-HUBO_CHAN_STATE_NAME     = 'hubo-state'     
-HUBO_LOOP_PERIOD         = 0.005
+HUBO_JOINT_COUNT                  = 42
+HUBO_JMC_COUNT                    = 0x26
+HUBO_IMU_COUNT                    = 3
+HUBO_CHAN_REF_NAME                = 'hubo-ref'        
+HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
+HUBO_CHAN_STATE_NAME              = 'hubo-state'     
+HUBO_CHAN_VIRTUAL_TO_SIM_NAME     = 'hubo-virtual-to-sim'     
+HUBO_CHAN_VIRTUAL_FROM_SIM_NAME   = 'hubo-virtual-from-sim'     
+HUBO_LOOP_PERIOD                  = 0.005
+
+RHY = 26# Right Hip Yaw
+RHR = 27# Right Hip Roll
+RHP = 28# Right Hip Pitch
+RKN = 29# Right Knee Pitch
+RAP = 23# Right Ankle Pitch
+RAR = 31# Right Ankle Roll
 
 LHY = 19# Left Hip Yaw
 LHR = 20# Left Hip Roll
@@ -88,6 +97,10 @@ LF3 = 39 # Left Finger
 LF4 = 40 # Left Finger
 LF5 = 41 # Left Finger
 
+
+class HUBO_VIRTUAL(Structure):
+    _pack_ = 1
+    _fields_ = [("time"  , c_double)]
 
 class HUBO_SENSOR_PARAM(Structure):
     _pack_ = 1

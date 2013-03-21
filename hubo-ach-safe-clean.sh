@@ -1,3 +1,4 @@
+hubo-ach killall
 sudo apt-get remove hubo-ach hubo-ach-dev
 sudo apt-get purge hubo-ach hubo-ach-dev
 sudo rm /usr/bin/hubo*

@@ -20,6 +20,8 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-board-cmd'
+HUBO_VIRTUAL='hubo-virtual-to-sim'
+HUBO_VIRTUAL='hubo-virtual-from-sim'
 
 DAEMON_DIR='/etc/hubo-ach'
 DAEMON_LOG_DIR='/var/log/hubo'
@@ -35,6 +37,8 @@ MakeAch()
 	ach -1 -C hubo-ref -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
+	ach -1 -C hubo-virtual-to-sim -m 10 -n 3000
+	ach -1 -C hubo-virtual-from-sim -m 10 -n 3000
         sudo chmod 777 /dev/shm/achshm-hubo-*
 }
 
@@ -59,6 +63,8 @@ case "$1" in
 	achd -r push $1 hubo-ref &
 	achd -r pull $1 hubo-state &
 	achd -r push $1 hubo-board-cmd &
+        achd -r push $1 hubo-virtual-from-sim &
+        achd -r pull $1 hubo-virtual-to-sim &
 ;;
 esac
 
@@ -548,7 +554,7 @@ ShowUsage()
 	echo "default       : Sets Hubo's params to default values"
 	echo 'debug         : Run the daemon in debug mode'
 	echo 'virtual       : Run the daemon without using CAN'
-	echo 'openhubo      : Run using openhubo simulator (non-real-time)
+	echo 'openhubo      : Run using openhubo simulator (non-real-time)'
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'killremote    : kills the remote connection'
 	echo 'config        : Do a first-time setup'
@@ -652,7 +658,7 @@ case "$1" in
 		DefaultHubo $2
 	;;
 
-# Print out Hubo's logs
+# Print out Hubos logs
 	'log' )
 		LogHubo $2
 	;;

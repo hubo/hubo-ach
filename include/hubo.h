@@ -112,11 +112,13 @@ extern "C" {
 #define         BNO_SENSOR_BASE         0x2F
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
-#define		HUBO_CHAN_REF_NAME       "hubo-ref"        ///> hubo ach channel
-#define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"   ///> hubo console channel for ach
-#define		HUBO_CHAN_STATE_NAME     "hubo-state"      ///> hubo state ach channel
-#define		HUBO_CHAN_PARAM_NAME     "hubo-param"      ///> hubo param ach channel
-#define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter" ///> hubo reference with filter ach channel
+#define		HUBO_CHAN_REF_NAME       "hubo-ref"                    ///> hubo ach channel
+#define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"              ///> hubo console channel for ach
+#define		HUBO_CHAN_STATE_NAME     "hubo-state"                  ///> hubo state ach channel
+#define		HUBO_CHAN_PARAM_NAME     "hubo-param"                  ///> hubo param ach channel
+#define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"            ///> hubo reference with filter ach channel
+#define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
+#define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
@@ -208,6 +210,11 @@ typedef struct hubo_imu {
 	double w_y;     ///< rotational velocity in y (rad/s)
 	double w_z;     ///< rotational velocity in z (rad/s)
 }__attribute__((packed)) hubo_imu_t;
+
+
+typedef struct hubo_virtual {
+    double time; ///< trigger channel time in (sec)
+}__attribute__((packed)) hubo_virtual_t;
 
 typedef struct hubo_ft {
 	double m_x;	///< Moment in X (Mx)
