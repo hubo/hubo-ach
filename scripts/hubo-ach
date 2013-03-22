@@ -44,14 +44,18 @@ MakeAch()
 
 Clean()
 {
-	./etc/hubo-ach/hubo-ach-safe-clean.sh
+	sudo cp /etc/hubo-ach/hubo-ach-safe-clean.sh /tmp
+	sudo chmod +x /tmp/hubo-ach-safe-clean.sh
+	source /tmp/hubo-ach-safe-clean.sh
 }
 
 Update()
 {
-	Clean
-	sudo apt-get update
-	sudo apt-get install hubo-ach-dev
+	cat /etc/hubo-ach/hubo-ach-safe-clean.sh > /tmp/hubo-ach.update
+	sudo echo "sudo apt-get update" >> /tmp/hubo-ach.update
+	sudo echo "sudo apt-get --yes --force-yes install hubo-ach-dev" >> /tmp/hubo-ach.update
+	sudo chmod +x /tmp/hubo-ach.update
+	source /tmp/hubo-ach.update
 }
 
 Kill()
