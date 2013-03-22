@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# M.X. Grey ( mxgrey@gatech.edu )
 # Daniel M. Lofaro (dan@danlofaro.com)
-# Last updated: 2013-01-30
+# M.X. Grey ( mxgrey@gatech.edu )
+# Last updated: 2013-03-22
 
 export LD_LIBRARY_PATH=/usr/lib:
 
