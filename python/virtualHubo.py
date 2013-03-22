@@ -187,6 +187,10 @@ if __name__=='__main__':
     except:
         flag = -1
 
+    try:
+	simtimeFlag = args[1]
+    except:
+	simtimeFlag = -1
 
     (env,options)=openhubo.setup('qtcoin',True)
     env.SetDebugLevel(4)
@@ -230,7 +234,7 @@ if __name__=='__main__':
     fs.put(sim) 
     while(1):
       with Timer('Get_Pose'):
-        if( 'dynamics' == flag ):
+        if(( 'dynamics' == flag) | ('simtime' == simtimeFlag )):
             [statuss, framesizes] = ts.get(sim, wait=True, last=False)
 
         [statuss, framesizes] = s.get(state, wait=False, last=True)
@@ -250,16 +254,17 @@ if __name__=='__main__':
 
     # this will step the simulation  note: i can run env step in a loop if nothign else changes
 
-        if( 'dynamics' == flag ):
+        if( ('dynamics' == flag ) | ('simtime' == simtimeFlag)):
             N = numpy.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
             T = 1/N*ha.HUBO_LOOP_PERIOD
     #        print 'openhubo.TIMESTEP = ',openhubo.TIMESTEP, ' : N = ', N, ' : T = ', T
             for x in range(0,int(N)):
                 env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
                 sim.time = sim.time + openhubo.TIMESTEP
-            s.put(state)
+            if('dynamics' == flag ):
+                s.put(state)
+                pose = sim2state(robot,state)
             fs.put(sim) 
-            pose = sim2state(robot,state)
         else:
             env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
 # put the current state

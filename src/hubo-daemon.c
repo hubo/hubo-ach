@@ -358,6 +358,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
 
+        // wait until next shot
+        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         fs = 0;
 
@@ -377,10 +379,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                         fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
                 }
             else{    hubo_assert( sizeof(H_state) == fs, __LINE__ ); }
-        }
-        else {
-            // wait until next shot
-            clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
         }
 
 
@@ -442,11 +440,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         // Get current timestamp to send out with the state struct
 
 
-    if(HUBO_VIRTUAL_MODE_OPENHUBO != vflag) {
         clock_gettime( CLOCK_MONOTONIC, &time );
         tsec = (double)time.tv_sec;
         tsec += (double)(time.tv_nsec)/1.0e9;
-    }
 
         if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
             /* added time */
@@ -463,10 +459,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
         }
 
-    if(HUBO_VIRTUAL_MODE_OPENHUBO != vflag) {
         t.tv_nsec+=interval;
         tsnorm(&t);
-    }
         fflush(stdout);
         fflush(stderr);
     }
