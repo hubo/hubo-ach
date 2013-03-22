@@ -22,6 +22,7 @@ import ach
 import time
 from ctypes import *
 
+from optparse import OptionParser
 import select
 
 from openravepy import *
@@ -62,17 +63,36 @@ class Timer(object):
 
 if __name__=='__main__':
 
+    parser = OptionParser()
+#    parser.add_option("-n", "--file", dest="filename",
+#        help="write report to FILE", metavar="FILE")
+#    parser.add_option("-q", "--quiet",
+#        action="store_false", dest="verbose", default=True,
+#        help="don't print status messages to stdout")
+
+    (options, args) = parser.parse_args()
+
+    print 'options: ', options
+    print 'args: ', args[0], ' : num args = ',len(args)
+
+
+
+
     (env,options)=openhubo.setup('qtcoin',True)
     env.SetDebugLevel(4)
     time.sleep(.25)
 
-    [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True)
+    if( 'nodynamics' == args[0] ):
+         print 'No Dynamic mode'
+         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True, None,True)  # this will disable physics
+    else:
+         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True)
+         ctrl.SendCommand('set radians ')
     time.sleep(.5)
     env.StartSimulation(openhubo.TIMESTEP)
     time.sleep(.5)
    
     #Change the pose to lift the elbows and send
-    ctrl.SendCommand('set radians ')
 
 
     # Hubo-Ach Start and setup:
