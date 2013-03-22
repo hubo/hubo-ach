@@ -253,13 +253,22 @@ VirtualHubo()
 	esac
 }
 
-OpenHubo()
+SetSim()
 {
-
 		MakeVCan
 		MakeAch
 		sudo hubo-daemon -o
+}
+Sim()
+{
+		SetSim
 		sudo hubo-console
+}
+
+OpenHubo()
+{
+		SetSim
+		python -i /etc/hubo-ach/virtualHubo.py
 }
 
 DebugHubo()
@@ -554,7 +563,8 @@ ShowUsage()
 	echo "default       : Sets Hubo's params to default values"
 	echo 'debug         : Run the daemon in debug mode'
 	echo 'virtual       : Run the daemon without using CAN'
-	echo 'openhubo      : Run using openhubo simulator (non-real-time)'
+	echo 'sim           : Run usng non-real-time triggered mode'
+	echo 'openhubo      : Start OpenHubo simulator (non-real-time mode) '
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'killremote    : kills the remote connection'
 	echo 'config        : Do a first-time setup'
@@ -641,6 +651,11 @@ case "$1" in
 # Run OpenHubo simulator
 	'openhubo' )
 		OpenHubo $2
+	;;
+
+# Run simulator mode
+	'sim' )
+		Sim $2
 	;;
 
 # Emergency kill
