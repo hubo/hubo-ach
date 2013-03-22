@@ -44,7 +44,7 @@ MakeAch()
 
 Clean()
 {
-	sudo cp /etc/hubo-ach/hubo-ach-safe-clean.sh /tmp
+	sudo cp /etc/hubo-ach/hubo-ach-safe-clean.sh /tmp/hubo-ach-safe-clean.sh
 	sudo chmod +x /tmp/hubo-ach-safe-clean.sh
 	source /tmp/hubo-ach-safe-clean.sh
 }
