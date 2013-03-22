@@ -28,8 +28,8 @@ DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
 
-sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
-sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
+#sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
+#sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
 
 MakeAch()
 {
@@ -169,6 +169,9 @@ RunDaemon()
                 then
 	            exit 0 
                 else
+
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
 	    		sudo ifconfig can0 up
 			sudo ifconfig can1 up
 			sudo ifconfig can2 up
