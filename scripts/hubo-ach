@@ -280,12 +280,28 @@ OpenHubo()
 	'nodynamics')
         	case "$4" in
 		'simtime')
-			SetSim
-			python -i /etc/hubo-ach/virtualHubo.py nodynamics simtime
+                        case "$5" in 
+			'remote')
+				Remote $6
+				python -i /etc/hubo-ach/virtualHubo.py nodynamics simtime
+			;;
+			*)
+				SetSim
+				python -i /etc/hubo-ach/virtualHubo.py nodynamics simtime
+			;;
+			esac
 		;;
 		*)
-			RunDaemon
-			python -i /etc/hubo-ach/virtualHubo.py nodynamics
+                        case "$4" in 
+			'remote')
+				Remote $5
+				python -i /etc/hubo-ach/virtualHubo.py nodynamics
+			;;
+			*)
+				RunDaemon
+				python -i /etc/hubo-ach/virtualHubo.py nodynamics
+			;;
+			esac
 		;;
 		esac
 	;;
