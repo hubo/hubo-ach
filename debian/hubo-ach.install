@@ -5,6 +5,7 @@ usr/bin/hubo-ach
 etc/hubo-ach/joint.table
 etc/hubo-ach/sensor.table
 etc/hubo-ach/virtualHubo.py
+etc/hubo-ach/hubo-ach-safe-clean.sh
 usr/lib/libhuboparams.so
 usr/lib/python2.7/dist-packages/hubo_ach.pyc
 usr/lib/python2.7/dist-packages/hubo_ach.pyo

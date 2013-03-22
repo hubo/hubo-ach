@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-EXTRA_DIST = virtualHubo.py joint.table sensor.table scripts/hubo-ach
+EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach
 
 #huboscriptdir = $(sysconfdir)/bin
 huboscriptdir = /usr/bin
@@ -24,7 +24,7 @@ include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonI
 
 huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = tables/joint.table tables/sensor.table python/virtualHubo.py
+huboachconf_DATA = tables/joint.table tables/sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
 
 #hubo_jointparamsdir = $(prefix)/lib
 hubo_jointparamsdir = /usr/lib

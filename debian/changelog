@@ -1,3 +1,11 @@
+hubo-ach (0.0.20130322) stable; urgency=low
+
+  * added RHP, RHY etc. to python - it was missing
+  * added virtual features
+  * added clean install feature
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Frida, 22 Mar 2013 01:28:00 -0400
+
 hubo-ach (0.0.20130319) stable; urgency=low
 
   * Fixed python install.  Now installs to /usr/lib/python2.7/dist-packages/

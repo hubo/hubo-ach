@@ -42,6 +42,17 @@ MakeAch()
         sudo chmod 777 /dev/shm/achshm-hubo-*
 }
 
+Clean()
+{
+	./etc/hubo-ach/hubo-ach-safe-clean.sh
+}
+
+Update()
+{
+	Clean
+	sudo apt-get install hubo-ach-dev
+}
+
 Kill()
 {
 #	sudo updatedb
@@ -617,6 +628,8 @@ ShowUsage()
 	echo '              :                             remote xxx.xxx.xxx.xxx  : same as remote command'
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'killremote    : kills the remote connection'
+	echo 'clean         : cleans and removes installed hubo-ach (source and apt-get)'
+        echo 'update        : cleans, removes, then updates hubo-ach'
 	echo 'config        : Do a first-time setup'
 	echo
 	echo 'Type help after any of the above commands for'
@@ -679,7 +692,14 @@ case "$1" in
 	'killall' )
 		KillAll
 	;;
-
+# removes hubo-ach
+        'clean' )
+  		Clean
+	;;
+# updates hubo-ach
+	'update' )
+		Update
+	;;
 # Close and then reopen all channels and processes
 	'restart' )
 		case "$2" in
