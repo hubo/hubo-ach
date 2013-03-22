@@ -340,7 +340,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 //	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
 	double T = (double)HUBO_LOOP_PERIOD;
-        int interval = (int)((double)NSEC_PER_SEC/T);
+        int interval = (int)((double)NSEC_PER_SEC*T);
 	printf("T = %1.3f sec\n",T);
 
 
@@ -382,6 +382,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             // wait until next shot
             clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
         }
+
+
         r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
         if(ACH_OK != r) {
             if(debug) {
