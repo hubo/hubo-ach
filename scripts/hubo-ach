@@ -50,6 +50,7 @@ Clean()
 Update()
 {
 	Clean
+	sudo apt-get update
 	sudo apt-get install hubo-ach-dev
 }
 
