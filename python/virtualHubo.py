@@ -196,6 +196,9 @@ if __name__=='__main__':
     env.SetDebugLevel(4)
     time.sleep(.25)
 
+
+    options.robotfile = 'drchubo/robots/drchubo.robot.xml'
+
     if( 'nodynamics' == flag ):
          print 'No Dynamic mode'
          [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True, None, True)  # this will disable physics
@@ -250,7 +253,8 @@ if __name__=='__main__':
             pose = ref2robot(robot, state)
             ctrl.SetDesired(pose)   # sends to robot
 
-
+        trans = robot.GetLink("Body_Hip").GetTransform() # complete 4x4 xform matrix (i care about the 4th colum)
+        # look into compute to get the  
 
     # this will step the simulation  note: i can run env step in a loop if nothign else changes
 
@@ -264,6 +268,7 @@ if __name__=='__main__':
             if('dynamics' == flag ):
                 s.put(state)
                 pose = sim2state(robot,state)
+                print trans
             fs.put(sim) 
         else:
             env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
