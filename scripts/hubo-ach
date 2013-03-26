@@ -51,9 +51,51 @@ Clean()
 
 Update()
 {
+	sudo rm /tmp/hubo-ach* 
 	cat /etc/hubo-ach/hubo-ach-safe-clean.sh > /tmp/hubo-ach.update
-	sudo echo "sudo apt-get update" >> /tmp/hubo-ach.update
-	sudo echo "sudo apt-get --yes --force-yes install hubo-ach-dev" >> /tmp/hubo-ach.update
+#	sudo echo "sudo rm $(ls /tmp/ | grep hubo | grep deb)" >> /tmp/hubo-ach.update
+	case $1 in
+	'develop')
+		echo "****** updating to Hubo-Ach Develop ******" 
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest-develop/hubo-ach-dev_amd64.deb -P /tmp" >> /tmp/hubo-ach.update
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest-develop/hubo-ach_amd64.deb -P /tmp" >> /tmp/hubo-ach.update
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest-develop/hubo-ach-dev_i386.deb -P /tmp" >> /tmp/hubo-ach.update
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest-develop/hubo-ach_i386.deb -P /tmp" >> /tmp/hubo-ach.update
+	;;
+	*)
+		echo "****** updating to Hubo-Ach Release ******"
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest/hubo-ach-dev_amd64.deb -P /tmp" >> /tmp/hubo-ach.update
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest/hubo-ach_amd64.deb -P /tmp" >> /tmp/hubo-ach.update
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest/hubo-ach-dev_i386.deb -P /tmp" >> /tmp/hubo-ach.update
+		sudo echo "sudo wget http://danlofaro.com/software/hubo-ach/latest/hubo-ach_i386.deb -P /tmp" >> /tmp/hubo-ach.update
+	;;
+	esac
+
+	case $1 in 
+	'apt-get')
+		echo "****** updating to Hubo-Ach via apt-get ******"
+		sudo echo "sudo apt-get update" >> /tmp/hubo-ach.update
+		sudo echo "sudo apt-get --yes --force-yes install hubo-ach-dev" >> /tmp/hubo-ach.update
+	;;
+	*)
+
+		case "$(uname -m)" in
+		'x86_64')
+			echo "64 bit system detected"
+			sudo echo "sudo dpkg -i /tmp/hubo-ach_amd64.deb /tmp/hubo-ach-dev_amd64.deb" >> /tmp/hubo-ach.update
+		;;
+		'i686')
+			echo "32 bit system detected"
+			sudo echo "sudo dpkg -i /tmp/hubo-ach_i386.deb /tmp/hubo-ach-dev_i386.deb" >> /tmp/hubo-ach.update
+		;;
+		'i586')
+			echo "32 bit system detected"
+			sudo echo "sudo dpkg -i /tmp/hubo-ach_i386.deb /tmp/hubo-ach-dev_i386.deb" >> /tmp/hubo-ach.update
+		;;
+		esac
+	;;
+	esac
+
 	sudo chmod +x /tmp/hubo-ach.update
 	source /tmp/hubo-ach.update
 }
@@ -703,7 +745,7 @@ case "$1" in
 	;;
 # updates hubo-ach
 	'update' )
-		Update
+		Update $2
 	;;
 # Close and then reopen all channels and processes
 	'restart' )
