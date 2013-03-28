@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130327) stable; urgency=low
+
+  * Fixed small issue with RAP in hubo_ach.py
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 25 Mar 2013 17:57:00 -0400
+
 hubo-ach (0.0.20130326) stable; urgency=low
 
   * added hubo-ach update (updates from dpkg from website lates release)
@@ -6,7 +12,7 @@ hubo-ach (0.0.20130326) stable; urgency=low
   * added hubo-ach clean (this safely removed old verison of hubo-ach - installed form source or apt-get or dpkg)
   * all above will clean before installs
 
- -- Daniel M. Lofaro <dan@danlofaro.com>  tue, 25 Mar 2013 17:57:00 -0400
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 26 Mar 2013 17:57:00 -0400
 
 hubo-ach (0.0.20130322) stable; urgency=low
 
