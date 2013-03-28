@@ -330,22 +330,22 @@ OpenHubo()
 {
 
 	case "$3" in
-	'dynamics')
+	'physics')
 		SetSim
-		python -i /etc/hubo-ach/virtualHubo.py dynamics
+		python -i /etc/hubo-ach/virtualHubo.py physics
 	;;
 	
-	'nodynamics')
+	'nophysics')
         	case "$4" in
 		'simtime')
                         case "$5" in 
 			'remote')
 				Remote $6
-				python -i /etc/hubo-ach/virtualHubo.py nodynamics simtime
+				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime
 			;;
 			*)
 				SetSim
-				python -i /etc/hubo-ach/virtualHubo.py nodynamics simtime
+				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime
 			;;
 			esac
 		;;
@@ -353,18 +353,18 @@ OpenHubo()
                         case "$4" in 
 			'remote')
 				Remote $5
-				python -i /etc/hubo-ach/virtualHubo.py nodynamics
+				python -i /etc/hubo-ach/virtualHubo.py nophysicss
 			;;
 			*)
 				RunDaemon
-				python -i /etc/hubo-ach/virtualHubo.py nodynamics
+				python -i /etc/hubo-ach/virtualHubo.py nophysics
 			;;
 			esac
 		;;
 		esac
 	;;
 	*) 
-		echo 'No Dynamics mode chosen'
+		echo 'No Physics mode chosen'
 	;;
 	esac
 }
@@ -666,8 +666,8 @@ ShowUsage()
 	echo '              :    (no-arg)       : start simtime triggered mode'
 	echo '              :    openhubo       : Uses Open Hubo Simulator'
 	echo '              :         Options:'
-	echo '              :             dynamics    : Runs with Dynamics (SimTime triggered Mode)'
-	echo '              :             nodynamics  : Runs with No Dynamics'
+	echo '              :             physics    : Runs with Dynamics (SimTime triggered Mode)'
+	echo '              :             nophysics  : Runs with No Dynamics'
 	echo '              :                  Options: '
 	echo '              :                        (no-arg)  : run in RT (free run) mode'
 	echo '              :                             remote xxx.xxx.xxx.xxx  : same as remote command'

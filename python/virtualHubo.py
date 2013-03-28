@@ -196,7 +196,7 @@ if __name__=='__main__':
     env.SetDebugLevel(4)
     time.sleep(.25)
 
-    if( 'nodynamics' == flag ):
+    if( 'nophysics' == flag ):
          print 'No Dynamic mode'
          [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True, None, True)  # this will disable physics
     else:
@@ -228,18 +228,18 @@ if __name__=='__main__':
 
     print('Starting Sim')
 
-    if( 'dynamics' == flag ):
+    if( 'physics' == flag ):
         env.StopSimulation()
 
     fs.put(sim) 
     while(1):
       with Timer('Get_Pose'):
-        if(( 'dynamics' == flag) | ('simtime' == simtimeFlag )):
+        if(( 'physics' == flag) | ('simtime' == simtimeFlag )):
             [statuss, framesizes] = ts.get(sim, wait=True, last=False)
 
         [statuss, framesizes] = s.get(state, wait=False, last=True)
 
-        if( 'nodynamics' == flag ):
+        if( 'nophysics' == flag ):
             pose = ref2robot(ref, state)
             ref.SetDOFValues(pose)
             pose = pos2robot(robot, state)
@@ -254,14 +254,14 @@ if __name__=='__main__':
 
     # this will step the simulation  note: i can run env step in a loop if nothign else changes
 
-        if( ('dynamics' == flag ) | ('simtime' == simtimeFlag)):
+        if( ('physics' == flag ) | ('simtime' == simtimeFlag)):
             N = numpy.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
             T = 1/N*ha.HUBO_LOOP_PERIOD
     #        print 'openhubo.TIMESTEP = ',openhubo.TIMESTEP, ' : N = ', N, ' : T = ', T
             for x in range(0,int(N)):
                 env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
                 sim.time = sim.time + openhubo.TIMESTEP
-            if('dynamics' == flag ):
+            if('physics' == flag ):
                 s.put(state)
                 pose = sim2state(robot,state)
             fs.put(sim) 
