@@ -54,7 +54,7 @@ RHY = 26# Right Hip Yaw
 RHR = 27# Right Hip Roll
 RHP = 28# Right Hip Pitch
 RKN = 29# Right Knee Pitch
-RAP = 23# Right Ankle Pitch
+RAP = 30# Right Ankle Pitch
 RAR = 31# Right Ankle Roll
 
 LHY = 19# Left Hip Yaw
