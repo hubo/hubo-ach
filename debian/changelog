@@ -1,8 +1,14 @@
+hubo-ach (0.1.20130329) stable; urgency=low
+
+  * sim dynamic and nodynamics to physics and nophysics
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Fri, 29 Mar 2013 01:14:00 -0400
+
 hubo-ach (0.1.20130327) stable; urgency=low
 
   * Fixed small issue with RAP in hubo_ach.py
 
- -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 25 Mar 2013 17:57:00 -0400
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Wed, 27 Mar 2013 15:15:00 -0400
 
 hubo-ach (0.0.20130326) stable; urgency=low
 
