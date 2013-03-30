@@ -119,6 +119,7 @@ extern "C" {
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
 #define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
+#define 	HUBO_CHAN_MULTI_CHAN  "hubo-multi-chan"  ///> for multi chan 
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
@@ -133,6 +134,10 @@ typedef enum {
     HUBO_VIRTUAL_MODE_NONE        = 0, ///< not virtual mode
     HUBO_VIRTUAL_MODE_VIRTUAL     = 1, ///< virtual mode just uses vcan
     HUBO_VIRTUAL_MODE_OPENHUBO    = 2  ///< changes timing for use with openhubo
+}__attribute__((packed)) hubo_virtual_mode_index_t;
+typedef enum {
+    HUBO_JOINT_REF_INACTIVE       = 0, ///< FOR H_ref.active[] = joint not active
+    HUBO_JOINT_REF_ACTIVE         = 1  ///< FOR H_REF.active[] = joint active
 }__attribute__((packed)) hubo_virtual_mode_index_t;
 
 typedef enum {
@@ -277,6 +282,7 @@ typedef struct hubo_state {
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
+        uint8_t active[HUBO_JOINT_COUNT]; ///< 0 if not active 1 if is active
 }__attribute__((packed)) hubo_ref_t;
 
 typedef struct jmcDriver{

@@ -40,6 +40,9 @@ HUBO_IMU0	  = 4 # Index of IMU0
 HUBO_IMU1	  = 5 # Index of IMU1
 HUBO_IMU2	  = 6 # Index of IMU2
 
+HUBO_JOINT_REF_INACTIVE       = 0
+HUBO_JOINT_REF_ACTIVE         = 1 
+
 HUBO_JOINT_COUNT                  = 42
 HUBO_JMC_COUNT                    = 0x26
 HUBO_IMU_COUNT                    = 3
@@ -48,6 +51,7 @@ HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME              = 'hubo-state'     
 HUBO_CHAN_VIRTUAL_TO_SIM_NAME     = 'hubo-virtual-to-sim'     
 HUBO_CHAN_VIRTUAL_FROM_SIM_NAME   = 'hubo-virtual-from-sim'     
+HUBO_CHAN_MULTI_CHAN              = 'hubo-multi-chan'
 HUBO_LOOP_PERIOD                  = 0.005
 
 RHY = 26# Right Hip Yaw
@@ -203,5 +207,6 @@ class HUBO_STATE(Structure):
 class HUBO_REF(Structure):
     _pack_ = 1
     _fields_ = [("ref",  c_double*HUBO_JOINT_COUNT),
-                ("mode", c_int16*HUBO_JOINT_COUNT)]
+                ("mode", c_int16*HUBO_JOINT_COUNT),
+                ("active", c_uint8*HUBO_JOINT_COUNT)]
 
