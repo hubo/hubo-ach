@@ -19,11 +19,19 @@
 
 #include <unistd.h>
 
+int loop();
+
 /* Ach Channel IDs */
 ach_channel_t chan_hubo_ref;      // Feed-Forward (Reference)
 ach_channel_t chan_hubo_ref_multi;    //
 
 int main(int argc, char **argv) {
+    daemon(0,0);
+    loop();
+
+}
+
+int loop(){
     int i = 0;
 
     /* Open Ach Channel */
