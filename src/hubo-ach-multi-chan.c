@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 	}
 */
 
-        printf("WST = %f \n\r",H_ref_multi.ref[WST]);
+    //    printf("WST = %f \n\r",H_ref_multi.ref[WST]);
         for( i = 0; i < HUBO_JOINT_COUNT ; i++ ){
             if(HUBO_JOINT_REF_ACTIVE == H_ref_multi.active[i]){
                 H_ref.ref[i] = H_ref_multi.ref[i];
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
         /* Write to the feed-forward channel */
         ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
-        usleep(10000);
+//        usleep(10000);
     }
 }
 
