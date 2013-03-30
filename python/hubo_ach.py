@@ -51,7 +51,7 @@ HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME              = 'hubo-state'     
 HUBO_CHAN_VIRTUAL_TO_SIM_NAME     = 'hubo-virtual-to-sim'     
 HUBO_CHAN_VIRTUAL_FROM_SIM_NAME   = 'hubo-virtual-from-sim'     
-HUBO_CHAN_MULTI_CHAN              = 'hubo-multi-chan'
+HUBO_CHAN_MULTI_CHAN_NAME         = 'hubo-multi-chan'
 HUBO_LOOP_PERIOD                  = 0.005
 
 RHY = 26# Right Hip Yaw

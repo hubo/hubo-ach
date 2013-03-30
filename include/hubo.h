@@ -119,7 +119,7 @@ extern "C" {
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
 #define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
-#define 	HUBO_CHAN_MULTI_CHAN  "hubo-multi-chan"  ///> for multi chan 
+#define 	HUBO_CHAN_MULTI_CHAN_NAME  "hubo-multi-chan"  ///> for multi chan 
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
