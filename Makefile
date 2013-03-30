@@ -3,12 +3,12 @@ default: all
 CFLAGS := -I./include -g --std=gnu99
 CC := gcc
 
-BINARIES := hubo-simple-demo
+BINARIES := hubo-ach-multi-chan
 all : $(BINARIES)
 
 LIBS := -lach 
 
-hubo-simple-demo: src/hubo-simple-demo.o
+hubo-ach-multi-chan: src/hubo-ach-multi-chan.o
 	gcc -o $@ $< $(LIBS)
 
 %.o: %.c
