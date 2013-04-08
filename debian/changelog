@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130408) stable; urgency=low
+
+  * fixed encoder read back in physics mode
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Mon, 08 Apr 2013 16:38:00 -0400
+
 hubo-ach (0.1.20130329) stable; urgency=low
 
   * sim dynamic and nodynamics to physics and nophysics
