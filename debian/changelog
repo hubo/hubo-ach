@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130420) stable; urgency=low
+
+  * OpenHubo No Physics on Remote working
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Sat, 20 Apr 2013 12:32:00 -0400
+
 hubo-ach (0.1.20130411) stable; urgency=low
 
   * Left hand working again

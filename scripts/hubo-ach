@@ -353,7 +353,7 @@ OpenHubo()
                         case "$4" in 
 			'remote')
 				Remote $5
-				python -i /etc/hubo-ach/virtualHubo.py nophysicss
+				python -i /etc/hubo-ach/virtualHubo.py nophysics
 			;;
 			*)
 				RunDaemon
