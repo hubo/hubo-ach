@@ -247,12 +247,12 @@ int main() {
             printf("   - Getting Status All\n");
             usleep(50*1000);
             hubo_update(&H_ref, &H_state);
-            hubo_joint_status_t e = H_state.status[H_cmd.joint];
           for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
+            hubo_joint_status_t e = H_state.status[i];
             printf("%s - %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n"
             , &H_param.joint[i].name
-            , H_ref.mode[H_cmd.joint]
-            , H_state.joint[H_cmd.joint].zeroed
+            , H_ref.mode[i]
+            , H_state.joint[i].zeroed
             , e.homeFlag
             , e.jam
             , e.pwmSaturated
@@ -264,7 +264,7 @@ int main() {
             , e.velError
             , e.accError
             , e.tempError
-            , H_state.joint[H_cmd.joint].active);
+            , H_state.joint[i].active);
           }
       	}
         else if (strcmp(buf0,"resetAll")==0) {
