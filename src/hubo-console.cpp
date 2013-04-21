@@ -87,7 +87,7 @@ int name2sensor(char* name, hubo_param_t *h);
 double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
-                "resetAll","status"}; //,
+                "resetAll","status","statusAll"}; //,
 
 
 int main() {
@@ -242,6 +242,30 @@ int main() {
             printf("Acc Error    : %d \n", e.accError);
             printf("Temp Error   : %d \n", e.tempError);
             printf("Active       : %d \n", H_state.joint[H_cmd.joint].active);
+      	}
+        else if (strcmp(buf0,"statusAll")==0) {
+            printf("   - Getting Status All\n");
+            usleep(50*1000);
+            hubo_update(&H_ref, &H_state);
+            hubo_joint_status_t e = H_state.status[H_cmd.joint];
+          for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
+            printf("%s - %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n"
+            , &H_param.joint[i].name
+            , H_ref.mode[H_cmd.joint]
+            , H_state.joint[H_cmd.joint].zeroed
+            , e.homeFlag
+            , e.jam
+            , e.pwmSaturated
+            , e.bigError
+            , e.encError
+            , e.driverFault
+            , e.posMinError
+            , e.posMaxError
+            , e.velError
+            , e.accError
+            , e.tempError
+            , H_state.joint[H_cmd.joint].active);
+          }
       	}
         else if (strcmp(buf0,"resetAll")==0) {
             for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
