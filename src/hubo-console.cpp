@@ -126,8 +126,8 @@ int main() {
         setSensorDefaults( &H_param );
 
 	size_t fs;
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(H_ref) == fs );
+//	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+//	assert( sizeof(H_ref) == fs );
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_state) == fs );
 

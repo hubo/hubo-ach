@@ -6,6 +6,7 @@ sudo rm $(locate hubo-daemon | grep /bin)
 sudo rm $(locate hubo-console | grep /bin)
 sudo rm $(locate hubo-read | grep /bin)
 sudo rm $(locate hubo-ach | grep /bin)
+sudo rm $(locate hubo-multi-chan | grep /bin)
 sudo rm /etc/hubo-ach/joint.table
 sudo rm /etc/hubo-ach/sensor.table
 sudo rm /etc/hubo-ach/virtualHubo.py
