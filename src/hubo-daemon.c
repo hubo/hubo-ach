@@ -567,7 +567,7 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
 
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
 		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-			jmc = h->joint[i].jmc+1;
+			jmc = h->joint[i].jmc;
 			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
 
 				if( slowLoopi < slowLoopSplit ) {

@@ -262,8 +262,8 @@ if __name__=='__main__':
                 env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
                 sim.time = sim.time + openhubo.TIMESTEP
             if('physics' == flag ):
-                s.put(state)
                 pose = sim2state(robot,state)
+            s.put(state)
             fs.put(sim) 
         else:
             env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
