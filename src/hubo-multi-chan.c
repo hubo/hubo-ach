@@ -51,13 +51,15 @@ int loop(){
     memset( &H_ref,   0, sizeof(H_ref));
     memset( &H_ref_multi, 0, sizeof(H_ref_multi));
 
+    ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
+
     /* for size check */
     size_t fs;
 
     usleep(2);
     while(1){
         /* Wait for new feedforward  */
-        r = ach_get( &chan_hubo_ref_multi, &H_ref_multi, sizeof(H_ref_multi), &fs, NULL, ACH_O_WAIT );  
+        r = ach_get( &chan_hubo_ref, &H_ref_multi, sizeof(H_ref_multi), &fs, NULL, ACH_O_WAIT );  
         if(ACH_OK != r) { assert( sizeof(H_ref_multi) == fs );}
 
         for( i = 0; i < HUBO_JOINT_COUNT ; i++ ){

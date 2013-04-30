@@ -97,17 +97,18 @@ int main() {
 	printf(" ******************************************* \n");
 
 	// get initial values for hubo
-	// open ach channel
-	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-	assert( ACH_OK == r );
 
 	// open hubo state
-	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
+	int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
 
-       // initialize control channel
-       r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-       assert( ACH_OK == r );
+	// open ach channel
+	r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+	assert( ACH_OK == r );
+
+        // initialize control channel
+        r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
+        assert( ACH_OK == r );
 
         // get initial values for hubo
         struct hubo_ref H_ref;
@@ -130,6 +131,23 @@ int main() {
 //	assert( sizeof(H_ref) == fs );
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_state) == fs );
+
+
+// open hubo reference
+/*
+    if( HUBO_MULTI_CHAN_MODE_ACTIVE == H_state.multi  ) {
+        r = ach_open(&chan_hubo_ref,  HUBO_CHAN_MULTI_CHAN_NAME, NULL);
+        assert( ACH_OK == r);
+    }
+    else {
+        r = ach_open(&chan_hubo_ref,  HUBO_CHAN_REF_NAME, NULL);
+        assert( ACH_OK == r);
+    }
+*/
+
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_ref) == fs );
+
 
     char *buf;
     rl_attempted_completion_function = my_completion;
@@ -161,7 +179,9 @@ int main() {
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &f) != 0){  //It's a float.
                 H_ref.ref[jnt] = (double)f;
+                H_ref.active[jnt] = HUBO_JOINT_REF_ACTIVE;
                 int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+                H_ref.active[jnt] = HUBO_JOINT_REF_INACTIVE;
                 char* tmp = getArg(buf,1);
                 printf(">> %s = %f rad \n",tmp,f);
             }

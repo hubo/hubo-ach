@@ -136,10 +136,10 @@ typedef enum {
     HUBO_VIRTUAL_MODE_OPENHUBO    = 2  ///< changes timing for use with openhubo
 }__attribute__((packed)) hubo_virtual_mode_index_t;
 typedef enum {
+    HUBO_MULTI_CHAN_MODE_INACTIVE = 0,  ///< Set flag in hubo-daemon to make inactive
+    HUBO_MULTI_CHAN_MODE_ACTIVE   = 1, ///< Set flag in hubo-daemon to make active
     HUBO_JOINT_REF_INACTIVE       = 0, ///< FOR H_ref.active[] = joint not active
-    HUBO_JOINT_REF_ACTIVE         = 1, ///< FOR H_REF.active[] = joint active
-    HUBO_MULTI_CHAN_MODE_ACTIVE   = 3, ///< Set flag in hubo-daemon to make active
-    HUBO_MULTI_CHAN_MODE_INACTIVE = 4  ///< Set flag in hubo-daemon to make inactive
+    HUBO_JOINT_REF_ACTIVE         = 1 ///< FOR H_REF.active[] = joint active
 }__attribute__((packed)) hubo_multi_chan_index_t;
 
 typedef enum {
@@ -279,6 +279,7 @@ typedef struct hubo_state {
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
         double time;
 	int16_t refWait;
+        uint8_t multi;
 }__attribute__((packed)) hubo_state_t;
 
 typedef struct hubo_ref {

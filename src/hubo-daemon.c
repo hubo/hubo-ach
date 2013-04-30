@@ -2786,6 +2786,7 @@ int main(int argc, char **argv) {
     // open hubo reference
     if( HUBO_MULTI_CHAN_MODE_ACTIVE == multiChanFlag ) {
         r = ach_open(&chan_hubo_ref,  HUBO_CHAN_MULTI_CHAN_NAME, NULL);
+        H_state.multi = HUBO_MULTI_CHAN_MODE_ACTIVE;
         hubo_assert( ACH_OK == r, __LINE__ );
     }
     else {
