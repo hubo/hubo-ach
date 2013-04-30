@@ -93,6 +93,7 @@ int loop(){
         for( i = 0; i < HUBO_JOINT_COUNT ; i++ ){
             if(HUBO_JOINT_REF_ACTIVE == H_ref_multi.active[i]){
                 H_ref.ref[i] = H_ref_multi.ref[i];
+                H_ref.mode[i] = H_ref_multi.mode[i];
             }
         }
 
