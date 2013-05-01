@@ -54,9 +54,10 @@ ach_channel_t chan_hubo_ref;      // Feed-Forward (Reference)
 ach_channel_t chan_hubo_ref_multi;    //
 
 int main(int argc, char **argv) {
-    daemon(0,0);
+
     // Daemonize
-//    hubo_daemonize();
+    hubo_daemonize("hubo-multi-chan", 49);
+
     loop();
 
 }
@@ -66,10 +67,10 @@ int loop(){
 
     /* Open Ach Channel */
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
-    assert( ACH_OK == r );
+    hubo_assert( ACH_OK == r, __LINE__ );
 
     r = ach_open(&chan_hubo_ref_multi, HUBO_CHAN_MULTI_CHAN_NAME , NULL);
-    assert( ACH_OK == r );
+    hubo_assert( ACH_OK == r, __LINE__ );
     ach_flush(&chan_hubo_ref_multi);
 
 
@@ -88,7 +89,7 @@ int loop(){
     while(1){
         /* Wait for new feedforward  */
         r = ach_get( &chan_hubo_ref, &H_ref_multi, sizeof(H_ref_multi), &fs, NULL, ACH_O_WAIT );  
-        if(ACH_OK != r) { assert( sizeof(H_ref_multi) == fs );}
+        if(ACH_OK != r) { hubo_assert( sizeof(H_ref_multi) == fs, __LINE__ );}
 
         for( i = 0; i < HUBO_JOINT_COUNT ; i++ ){
             if(HUBO_JOINT_REF_ACTIVE == H_ref_multi.active[i]){

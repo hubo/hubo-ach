@@ -53,6 +53,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hubo-daemonID.h"
 #include "hubo-daemon.h"
 #include "hubo-jointparams.h"
+#include "hubo-daemonizer.h"
 
 // Check out which CAN API to use
 #ifdef HUBO_CONFIG_ESD
@@ -356,7 +357,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     int startFlag = 1;
 
     printf("Start Hubo Loop\n");
-    while(!hubo_sig_quit) {
+    while(!daemon_sig_quit) {
 
         // wait until next shot
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -2760,7 +2761,7 @@ int main(int argc, char **argv) {
         i++;
     }
     // Daemonize
-    hubo_daemonize();
+    hubo_daemonize("hubo-daemon", 49);
     
 
     // Initialize Hubo Structs
