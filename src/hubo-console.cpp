@@ -76,7 +76,6 @@ int test(char *s , struct hubo *h);
 char* getArg(string s, int argNum);
 void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state);
 int name2mot(char*s, hubo_param_t *h);
-double hubo_get(char*s, struct hubo_ref *h, hubo_param_t *p);
 void hubo_jmc_beep(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 void hubo_jmc_home(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 //char* cmd [] ={ "test","hello", "world", "hell" ,"word", "quit", " " };
@@ -84,7 +83,6 @@ void hubo_jmc_home_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 void hubo_enc_reset(hubo_param_t *h, hubo_board_cmd_t *c, int jnt);
 void hubo_startup_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
 int name2sensor(char* name, hubo_param_t *h);
-double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
                 "resetAll","status","statusAll"}; //,
@@ -151,36 +149,48 @@ int main() {
             printf("--->Hubo Information Updated\n");
         }
         else if (strcmp(buf0,"get")==0) {
-            double jRef = hubo_get(buf,&H_ref, &H_param);
-            char* tmp = getArg(buf,1);
-            printf(">> %s = %f rad \n",tmp,jRef);
+	    int jnt = name2mot(getArg(buf,1), &H_param);
+            if( jnt == -1) {
+                printf("Unrecognized joint '%s'\n",getArg(buf,1));}
+            else {
+	        double jRef = H_ref.ref[jnt];
+                char* tmp = getArg(buf,1);
+                printf(">> %s = %f rad \n",tmp,jRef);
+            }
         }
         else if (strcmp(buf0,"goto")==0) {
-            int jnt = hubo_set(buf, &H_param);
-            float f = 0.0;
-            char* str = getArg(buf,2);
-            if(sscanf(str, "%f", &f) != 0){  //It's a float.
-                H_ref.ref[jnt] = (double)f;
-                int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
-                char* tmp = getArg(buf,1);
-                printf(">> %s = %f rad \n",tmp,f);
-            }
+	    int jnt = name2mot(getArg(buf,1), &H_param);
+            if( jnt == -1) {
+                printf("Unrecognized joint '%s'\n",getArg(buf,1));}
             else {
-                printf(">> Bad input \n");
+                float f = 0.0;
+                char* str = getArg(buf,2);
+                if(sscanf(str, "%f", &f) != 0){  //It's a float.
+                    H_ref.ref[jnt] = (double)f;
+                    int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+                    char* tmp = getArg(buf,1);
+                    printf(">> %s = %f rad \n",tmp,f);
+                }
+                else {
+                    printf(">> Bad input \n");
+                }
             }
         }
         else if (strcmp(buf0,"beep")==0) {
             hubo_jmc_beep(&H_param, &H_cmd, buf);
         }
         else if (strcmp(buf0,"home")==0) {
-            hubo_jmc_home(&H_param, &H_cmd, buf);
-            printf("%s - Home \n",getArg(buf,1));
+            if( name2mot(getArg(buf,1),&H_param) == -1 ) {
+                printf("Unrecognized joint '%s'\n",getArg(buf,1));}
+            else {
+                hubo_jmc_home(&H_param, &H_cmd, buf);
+                printf("%s - Home \n",getArg(buf,1));
+            }
         }
         else if (strcmp(buf0,"homeAll")==0) {
             hubo_jmc_home_all(&H_param, &H_cmd, buf);
             printf("%s - Home All \n",getArg(buf,1));
             tsleep = 5;
-            
         }
 
 	else if (strcmp(buf0,"ctrl")==0) {
@@ -188,16 +198,20 @@ int main() {
 		if(hOnOff == 0 | hOnOff == 1) {
 			H_cmd.type = D_CTRL_ON_OFF;
 			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-			if( hOnOff == 1)
-			    H_cmd.param[0] = D_ENABLE;         // 1 = on
-			if( hOnOff == 0)
-			    H_cmd.param[0] = D_DISABLE;         // 0 = off
-                        if( hOnOff == 1 | hOnOff == 0 )
-                            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-			if( hOnOff == 0) {
-				printf("%s - Turning Off CTRL\n",getArg(buf,1));}
-			else {
-				printf("%s - Turning On CTRL\n",getArg(buf,1));}
+			if( H_cmd.joint == -1) {
+				printf("Unrecognized joint '%s'\n",getArg(buf,1));}
+                        else {
+				if( hOnOff == 1)
+				    H_cmd.param[0] = D_ENABLE;         // 1 = on
+				if( hOnOff == 0)
+				    H_cmd.param[0] = D_DISABLE;         // 0 = off
+	                        if( hOnOff == 1 | hOnOff == 0 )
+        	                    r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+				if( hOnOff == 0) {
+					printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+				else {
+					printf("%s - Turning On CTRL\n",getArg(buf,1));}
+			}
 		}
 
 	}
@@ -223,25 +237,29 @@ int main() {
         else if (strcmp(buf0,"status")==0) {
             H_cmd.type = D_GET_STATUS;
             H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-            printf("%s - Getting Status \n", &H_param.joint[H_cmd.joint].name);
-            usleep(50*1000);
-            hubo_update(&H_ref, &H_state);
-            hubo_joint_status_t e = H_state.status[H_cmd.joint];
-            printf("Mode         : %d \n", H_ref.mode[H_cmd.joint]);
-            printf("Zeroed       : %d \n", H_state.joint[H_cmd.joint].zeroed);
-            printf("Homed        : %d \n", e.homeFlag);
-            printf("Jam          : %d \n", e.jam);
-            printf("PWM Saturated: %d \n", e.pwmSaturated);
-            printf("Big Error    : %d \n", e.bigError);
-            printf("Enc Error    : %d \n", e.encError);
-            printf("Drive Fault  : %d \n", e.driverFault);
-            printf("Pos Err (min): %d \n", e.posMinError);
-            printf("Pos Err (max): %d \n", e.posMaxError);
-            printf("Velos Error  : %d \n", e.velError);
-            printf("Acc Error    : %d \n", e.accError);
-            printf("Temp Error   : %d \n", e.tempError);
-            printf("Active       : %d \n", H_state.joint[H_cmd.joint].active);
+            if( H_cmd.joint == -1) {
+                printf("Unrecognized joint '%s'\n",getArg(buf,1));}
+            else {
+                r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+                printf("%s - Getting Status \n", H_param.joint[H_cmd.joint].name);
+                usleep(50*1000);
+                hubo_update(&H_ref, &H_state);
+                hubo_joint_status_t e = H_state.status[H_cmd.joint];
+                printf("Mode         : %d \n", H_ref.mode[H_cmd.joint]);
+                printf("Zeroed       : %d \n", H_state.joint[H_cmd.joint].zeroed);
+                printf("Homed        : %d \n", e.homeFlag);
+                printf("Jam          : %d \n", e.jam);
+                printf("PWM Saturated: %d \n", e.pwmSaturated);
+                printf("Big Error    : %d \n", e.bigError);
+                printf("Enc Error    : %d \n", e.encError);
+                printf("Drive Fault  : %d \n", e.driverFault);
+                printf("Pos Err (min): %d \n", e.posMinError);
+                printf("Pos Err (max): %d \n", e.posMaxError);
+                printf("Velos Error  : %d \n", e.velError);
+                printf("Acc Error    : %d \n", e.accError);
+                printf("Temp Error   : %d \n", e.tempError);
+                printf("Active       : %d \n", H_state.joint[H_cmd.joint].active);
+            }
       	}
         else if (strcmp(buf0,"statusAll")==0) {
             printf("   - Getting Status All\n");
@@ -250,7 +268,7 @@ int main() {
           for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
             hubo_joint_status_t e = H_state.status[i];
             printf("%s - %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n"
-            , &H_param.joint[i].name
+            , H_param.joint[i].name
             , H_ref.mode[i]
             , H_state.joint[i].zeroed
             , e.homeFlag
@@ -270,15 +288,19 @@ int main() {
         else if (strcmp(buf0,"resetAll")==0) {
             for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
                 hubo_enc_reset(&H_param, &H_cmd, i);
-                printf("%s - Resetting Encoder \n", &H_param.joint[i].name);
+                printf("%s - Resetting Encoder \n", H_param.joint[i].name);
                 usleep(10*1000);
             }
 	}
 
         else if (strcmp(buf0,"reset")==0) {
             int jnt = name2mot(getArg(buf, 1), &H_param); 
-            hubo_enc_reset(&H_param, &H_cmd, jnt);
-            printf("%s - Resetting Encoder \n",getArg(buf,1));
+            if( jnt == -1 ) {
+                printf("Unrecognized joint '%s'\n",getArg(buf,1));}
+            else {    
+                hubo_enc_reset(&H_param, &H_cmd, jnt);
+                printf("%s - Resetting Encoder \n",getArg(buf,1));
+}
         }
         else if (strcmp(buf0,"startup")==0) {
             hubo_startup_all(&H_param, &H_cmd, buf);
@@ -290,15 +312,19 @@ int main() {
             if(onOrOff == 0 | onOrOff == 1) {
                 H_cmd.type = D_CTRL_SWITCH;
                 H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-                if(onOrOff==1)			// 1 = on, 0 = 0ff
-                    H_cmd.param[0] = D_ENABLE;
-                else if(onOrOff==0)
-                    H_cmd.param[0] = D_DISABLE;	
-                r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-                if(onOrOff == 0) {
-                    printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+                if( H_cmd.joint == -1) {
+                    printf("Unrecognized joint '%s'\n",getArg(buf,1));}
                 else {
-                    printf("%s - Turning On CTRL\n",getArg(buf,1));}
+                    if(onOrOff==1)			// 1 = on, 0 = 0ff
+                        H_cmd.param[0] = D_ENABLE;
+                    else if(onOrOff==0)
+                        H_cmd.param[0] = D_DISABLE;	
+                    r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+                    if(onOrOff == 0) {
+                        printf("%s - Turning Off CTRL\n",getArg(buf,1));}
+                    else {
+                        printf("%s - Turning On CTRL\n",getArg(buf,1));}
+                }
             }
         }
         else if (strcmp(buf0,"fet")==0) {
@@ -306,23 +332,31 @@ int main() {
             if(onOrOff == 0 | onOrOff == 1) {
                 H_cmd.type = D_FET_SWITCH;
                 H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
-                if(onOrOff==1)
-                    H_cmd.param[0] = D_ENABLE;
-                else if(onOrOff==0)
-                    H_cmd.param[0] = D_DISABLE;
-                int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-                if(onOrOff == 0) {
-                    printf("%s - Turning Off FET\n",getArg(buf,1));}
+                if( H_cmd.joint == -1) {
+                    printf("Unrecognized joint '%s'\n",getArg(buf,1));}
                 else {
-                    printf("%s - Turning On FET\n",getArg(buf,1));}
+                    if(onOrOff==1)
+                        H_cmd.param[0] = D_ENABLE;
+                    else if(onOrOff==0)
+                        H_cmd.param[0] = D_DISABLE;
+                    int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+                    if(onOrOff == 0) {
+                        printf("%s - Turning Off FET\n",getArg(buf,1));}
+                    else {
+                        printf("%s - Turning On FET\n",getArg(buf,1));}
+                }
             }
         }
         else if (strcmp(buf0,"initialize")==0) {
             H_cmd.type = D_JMC_INITIALIZE;
             H_cmd.joint = name2mot(getArg(buf,1),&H_param);	// set motor num
-            //C.val[0] = atof(getArg(buf,2));
-            int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-            printf("%s - Initialize \n",getArg(buf,1));
+            if( H_cmd.joint == -1) {
+                printf("Unrecognized joint '%s'\n",getArg(buf,1));}
+            else {
+                //C.val[0] = atof(getArg(buf,2));
+                int r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+                printf("%s - Initialize \n",getArg(buf,1));
+            }
         }
         else if (strcmp(buf0,"initializeAll")==0) {
             H_cmd.type = D_JMC_INITIALIZE_ALL;
@@ -379,21 +413,6 @@ int main() {
     }
     free(buf);
     return 0;
-}
-
-double hubo_get(char*s, struct hubo_ref *h, hubo_param_t *p) {
-
-	/* get joint number */
-	int jointNo = name2mot(getArg(s,1),p);
-
-	return h->ref[jointNo];
-}
-
-double hubo_set(char*s, hubo_param_t *p) {
-
-    /* get joint number */
-    int jointNo = name2mot(getArg(s,1),p);
-    return jointNo;
 }
 
 void hubo_jmc_beep(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
