@@ -368,6 +368,10 @@ int main() {
         /* Quit */
         else if (strcmp(buf0,"quit")==0)
             break;
+        }
+        else {
+            printf("Command '%s' not recognized.\n",getArg(buf,0));
+        }
         if (buf[0]!=0)
         add_history(buf);
         sleep(tsleep);	// sleep for tsleep sec
