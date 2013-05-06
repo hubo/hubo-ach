@@ -366,7 +366,8 @@ int main() {
             
         }
         /* Quit */
-        else if (strcmp(buf0,"quit")==0)
+        else if (strcmp(buf0,"quit")==0 || strcmp(buf0,"exit")==0) {
+            printf("\n");
             break;
         }
         else {
