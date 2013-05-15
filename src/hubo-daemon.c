@@ -346,6 +346,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
     // time info
     struct timespec t, time;
+    struct timespec ts;
     double tsec;
 
     // get current time
@@ -355,11 +356,27 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
     int startFlag = 1;
 
+    // dan record
+    FILE *file; 
+    file = fopen("/home/geovana/hubo-ach.log","a+");
+    long b1 = 1000000000;  // one billion
+    double recsec = 0.0;
+    double recnsec = 0.0;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    double recsecIni = (double)ts.tv_sec;
+
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
 
+	
         // wait until next shot
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+
+        // dan record (top of loop time)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file,"%-11.11f",recsec+recnsec);
 
         fs = 0;
 
@@ -388,11 +405,23 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
             }
         else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
+        // dan record (get ref latest)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
 
 
         /* Set all Ref */
         if(hubo_noRefTimeAll < T ) {
             refFilterMode(&H_ref, HUBO_REF_FILTER_LENGTH, H_param, &H_state, &H_ref_filter);
+
+            // dan record (filter)
+            clock_gettime(CLOCK_REALTIME, &ts);
+            recsec = (double)ts.tv_sec-recsecIni;
+            recnsec = (double)ts.tv_nsec/1.0e9;
+            fprintf(file," %-11.11f",recsec+recnsec);
+
             setRefAll(&H_ref, H_param, &H_state, &frame);
             H_state.refWait = 0;
         }
@@ -411,24 +440,67 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             startFlag = 0;
         }
 
+
+        // dan record (set POS time)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
+
+
         /* read hubo console */
         huboMessage(&H_ref, &H_ref_filter, H_param, &H_state, &H_cmd, &frame);
 
+        // dan record (Commands form console)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
 
         /* Get all Encoder data */
         getEncAllSlow(&H_state, H_param, &frame); 
+
+        // dan record (get Enc Data)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
         
         /* Get FT Sensor data */
         getFTAllSlow(&H_state, H_param, &frame);
 
+        // dan record (get FT data)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
+
         /* Get foot acceleration data */
         getAccAllSlow(&H_state, H_param, &frame);
+
+        // dan record (get acc data)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
 
         /* Get IMU data */
         getIMUAllSlow(&H_state, H_param, &frame);
 
+        // dan record (get imu data)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
+
         /* Update next joint status (one each loop) */
         getStatusIterate( &H_state, H_param, &frame);
+
+        // dan record (update state)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
 
         /* Read any aditional data left on the buffer */
 //        clearCanBuff(&H_state, H_param, &frame);
@@ -441,7 +513,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
         clock_gettime( CLOCK_MONOTONIC, &time );
-        tsec = (double)time.tv_sec;
+        recsec = (double)ts.tv_sec-recsecIni;
         tsec += (double)(time.tv_nsec)/1.0e9;
 
         if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
@@ -455,12 +527,21 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         /* put data back in ACH channel */
         ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
-        if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
+//        if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
             ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
-        }
+//        }
+        // dan record (set to sim)
+        clock_gettime(CLOCK_REALTIME, &ts);
+        recsec = (double)ts.tv_sec-recsecIni;
+        recnsec = (double)ts.tv_nsec/1.0e9;
+        fprintf(file," %-11.11f",recsec+recnsec);
 
         t.tv_nsec+=interval;
         tsnorm(&t);
+
+        // dan record
+        fprintf(file,"\n");
+
         fflush(stdout);
         fflush(stderr);
     }
