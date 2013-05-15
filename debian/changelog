@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130515) stable; urgency=low
+
+  * added joint names to hubo.h and removed them from jointparams.c
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Wed, 15 May 2013 16:09:00 -0400
+
 hubo-ach (0.1.20130420-2) stable; urgency=low
 
   * Added statusAll to to hubo-console
