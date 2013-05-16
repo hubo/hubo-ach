@@ -3,6 +3,7 @@ sudo apt-get --yes --force-yes remove hubo-ach hubo-ach-dev
 sudo apt-get --yes --force-yes purge hubo-ach hubo-ach-dev
 sudo updatedb
 sudo rm $(locate hubo-daemon | grep /bin)
+sudo rm $(locate hubo-multi-chan | grep /bin)
 sudo rm $(locate hubo-console | grep /bin)
 sudo rm $(locate hubo-read | grep /bin)
 sudo rm $(locate hubo-ach | grep /bin)

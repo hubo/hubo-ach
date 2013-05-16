@@ -663,6 +663,11 @@ ShowUsage()
 {
 	echo
 	echo 'start         : Start all channels and processes and consle'
+	echo '              : Options:'
+	echo '              :    (no-arg)       : Normal mode'
+	echo '              :    multi          : active channel mode (must state controller'
+	echo '              :                     has access to this channel to control it'
+        echo '              :                     result: multiple processes can publish to the ref channel'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
