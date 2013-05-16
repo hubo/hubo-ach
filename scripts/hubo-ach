@@ -199,8 +199,8 @@ RunMulti()
 	
 	SetupCan
 	MakeAch
-        sudo hubo-multi-chan &
         sudo hubo-daemon -m
+        sudo hubo-multi-chan &
 }
 
 StartHubo()
@@ -209,13 +209,14 @@ StartHubo()
 	case "$1" in
       		'multi')
 		RunMulti
+	        StartConsole multi
    	;;
 
 	*)
 		RunDaemon
+	        StartConsole
 	;;
 	esac
-	StartConsole
 }
 
 SetupCan()
@@ -279,7 +280,14 @@ RunDaemon()
 
 StartConsole()
 {
-   hubo-console
+  case "$1" in
+        'multi')
+             hubo-console -m
+  ;;
+  *)
+    hubo-console
+  ;;
+  esac
 }
 
 MakeVCan()

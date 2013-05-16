@@ -89,8 +89,21 @@ char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","i
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
                 "resetAll","status","statusAll"}; //,
 
+bool multiChan = false;
 
-int main() {
+int main(int argc, char **argv) {
+
+        int i = 1;
+        while(argc > i){
+
+            if(strcmp(argv[i], "-m") == 0) {
+                multiChan = true;
+            }
+            i++;
+        }
+
+
+
 	printf("\n");
 	printf(" ***************** hubo-ach **************** \n");
 	printf(" Support: Daniel M. Lofaro dan@danlofaro.com \n");
@@ -103,8 +116,14 @@ int main() {
 	assert( ACH_OK == r );
 
 	// open ach channel
-	r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-	assert( ACH_OK == r );
+        if(multiChan){
+	    r = ach_open(&chan_hubo_ref, HUBO_CHAN_MULTI_CHAN_NAME, NULL);
+            assert( ACH_OK == r );
+        }
+        else{
+  	    r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+            assert( ACH_OK == r );
+        }
 
         // initialize control channel
         r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);

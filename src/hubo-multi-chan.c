@@ -65,6 +65,9 @@ int main(int argc, char **argv) {
 int loop(){
     int i = 0;
 
+    /* for size check */
+    size_t fs;
+
     /* Open Ach Channel */
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME , NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
@@ -80,10 +83,13 @@ int loop(){
     memset( &H_ref,   0, sizeof(H_ref));
     memset( &H_ref_multi, 0, sizeof(H_ref_multi));
 
+    r = ach_get( &chan_hubo_ref_multi, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );  
+    if(ACH_OK != r) { hubo_assert( sizeof(H_ref) == fs, __LINE__ );}
+
+    memcpy( &H_ref_multi, &H_ref, sizeof(H_ref_multi));
+
     ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
 
-    /* for size check */
-    size_t fs;
 
     usleep(2);
     while(1){
