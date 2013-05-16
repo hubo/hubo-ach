@@ -108,7 +108,7 @@ Kill()
 	sudo kill -9 $(pidof hubo-daemon)
 	sudo kill -9 $(pidof hubo-read)
 	sudo kill -9 $(pidof hubo-console)
-        sudo kill -9 $(pidof hubo-ach-multi-chan)
+        sudo kill -9 $(pidof hubo-multi-chan)
 }
 
 Remote()
