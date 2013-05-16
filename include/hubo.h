@@ -109,6 +109,7 @@ extern "C" {
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 #define         HUBO_JOINT_COUNT        42              ///> The max number of joints
 #define         HUBO_JMC_COUNT          0x26            ///> The max number of JMCs
+#define         HUBO_FT_COUNT           4		///> number of FT sensors
 #define         BNO_SENSOR_BASE         0x2F
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
@@ -283,7 +284,7 @@ typedef struct hubo_jmc_state {
 
 typedef struct hubo_state {
 	hubo_imu_t imu[HUBO_IMU_COUNT];	///< IMU
-	hubo_ft_t ft[4];   ///< ft sensors
+	hubo_ft_t ft[HUBO_FT_COUNT];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
         hubo_joint_status_t status[HUBO_JOINT_COUNT];
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
