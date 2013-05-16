@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
 
             if(strcmp(argv[i], "-m") == 0) {
                 multiChan = true;
+                printf("hubo-console in MultiChan mode\n");
             }
             i++;
         }
@@ -146,10 +147,15 @@ int main(int argc, char **argv) {
         setSensorDefaults( &H_param );
 
 	size_t fs;
+
+        printf("Wainting for state to be posted\n");
 //	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 //	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+//	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+//	assert( sizeof(H_state) == fs );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_state) == fs );
+
 
 
 // open hubo reference
@@ -164,10 +170,11 @@ int main(int argc, char **argv) {
     }
 */
 
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+        printf("Wainting for ref to be posted\n");
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_ref) == fs );
 
-
+    printf("\nReady\n");
     char *buf;
     rl_attempted_completion_function = my_completion;
     printf("\n");

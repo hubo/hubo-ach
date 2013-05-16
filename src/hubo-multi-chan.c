@@ -56,6 +56,7 @@ ach_channel_t chan_hubo_ref_multi;    //
 int main(int argc, char **argv) {
 
     // Daemonize
+//    daemon(0,0);
     hubo_daemonize("hubo-multi-chan", 49);
 
     loop();
@@ -83,10 +84,10 @@ int loop(){
     memset( &H_ref,   0, sizeof(H_ref));
     memset( &H_ref_multi, 0, sizeof(H_ref_multi));
 
-    r = ach_get( &chan_hubo_ref_multi, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );  
+    r = ach_get( &chan_hubo_ref_multi, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_WAIT );  
     if(ACH_OK != r) { hubo_assert( sizeof(H_ref) == fs, __LINE__ );}
 
-    memcpy( &H_ref_multi, &H_ref, sizeof(H_ref_multi));
+//    memcpy( &H_ref_multi, &H_ref, sizeof(H_ref_multi));
 
     ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref));
 
@@ -98,7 +99,7 @@ int loop(){
         if(ACH_OK != r) { hubo_assert( sizeof(H_ref_multi) == fs, __LINE__ );}
 
         for( i = 0; i < HUBO_JOINT_COUNT ; i++ ){
-            if(HUBO_JOINT_REF_ACTIVE == H_ref_multi.active[i]){
+            if(H_ref_multi.active[i] == HUBO_JOINT_REF_ACTIVE){
                 H_ref.ref[i] = H_ref_multi.ref[i];
                 H_ref.mode[i] = H_ref_multi.mode[i];
             }

@@ -153,6 +153,7 @@ KillAll()
 	KillHubo
 	Kill
 	sudo rm $LOCK_DIR/hubo-daemon
+	sudo rm $LOCK_DIR/hubo-multi-chan
 	sudo rm /dev/shm/achshm-hubo*
 	KillRemote
 }
@@ -199,8 +200,8 @@ RunMulti()
 	
 	SetupCan
 	MakeAch
-        sudo hubo-daemon -m
         sudo hubo-multi-chan &
+        sudo hubo-daemon -m
 }
 
 StartHubo()
@@ -209,7 +210,8 @@ StartHubo()
 	case "$1" in
       		'multi')
 		RunMulti
-	        StartConsole multi
+	        StartConsole
+#	        StartConsole multi
    	;;
 
 	*)
