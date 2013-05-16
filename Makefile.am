@@ -10,7 +10,7 @@ init_ddir = $(huboscriptdir)
 init_d_SCRIPTS = scripts/hubo-ach 
 
 # installed under $prefix/include/
-include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonID.h
+include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonID.h include/hubo-daemonizer.h
 #include_HEADERS = include/hubo.h
 
 # installed under $prefix/include/hubo-ach/
@@ -32,11 +32,16 @@ hubo_jointparams_LTLIBRARIES = libhuboparams.la
 libhuboparams_la_SOURCES = src/hubo-jointparams.c
 libhuboparams_la_LDFLAGS = -module -avoid-version -shared
 
+hubo_daemonizerdir = /usr/lib
+hubo_daemonizer_LTLIBRARIES = libhubodaemonizer.la
+libhubodaemonizer_la_SOURCES = src/hubo-daemonizer.c
+libhubodaemonizer_la_LDFLAGS = -module -avoid-version -shared
+
 #bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-ach-multi-chan
 bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-multi-chan
 
-hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-socketcan.c
-hubo_daemon_LDADD = -lm -lrt -lc libhuboparams.la
+hubo_daemon_SOURCES = src/hubo-daemon.c src/hubo-socketcan.c
+hubo_daemon_LDADD = -lm -lrt -lc libhuboparams.la libhubodaemonizer.la
 
 hubo_console_SOURCES = src/hubo-console.cpp
 hubo_console_LDADD = -lrt -lc -lm -lreadline libhuboparams.la
@@ -45,7 +50,7 @@ hubo_read_SOURCES = src/hubo-read.c
 hubo_read_LDADD = -lm -lc -lrt libhuboparams.la
 
 hubo_multi_chan_SOURCES = src/hubo-multi-chan.c 
-hubo_multi_chan_LDADD = -lm -lc -lrt libhuboparams.la
+hubo_multi_chan_LDADD = -lm -lc -lrt libhuboparams.la libhubodaemonizer.la
 
 python_PYTHON = python/hubo_ach.py
 
