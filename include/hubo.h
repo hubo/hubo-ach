@@ -130,6 +130,16 @@ extern "C" {
 				   guaranteed safe to access without
 				   faulting */
 
+// array of joint name strings (total of 42)
+static const char *jointNames[HUBO_JOINT_COUNT] =
+	{"WST", "NKY", "NK1", "NK2", // 0 1 2 3
+	 "LSP", "LSR", "LSY", "LEB", "LWY", "LWR", "LWP", // 4 5 6 7 8 9 10
+	 "RSP", "RSR", "RSY", "REB", "RWY", "RWR", "RWP", "N/A", // 11 12 13 14 15 16 17 18
+	 "LHY", "LHR", "LHP", "LKN", "LAP", "LAR", "N/A", // 19 20 21 22 23 24 25
+	 "RHY", "RHR", "RHP", "RKN", "RAP", "RAR", // 26 27 28 29 30 31
+	 "RF1", "RF2", "RF3", "RF4", "RF5", // 32 33 34 35 36
+	 "LF1", "LF2", "LF3", "LF4", "LF5"}; // 37 38 39 40 41
+
 typedef enum {
     HUBO_VIRTUAL_MODE_NONE        = 0, ///< not virtual mode
     HUBO_VIRTUAL_MODE_VIRTUAL     = 1, ///< virtual mode just uses vcan

@@ -155,26 +155,6 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 		}
 	}
 
-	// array of joint name values from header file hubo.h
-	uint16_t jointNameValues[] =
-			{WST, NKY, NK1, NK2,
-			LSP, LSR, LSY, LEB, LWY, LWR, LWP,
-			RSP, RSR, RSY, REB, RWY, RWR, RWP,
-			LHY, LHR, LHP, LKN, LAP, LAR,
-			RHY, RHR, RHP, RKN, RAP, RAR,
-			RF1, RF2, RF3, RF4, RF5,
-			LF1, LF2, LF3, LF4, LF5};
-
-	// array of joint name strings (total of 40)
-	char *jointNameStrings[] =
-			{"WST", "NKY", "NK1", "NK2",
-			 "LSP", "LSR", "LSY", "LEB", "LWY", "LWR", "LWP",
-			 "RSP", "RSR", "RSY", "REB", "RWY", "RWR", "RWP",
-			 "LHY", "LHR", "LHP", "LKN", "LAP", "LAR",
-			 "RHY", "RHR", "RHP", "RKN", "RAP", "RAR",
-			 "RF1", "RF2", "RF3", "RF4", "RF5",
-			 "LF1", "LF2", "LF3", "LF4", "LF5"};
-
 	// array of jmc name values from header file canId.h
 	uint8_t jmcNumbers[] = {JMC0, JMC1, JMC2, JMC3, JMC4, JMC5,
 				JMC6, JMC7, JMC8, JMC9, JMC10, JMC11,
@@ -226,10 +206,10 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 		{
 
 			// check to make sure jointName is valid
-			size_t x;
-			for (x = 0; x < sizeof(jointNameStrings)/sizeof(jointNameStrings[0]); x++) {
-				if (0 == strcmp(tp.name, jointNameStrings[x])) {
-					i = jointNameValues[x];
+			size_t jntIndex;
+			for (jntIndex = 0; jntIndex < HUBO_JOINT_COUNT; jntIndex++) {
+				if (0 == strcmp(tp.name, jointNames[jntIndex])) {
+					i = jntIndex;
 					jntNameCount = 1;
 					break;
 				}
