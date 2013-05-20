@@ -2468,6 +2468,17 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         }
         else if(num==h->sensor[HUBO_FT_R_HAND].boardNo)
         {
+
+            val =  (f->data[1]<<8) | f->data[0];
+            s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
+            
+            val =  (f->data[3]<<8) | f->data[2];
+            s->ft[HUBO_FT_R_HAND].m_y = ((double)(val))/100.0;
+
+            val =  (f->data[5]<<8) | f->data[4];
+            s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
+
+/*
             val =  (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
             
@@ -2475,7 +2486,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             s->ft[HUBO_FT_R_HAND].m_y = ((double)(val))/100.0;
 
             s->ft[HUBO_FT_R_HAND].f_z = 0;
-
+*/
             //val = (f->data[5]<<8) | f->data[4]; // This does not exist
             //s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
         }
@@ -2487,8 +2498,18 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             val =  (f->data[3]<<8) | f->data[2];
             s->ft[HUBO_FT_L_HAND].m_y = ((double)(val))/100.0;
 
-            s->ft[HUBO_FT_L_HAND].f_z = 0;
+            val =  (f->data[5]<<8) | f->data[4];
+            s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
 
+/*
+            val =  (f->data[1]<<8) | f->data[0];
+            s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
+            
+            val =  (f->data[3]<<8) | f->data[2];
+            s->ft[HUBO_FT_L_HAND].m_y = ((double)(val))/100.0;
+
+            s->ft[HUBO_FT_L_HAND].f_z = 0;
+*/
             //val =  (f->data[5]<<8) | f->data[4]; // This does not exist
             //s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
         }
