@@ -2436,6 +2436,58 @@ double enc2rad(int jnt, int enc, hubo_param_t *h) {
 }
 
 
+double doubleFromBytePair(uint8_t data0, uint8_t data1){
+	unsigned int tmp = 0;
+
+	tmp |= (( ((uint16_t)data0) << 8 ) & 0xFFFF); 
+	tmp |= (( ((uint16_t)data1)  ) & 0x00FF); 
+	return (double) (int16_t)tmp;
+}
+
+
+
+void decodeFTFrame(int num, struct hubo_state *s, struct can_frame *f){
+
+    double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
+    double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
+    double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
+    s->ft[num].m_x = Mx;
+    s->ft[num].m_y = My;
+    s->ft[num].f_z = Fz;
+}
+
+
+void decodeADFrame(int num, struct hubo_state *s, struct can_frame *f){
+
+    double Ax = doubleFromBytePair(f->data[1],f->data[0])/100.0;		
+    double Ay = doubleFromBytePair(f->data[3],f->data[2])/100.0;		
+    double Az = doubleFromBytePair(f->data[5],f->data[4])/100.0;		
+    s->imu[num].a_x = Ax;
+    s->imu[num].a_y = Ay;
+    s->imu[num].a_z = Az;
+}
+
+void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
+
+    double Ra = doubleFromBytePair(f->data[1],f->data[0])/100.0;		
+    double Pa = doubleFromBytePair(f->data[3],f->data[2])/100.0;		
+    double Rr = doubleFromBytePair(f->data[5],f->data[4])/100.0;		
+    double Pr = doubleFromBytePair(f->data[5],f->data[6])/100.0;
+    //TODO: Check that "Roll" and "Pitch" names make sense
+    s->imu[num].a_x = Ra;
+    s->imu[num].a_y = Pa;
+    s->imu[num].w_x = Rr;
+    s->imu[num].w_y = Pr;
+}
+
+
+
+
+
+
+
+
+
 int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
     int fs = (int)f->can_id;
     
@@ -2446,6 +2498,10 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         int16_t val;
         if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
+            int num2 = HUBO_FT_R_FOOT;
+            decodeFTFrame(num2,s,f);
+
+/*
             val = (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
         
@@ -2454,9 +2510,14 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
             val = (f->data[5]<<8) | f->data[4];
             s->ft[HUBO_FT_R_FOOT].f_z = ((double)(val))/10.0;
+*/
         }
         else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
         {
+            int num2 = HUBO_FT_L_FOOT;
+            decodeFTFrame(num2,s,f);
+
+/*
             val =  (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_L_FOOT].m_x = ((double)(val))/100.0;
             
@@ -2465,10 +2526,15 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
             val =  (f->data[5]<<8) | f->data[4];
             s->ft[HUBO_FT_L_FOOT].f_z = ((double)(val))/10.0;
+*/
+
         }
         else if(num==h->sensor[HUBO_FT_R_HAND].boardNo)
         {
+            int num2 = HUBO_FT_R_HAND;
+            decodeFTFrame(num2,s,f);
 
+/*
             val =  (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_R_HAND].m_x = ((double)(val))/100.0;
             
@@ -2477,6 +2543,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
             val =  (f->data[5]<<8) | f->data[4];
             s->ft[HUBO_FT_R_HAND].f_z = ((double)(val))/10.0;
+*/
 
 /*
             val =  (f->data[1]<<8) | f->data[0];
@@ -2492,6 +2559,10 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         }
         else if(num==h->sensor[HUBO_FT_L_HAND].boardNo)
         {
+            int num2 = HUBO_FT_L_HAND;
+            decodeFTFrame(num2,s,f);
+
+/*
             val =  (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
             
@@ -2500,7 +2571,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
             val =  (f->data[5]<<8) | f->data[4];
             s->ft[HUBO_FT_L_HAND].f_z = ((double)(val))/10.0;
-
+*/
 /*
             val =  (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_L_HAND].m_x = ((double)(val))/100.0;
