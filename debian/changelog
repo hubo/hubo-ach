@@ -1,3 +1,10 @@
+hubo-ach (0.1.20130520) stable; urgency=low
+
+  * Fixed problemm with the FT sensors, all FT reads now, just initilize
+  * initilize with iniSensors in hubo-console
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Mon, 20 May 2013 12:26:00 -0400
+
 hubo-ach (0.1.20130515) stable; urgency=low
 
   * added joint names to hubo.h and removed them from jointparams.c
