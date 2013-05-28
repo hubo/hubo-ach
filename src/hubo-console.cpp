@@ -89,25 +89,46 @@ char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","i
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
                 "resetAll","status","statusAll"}; //,
 
+bool multiChan = false;
 
-int main() {
+int main(int argc, char **argv) {
+
+        int i = 1;
+        while(argc > i){
+
+            if(strcmp(argv[i], "-m") == 0) {
+                multiChan = true;
+                printf("hubo-console in MultiChan mode\n");
+            }
+            i++;
+        }
+
+
+
 	printf("\n");
 	printf(" ***************** hubo-ach **************** \n");
 	printf(" Support: Daniel M. Lofaro dan@danlofaro.com \n");
 	printf(" ******************************************* \n");
 
 	// get initial values for hubo
-	// open ach channel
-	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
-	assert( ACH_OK == r );
 
 	// open hubo state
-	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
+	int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
 
-       // initialize control channel
-       r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-       assert( ACH_OK == r );
+	// open ach channel
+        if(multiChan){
+	    r = ach_open(&chan_hubo_ref, HUBO_CHAN_MULTI_CHAN_NAME, NULL);
+            assert( ACH_OK == r );
+        }
+        else{
+  	    r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+            assert( ACH_OK == r );
+        }
+
+        // initialize control channel
+        r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
+        assert( ACH_OK == r );
 
         // get initial values for hubo
         struct hubo_ref H_ref;
@@ -126,11 +147,34 @@ int main() {
         setSensorDefaults( &H_param );
 
 	size_t fs;
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+
+        printf("Wainting for state to be posted\n");
+//	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+//	assert( sizeof(H_ref) == fs );
+//	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+//	assert( sizeof(H_state) == fs );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_state) == fs );
 
+
+
+// open hubo reference
+/*
+    if( HUBO_MULTI_CHAN_MODE_ACTIVE == H_state.multi  ) {
+        r = ach_open(&chan_hubo_ref,  HUBO_CHAN_MULTI_CHAN_NAME, NULL);
+        assert( ACH_OK == r);
+    }
+    else {
+        r = ach_open(&chan_hubo_ref,  HUBO_CHAN_REF_NAME, NULL);
+        assert( ACH_OK == r);
+    }
+*/
+
+        printf("Wainting for ref to be posted\n");
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_WAIT );
+	assert( sizeof(H_ref) == fs );
+
+    printf("\nReady\n");
     char *buf;
     rl_attempted_completion_function = my_completion;
     printf("\n");
@@ -161,7 +205,9 @@ int main() {
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &f) != 0){  //It's a float.
                 H_ref.ref[jnt] = (double)f;
+                H_ref.active[jnt] = HUBO_JOINT_REF_ACTIVE;
                 int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+                H_ref.active[jnt] = HUBO_JOINT_REF_INACTIVE;
                 char* tmp = getArg(buf,1);
                 printf(">> %s = %f rad \n",tmp,f);
             }

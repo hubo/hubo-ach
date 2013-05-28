@@ -53,6 +53,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hubo-daemonID.h"
 #include "hubo-daemon.h"
 #include "hubo-jointparams.h"
+#include "hubo-daemonizer.h"
 
 // Check out which CAN API to use
 #ifdef HUBO_CONFIG_ESD
@@ -356,7 +357,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     int startFlag = 1;
 
     printf("Start Hubo Loop\n");
-    while(!hubo_sig_quit) {
+    while(!daemon_sig_quit) {
 
         // wait until next shot
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
@@ -2825,10 +2826,14 @@ int isError( int jnt, hubo_state_t *s) {
 }
 
 int main(int argc, char **argv) {
-
+    // multi chan flag
+    int multiChanFlag = HUBO_MULTI_CHAN_MODE_INACTIVE;
     // Parse user input
     int vflag = HUBO_VIRTUAL_MODE_NONE;
     debug = 0;
+
+    char* ref_chan = HUBO_CHAN_REF_NAME;
+
 
     int i = 1;
     while(argc > i)
@@ -2836,6 +2841,9 @@ int main(int argc, char **argv) {
         if(strcmp(argv[i], "-d") == 0) {
             debug = 1;
         }
+        if(strcmp(argv[i], "-m") == 0){
+                multiChanFlag = HUBO_MULTI_CHAN_MODE_ACTIVE;
+	}
         if(strcmp(argv[i], "-v") == 0){
             vflag = HUBO_VIRTUAL_MODE_VIRTUAL;
         }
@@ -2845,7 +2853,7 @@ int main(int argc, char **argv) {
         i++;
     }
     // Daemonize
-    hubo_daemonize();
+    hubo_daemonize("hubo-daemon", 49);
     
 
     // Initialize Hubo Structs
@@ -2864,13 +2872,21 @@ int main(int argc, char **argv) {
     setJointParams(&H_param, &H_state);
     setSensorDefaults(&H_param);
 
-    // open hubo reference
-    int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+    // open hubo state
+    int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
 
-    // open hubo state
-    r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
-    hubo_assert( ACH_OK == r, __LINE__ );
+    // open hubo reference
+    if( HUBO_MULTI_CHAN_MODE_ACTIVE == multiChanFlag ) {
+        r = ach_open(&chan_hubo_ref,  HUBO_CHAN_MULTI_CHAN_NAME, NULL);
+        H_state.multi = HUBO_MULTI_CHAN_MODE_ACTIVE;
+        hubo_assert( ACH_OK == r, __LINE__ );
+    }
+    else {
+        r = ach_open(&chan_hubo_ref,  HUBO_CHAN_REF_NAME, NULL);
+        hubo_assert( ACH_OK == r, __LINE__ );
+    }
+
 
     // initilize control channel
     r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);

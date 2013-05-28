@@ -39,6 +39,7 @@ MakeAch()
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
 	ach -1 -C hubo-virtual-to-sim -m 10 -n 3000
 	ach -1 -C hubo-virtual-from-sim -m 10 -n 3000
+	ach -1 -C hubo-multi-chan -m 10 -n 3000
         sudo chmod 777 /dev/shm/achshm-hubo-*
 }
 
@@ -107,6 +108,7 @@ Kill()
 	sudo kill -9 $(pidof hubo-daemon)
 	sudo kill -9 $(pidof hubo-read)
 	sudo kill -9 $(pidof hubo-console)
+        sudo kill -9 $(pidof hubo-multi-chan)
 }
 
 Remote()
@@ -151,6 +153,7 @@ KillAll()
 	KillHubo
 	Kill
 	sudo rm $LOCK_DIR/hubo-daemon
+	sudo rm $LOCK_DIR/hubo-multi-chan
 	sudo rm /dev/shm/achshm-hubo*
 	KillRemote
 }
@@ -192,10 +195,42 @@ StopHubo()
 	esac
 }
 
+RunMulti()
+{
+	
+	SetupCan
+	MakeAch
+        sudo hubo-multi-chan &
+        sudo hubo-daemon -m
+}
+
 StartHubo()
 {
-   RunDaemon
-   StartConsole
+
+	case "$1" in
+      		'multi')
+		RunMulti
+	        StartConsole
+#	        StartConsole multi
+   	;;
+
+	*)
+		RunDaemon
+	        StartConsole
+	;;
+	esac
+}
+
+SetupCan()
+{
+
+	sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
+	sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
+	sudo ifconfig can0 up
+	sudo ifconfig can1 up
+	sudo ifconfig can2 up
+	sudo ifconfig can3 up
+
 }
 
 RunDaemon()
@@ -228,23 +263,8 @@ RunDaemon()
 	            exit 0 
                 else
 
-			sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
-			sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
-	    		sudo ifconfig can0 up
-			sudo ifconfig can1 up
-			sudo ifconfig can2 up
-			sudo ifconfig can3 up
-
-#		sudo ach -1 -C hubo-ref -m 10 -n 3000
-#		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
-#		sudo ach -1 -C hubo-state -m 10 -n 3000
-#		sudo ach -1 -C hubo-init-cmd -m 10 -n 3000
-
+			SetupCan
 			MakeAch
-#		ach -1 -C hubo-ref -m 10 -n 3000
-#		ach -1 -C hubo-ref-filter -m 10 -n 3000
-#		ach -1 -C hubo-state -m 10 -n 3000
-#		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
 			DAEMON_ARGS=''
 			for IN_ARG in $@
@@ -262,7 +282,14 @@ RunDaemon()
 
 StartConsole()
 {
-   hubo-console
+  case "$1" in
+        'multi')
+             hubo-console -m
+  ;;
+  *)
+    hubo-console
+  ;;
+  esac
 }
 
 MakeVCan()
@@ -646,6 +673,11 @@ ShowUsage()
 {
 	echo
 	echo 'start         : Start all channels and processes and consle'
+	echo '              : Options:'
+	echo '              :    (no-arg)       : Normal mode'
+	echo '              :    multi          : active channel mode (must state controller'
+	echo '              :                     has access to this channel to control it'
+        echo '              :                     result: multiple processes can publish to the ref channel'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
@@ -706,7 +738,7 @@ case "$1" in
 
 # Start all channels and processes and Console
 	'start' )
-		StartHubo $@
+		StartHubo $2
 	;;
 
 # Start remote via achd

@@ -40,7 +40,15 @@ HUBO_IMU0	  = 4 # Index of IMU0
 HUBO_IMU1	  = 5 # Index of IMU1
 HUBO_IMU2	  = 6 # Index of IMU2
 
+
+# Multi chan stuff
+HUBO_JOINT_REF_INACTIVE       = 0
+HUBO_JOINT_REF_ACTIVE         = 1 
+HUBO_MULTI_CHAN_MODE_INACTIVE = 0
+HUBO_MULTI_CHAN_MODE_ACTIVE   = 1
+
 HUBO_JOINT_COUNT                  = 42
+HUBO_FT_COUNT	                  = 4
 HUBO_JMC_COUNT                    = 0x26
 HUBO_IMU_COUNT                    = 3
 HUBO_CHAN_REF_NAME                = 'hubo-ref'        
@@ -48,6 +56,7 @@ HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME              = 'hubo-state'     
 HUBO_CHAN_VIRTUAL_TO_SIM_NAME     = 'hubo-virtual-to-sim'     
 HUBO_CHAN_VIRTUAL_FROM_SIM_NAME   = 'hubo-virtual-from-sim'     
+HUBO_CHAN_MULTI_CHAN_NAME         = 'hubo-multi-chan'
 HUBO_LOOP_PERIOD                  = 0.005
 
 RHY = 26# Right Hip Yaw
@@ -190,12 +199,13 @@ class HUBO_JMC_STATE(Structure):
 class HUBO_STATE(Structure):
     _pack_ = 1
     _fields_ = [("imu"    , HUBO_IMU*HUBO_IMU_COUNT),
-                ("ft"     , HUBO_FT*4),
+                ("ft"     , HUBO_FT*HUBO_FT_COUNT),
                 ("joint"  , HUBO_JOINT_STATE*HUBO_JOINT_COUNT),
                 ("status" , HUBO_JOINT_STATUS*HUBO_JOINT_COUNT),
                 ("driver" , HUBO_JMC_STATE*HUBO_JMC_COUNT),
                 ("time"   , c_double),
-                ("refWait", c_int16)]
+                ("refWait", c_int16),
+                ("multi"  , c_ubyte)]
 
 
 
@@ -203,5 +213,6 @@ class HUBO_STATE(Structure):
 class HUBO_REF(Structure):
     _pack_ = 1
     _fields_ = [("ref",  c_double*HUBO_JOINT_COUNT),
-                ("mode", c_int16*HUBO_JOINT_COUNT)]
+                ("mode", c_int16*HUBO_JOINT_COUNT),
+                ("active", c_uint8*HUBO_JOINT_COUNT)]
 

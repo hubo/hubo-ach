@@ -1,3 +1,4 @@
+hubo-ach killall
 sudo mkdir /var/log/hubo/
 sudo mkdir /var/lock/hubo/
 ./configure

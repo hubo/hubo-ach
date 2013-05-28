@@ -109,6 +109,7 @@ extern "C" {
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 #define         HUBO_JOINT_COUNT        42              ///> The max number of joints
 #define         HUBO_JMC_COUNT          0x26            ///> The max number of JMCs
+#define         HUBO_FT_COUNT           4		///> number of FT sensors
 #define         BNO_SENSOR_BASE         0x2F
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
@@ -119,6 +120,7 @@ extern "C" {
 #define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
 #define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
+#define 	HUBO_CHAN_MULTI_CHAN_NAME  "hubo-multi-chan"  ///> for multi chan 
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
@@ -144,6 +146,12 @@ typedef enum {
     HUBO_VIRTUAL_MODE_VIRTUAL     = 1, ///< virtual mode just uses vcan
     HUBO_VIRTUAL_MODE_OPENHUBO    = 2  ///< changes timing for use with openhubo
 }__attribute__((packed)) hubo_virtual_mode_index_t;
+typedef enum {
+    HUBO_MULTI_CHAN_MODE_INACTIVE = 0,  ///< Set flag in hubo-daemon to make inactive
+    HUBO_MULTI_CHAN_MODE_ACTIVE   = 1, ///< Set flag in hubo-daemon to make active
+    HUBO_JOINT_REF_INACTIVE       = 0, ///< FOR H_ref.active[] = joint not active
+    HUBO_JOINT_REF_ACTIVE         = 1 ///< FOR H_REF.active[] = joint active
+}__attribute__((packed)) hubo_multi_chan_index_t;
 
 typedef enum {
 	HUBO_FT_R_HAND    = 0, ///< Index of right hand FT
@@ -276,17 +284,19 @@ typedef struct hubo_jmc_state {
 
 typedef struct hubo_state {
 	hubo_imu_t imu[HUBO_IMU_COUNT];	///< IMU
-	hubo_ft_t ft[4];   ///< ft sensors
+	hubo_ft_t ft[HUBO_FT_COUNT];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
         hubo_joint_status_t status[HUBO_JOINT_COUNT];
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
         double time;
 	int16_t refWait;
+        uint8_t multi;
 }__attribute__((packed)) hubo_state_t;
 
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
+        uint8_t active[HUBO_JOINT_COUNT]; ///< 0 if not active 1 if is active
 }__attribute__((packed)) hubo_ref_t;
 
 typedef struct jmcDriver{
