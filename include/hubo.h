@@ -129,6 +129,9 @@ extern "C" {
 				   guaranteed safe to access without
 				   faulting */
 
+#define OFF 0 // off static
+#define ON  1 // on static
+
 // array of joint name strings (total of 42)
 static const char *jointNames[HUBO_JOINT_COUNT] =
 	{"WST", "NKY", "NK1", "NK2", // 0 1 2 3
@@ -144,6 +147,11 @@ typedef enum {
     HUBO_VIRTUAL_MODE_VIRTUAL     = 1, ///< virtual mode just uses vcan
     HUBO_VIRTUAL_MODE_OPENHUBO    = 2  ///< changes timing for use with openhubo
 }__attribute__((packed)) hubo_virtual_mode_index_t;
+
+typedef enum {
+    HUBO_ROBOT_TYPE_HUBO_PLUS   = 0, ///> HUBO+ MODEL
+    HUBO_ROBOT_TYPE_DRC_HUBO    = 1 ///> DRC HUBO MODEL
+}__attribute__((packed)) hubo_robot_type_t;
 
 typedef enum {
 	HUBO_FT_R_HAND    = 0, ///< Index of right hand FT

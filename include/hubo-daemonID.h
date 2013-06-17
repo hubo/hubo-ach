@@ -305,7 +305,7 @@ typedef enum {
 								Default: 5ms
 					dValues: N/A	*/
 			
-	D_GET_BOARD_PARAMS	///> Get the JMC's board parameters
+	D_GET_BOARD_PARAMS	,	///> Get the JMC's board parameters
 			/* INCOMPLETE	joint: Target joint number
 					param: 		[0] = Type of parameters
 						D_PARAM_MOTOR, D_PARAM_HOME, D_PARAM_LIMITS
@@ -314,6 +314,7 @@ typedef enum {
 					iValues: N/A
 					dValues: N/A	*/	
 
+        D_COMP_MODE_ON_OFF              ///> turn on/off comp mode
 	
 } hubo_d_cmd_t;
 
@@ -362,6 +363,8 @@ typedef enum {
 	D_IMU_SENSOR_0		,	///> Parameter to indicate IMU sensor 0
 	D_IMU_SENSOR_1		,	///> Parameter to indicate IMU sensor 1
 	D_IMU_SENSOR_2			///> Parameter to indicate IMU sensor 2
+
+
 
 } hubo_d_param_t;
 

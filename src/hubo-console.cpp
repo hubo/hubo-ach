@@ -87,7 +87,7 @@ int name2sensor(char* name, hubo_param_t *h);
 double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
-                "resetAll","status","statusAll"}; //,
+                "resetAll","status","statusAll","compMode"}; //,
 
 
 int main() {
@@ -182,6 +182,23 @@ int main() {
             tsleep = 5;
             
         }
+	else if (strcmp(buf0,"compMode")==0) {
+		int hOnOff = atof(getArg(buf,2));
+		if(hOnOff == 0 | hOnOff == 1) {
+			H_cmd.type = D_COMP_MODE_ON_OFF;
+			H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+			if( hOnOff == 1)
+			    H_cmd.param[0] = D_ENABLE;         // 1 = on
+			if( hOnOff == 0)
+			    H_cmd.param[0] = D_DISABLE;         // 0 = off
+                        if( hOnOff == 1 | hOnOff == 0 )
+                            r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+			if( hOnOff == 0) {
+				printf("%s - Turning Off Complementary Mode\n",getArg(buf,1));}
+			if( hOnOff == 1) {
+				printf("%s - Turning On Complementary Mode\n",getArg(buf,1));}
+		}
+	}
 
 	else if (strcmp(buf0,"ctrl")==0) {
 		int hOnOff = atof(getArg(buf,2));

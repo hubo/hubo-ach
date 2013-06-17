@@ -121,7 +121,7 @@ void hInitilizeBoard(int jnt, hubo_ref_t *r, hubo_param_t *h, struct can_frame *
 void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
-void huboLoop(hubo_param_t *H_param, int vflag);
+void huboLoop(hubo_param_t *H_param, int vflag, int hubo_type);
 void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hFeedbackControllerOnOff(int jnt, hubo_ref_t *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
@@ -225,6 +225,8 @@ void fGetBoardParamG( int jnt, hubo_param_t *h, struct can_frame *f );
 void fGetBoardParamH( int jnt, hubo_param_t *h, struct can_frame *f );
 void fGetBoardParamI( int jnt, hubo_param_t *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, hubo_state_t *s, struct can_frame *f );
+void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
+void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 
 void clearCanBuff(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void getStatusIterate( hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
@@ -265,7 +267,7 @@ int statusJntItt = 5;
 int statusJnti = 0;
 int readBuffi = 3;
 
-void huboLoop(hubo_param_t *H_param, int vflag) {
+void huboLoop(hubo_param_t *H_param, int vflag, int hubo_type) {
     int i = 0;  // iterator
     // get initial values for hubo
     hubo_ref_t H_ref;
@@ -949,6 +951,27 @@ void fSetCurGain1(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki,
     f->data[7]    = int_to_bytes(Kd,2);
 
     f->can_dlc    = 8;
+}
+
+void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode){
+
+    if (the_mode == D_ENABLE)
+      f->data[2] = 0x01;    // turn on complementry switching mode
+    else
+      f->data[2] = 0x00;    // turn off complementry switching mode  
+
+    f->can_id    = CMD_TXDF;
+
+    f->data[0]    = getJMC(h,jnt);
+    f->data[1]    = H_COMPLEMENTARY_SWITCHING_MODE;
+
+    f->can_dlc    = 3;
+}
+
+void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode) {
+
+    fSetComplementaryMode(jnt, h, f, the_mode);
+    sendCan(getSocket(h,jnt), f);
 }
 
 // 4
@@ -2416,6 +2439,9 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
                 case D_SENSOR_STARTUP:
                     hInitAllSensors( h, f );
                     break;
+                case D_COMP_MODE_ON_OFF:
+                    hSetComplementaryMode(c->joint,h,f,c->param[0]);
+                    break;
 //                case D_GET_BOARD_PARAMS:
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //                    break;
@@ -2830,6 +2856,9 @@ int main(int argc, char **argv) {
     int vflag = HUBO_VIRTUAL_MODE_NONE;
     debug = 0;
 
+    int hubo_type = HUBO_ROBOT_TYPE_HUBO_PLUS;
+
+
     int i = 1;
     while(argc > i)
     {
@@ -2841,6 +2870,10 @@ int main(int argc, char **argv) {
         }
         if(strcmp(argv[i], "-o") == 0){
             vflag = HUBO_VIRTUAL_MODE_OPENHUBO;
+        }
+        if(strcmp(argv[i], "-drc") == 0){
+            hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
+            printf("DRC Hubo Type \n");
         }
         i++;
     }
@@ -2891,7 +2924,7 @@ int main(int argc, char **argv) {
     ach_put(&chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
 
     // run hubo main loop
-    huboLoop(&H_param, vflag);
+    huboLoop(&H_param, vflag, hubo_type);
 
     hubo_daemon_close();
     

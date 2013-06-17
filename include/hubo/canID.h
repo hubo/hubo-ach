@@ -448,6 +448,8 @@ extern "C" {
 #define H_GET_PARAM_H		21
 #define H_GET_PARAM_I		22
 
+// Complementary Switching mode (free wheeling)
+#define H_COMPLEMENTARY_SWITCHING_MODE 0x13
 
 // Error status stuff
 #define H_HOME_SUCCESS      0x06
