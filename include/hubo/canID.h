@@ -451,6 +451,9 @@ extern "C" {
 // Complementary Switching mode (free wheeling)
 #define H_COMPLEMENTARY_SWITCHING_MODE 0x13
 
+// Open Loop duty cycle mode
+#define H_OPENLOOP_PWM_DUTY_CYCLE_MODE 0x0D
+
 // Error status stuff
 #define H_HOME_SUCCESS      0x06
 

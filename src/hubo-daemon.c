@@ -952,6 +952,74 @@ void fSetCurGain1(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki,
 
     f->can_dlc    = 8;
 }
+// 30
+
+void RBpwmCommandHR2ch(unsigned char _canch, unsigned char _bno, int _duty1, int _duty2, unsigned char _zeroduty) // High resolution, 0.1%
+{
+	// MsgID		Byte0	Byte1	Byte2		Byte3	Byte4	Byte5	Byte6
+	// CMD_TXDF		BNO		0x0D	0x03		DIR0	DUTY0	DIR1	DUTY1
+	
+	int result;
+	
+	// CAN message data
+	unsigned char tempData[8];
+	unsigned short stemp;
+	
+	// CAN message data assign
+	tempData[0] = _bno;							// board no.
+	tempData[1] = 0x0D;							// command
+	if(_zeroduty != 0)
+		tempData[2] = 0x03;						// High Resolution PWM mode
+	else
+		tempData[2] = 0x00;
+	
+	stemp = (unsigned short)(abs(_duty1));	// 1st motor duty
+	if(stemp > 1000)
+		stemp = 1000;
+	tempData[3] = (unsigned char)((stemp & 0x0F00) >> 4);  // 1st motor direction : CCW
+
+	if(_duty1 < 0)  		 
+		tempData[3] |= 0x01;	// 1st motor direction : CW
+	tempData[4] = (unsigned char)(stemp & 0x00FF);
+	
+	stemp = (unsigned short)(abs(_duty2));	// 1st motor duty
+	if(stemp > 1000)
+		stemp = 1000;
+	tempData[5] = (unsigned char)((stemp & 0x0F00) >> 4);  // 2nd motor direction : CCW
+	if(_duty2 < 0)  
+		tempData[5] |= 0x01;					// 2nd motor direction : CW
+	tempData[6] = (unsigned char)(stemp & 0x00FF);	// 2nd motor duty
+	
+	// Send CAN message
+	result = PushCANMsg(_canch, CMD_TXDF, tempData, 7, 0);
+	
+	if(result == 0x00) 
+		return true;
+	else 
+		return false;
+}
+
+
+
+void fSetOpenLoopPwmDutyCycle(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, int the_mode){
+// For DRC-Hubo
+
+    double duty = s->joint[jnt].duty;
+
+    /* Saturation */
+    if ( duty > 1.0 ) duty = 1.0;
+    if ( duty < -1.0) duty = -1.0;
+
+    f->can_id    = CMD_TXDF;
+
+    f->data[0]    = getJMC(h,jnt);
+    f->data[1]    = H_OPENLOOP_PWM_DUTY_CYCLE_MODE;
+    f->data[2]    = 0x03; // PUL_ON
+
+    f->can_dlc    = 3;
+
+
+}
 
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode){
 
