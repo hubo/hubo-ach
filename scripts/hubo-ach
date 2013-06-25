@@ -194,6 +194,19 @@ StopHubo()
 
 StartHubo()
 {
+
+   case "$2" in
+   'drc')
+        sudo rm /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        echo 'Loaded DRC-Hubo Joint Table'
+    ;;
+    *)   
+        sudo rm /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        echo 'Loaded Hubo Plus Joint Table'
+   esac
+ 
    RunDaemon
    StartConsole
 }
