@@ -37,6 +37,26 @@ skip = 100
 skipi = 0
 skiptemp = 0.0
 
+class StatusLogger:
+    """Simple and efficient status updater for the main loop"""
+    def __init__(self,skipcount=100,init_time=0.0):
+        self.t_last=init_time
+        self.skip=skipcount
+        self.count=0
+        self.rate=0.0
+
+    def tick(self):
+        self.count+=1
+        if self.count>=self.skip:
+            self.show()
+
+    def show(self):
+        ideal_time = ha.HUBO_LOOP_PERIOD*self.count
+        t=time.time()
+        actual_time = t-self.t_last
+        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}%'.format(ideal_time,actual_time,ideal_time/actual_time*100))
+        self.t_last=t
+        self.count=0
 
 class Timer(object):
     def __init__(self, name=None):
@@ -167,7 +187,7 @@ def ref2robot(robot, state):
     return pose
 
 def virtualHuboLog(string,level=4):
-    raveLog('virtualHubo: '+string,level)
+    raveLog('[virtualHubo.py] '+string,level)
 
 if __name__=='__main__':
 
@@ -200,21 +220,22 @@ if __name__=='__main__':
     if flag == 'nophysics':
         options.physics=False
         options.stop=False
+        openhubo.TIMESTEP=0.005
         print 'No Dynamics mode'
     else:
         options.physics=True
         options.stop=True
 
-    options.simtime = (simtimeFlag == 'simtime')
-
+    #Enable simtime if required, or if force by physics
+    options.simtime = (simtimeFlag == 'simtime') or options.physics
 
     # Detect Load robot and scene based on openhubo version
     if oh_version=='0.8.0':
-        [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options)
+        [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options)
     elif oh_version=='0.7.0':
-        [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
+        [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
     else:
-        [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
+        [robot,ctrl,ind,ghost,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
 
     # Setup ACH channels to interface with hubo
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
@@ -231,54 +252,43 @@ if __name__=='__main__':
     virtualHuboLog('Starting Simulation...',3)
 
     fs.put(sim)
+    statuslogger=StatusLogger(100,time.time())
     while True:
-      with Timer('Get_Pose'):
-        if options.physics or options.simtime:
+        statuslogger.tick()
+
+        if options.simtime:
             [status, framesizes] = ts.get(sim, wait=True, last=False)
 
         [status, framesizes] = s.get(state, wait=False, last=True)
 
-        if not options.physics:
-            ref_pose = ref2robot(ref, state)
-            ref.SetDOFValues(ref_pose)
+        #Extract pose information from ACH Channels
+        ref_pose = ref2robot(robot, state)
+        body_pose = pos2robot(robot, state)
 
-            body_pose = pos2robot(robot, state)
+        if not options.physics:
+            # Simulation is a "viewer", shows current pos and ref
+            ghost.SetDOFValues(ref_pose)
             robot.SetDOFValues(body_pose)
         else:
-            # Set Reference from simulation
-            ref_pose = ref2robot(robot, state)
-            ctrl.SetDesired(ref_pose)   # sends to robot
+            # Simulation functions as robot "emulator", pass ref
+            # channel to controller
+            ctrl.SetDesired(ref_pose)
 
-        if options.physics or options.simtime:
+        if options.simtime:
+            #Update "official" time based on simulation steps
             N = np.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
-            T = 1/N*ha.HUBO_LOOP_PERIOD
-            virtualHuboLog('TIMESTEP = {}, N = {}, T = {}'.format(openhubo.TIMESTEP,N,T),5)
-            for x in range(0,int(N)):
+            for x in xrange(int(N)):
                 env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
-                sim.time = sim.time + openhubo.TIMESTEP
+            sim.time += N*openhubo.TIMESTEP
 
             if options.physics:
                 pose = sim2state(robot,state)
 
+            # put the current state
             s.put(state)
             fs.put(sim)
         else:
             env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
-# put the current state
 
         time.sleep(0.001)  # sleep to allow for keyboard input
 
-
-# end here
-    openhubo.pause(2)
-
-    #Hack to get hand
-    if robot.GetName() == 'rlhuboplus' or robot.GetName() == 'huboplus':
-        ctrl.SendCommand('openloop '+' '.join(['{}'.format(x) for x in range(42,57)]))
-        for i in range(42,57):
-            pose[i]=pi/2
-        ctrl.SetDesired(pose)
-        openhubo.pause(2)
-
-        pose[42:57]=0
-        ctrl.SetDesired(pose)
