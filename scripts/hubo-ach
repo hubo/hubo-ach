@@ -659,6 +659,9 @@ ShowUsage()
 {
 	echo
 	echo 'start         : Start all channels and processes and consle'
+        echo '              :Options:'
+        echo '                     (no-arg)      : loads Hubo Plus joint table'
+        echo '                     drc           : loads drc-hubo joint table'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'

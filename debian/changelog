@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130624) stable; urgency=low
+
+  * added drc-hubo joint table
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Mon, 24 Jun 2013 12:51:00 -0400
+
 hubo-ach (0.1.20130520) stable; urgency=low
 
   * Fixed problemm with the FT sensors, all FT reads now, just initilize
