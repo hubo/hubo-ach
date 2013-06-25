@@ -23,13 +23,14 @@ import time
 import numpy as np
 # from ctypes import *
 
-# from optparse import OptionParser
+from optparse import OptionParser
 # import select
 
 # from openravepy import *
+from openravepy import raveLog
 from numpy import pi
 # import time
-import sys
+# import sys
 import openhubo
 
 skip = 100
@@ -61,7 +62,7 @@ class Timer(object):
 
 def sim2state(robot,state):
 
-    pose=robot.GetDOFValues() # gets the current state
+    pose=robot.GetDOFValues()
     # Get current state from simulation
     state.joint[ha.RSP].pos = pose[ind('RSP')]
     state.joint[ha.RSR].pos = pose[ind('RSR')]
@@ -165,31 +166,23 @@ def ref2robot(robot, state):
 
     return pose
 
+def virtualHuboLog(string,level=4):
+    raveLog('virtualHubo: '+string,level)
 
 if __name__=='__main__':
 
-#    parser = OptionParser()
-#    parser.add_option("-n", "--file", dest="filename",
-#        help="write report to FILE", metavar="FILE")
-#    parser.add_option("-q", "--quiet",
-#        action="store_false", dest="verbose", default=True,
-#        help="don't print status messages to stdout")
+    parser = OptionParser()
 
-#    options(options, args) = parser.parse_args()
-
-
-#    print 'options: ', options
-#    print 'args: ', args[0], ' : num args = ',len(args)
+    (options, args) = parser.parse_args()
 
     try:
-        flag = sys.args[0]
+        flag = args[0]
     except:
-        flag = -1
-
+        flag = 'unspecified'
     try:
-        simtimeFlag = sys.args[1]
+        simtimeFlag = args[1]
     except:
-        simtimeFlag = -1
+        simtimeFlag = 'unspecified'
 
     (env,options)=openhubo.setup('qtcoin',True)
     env.SetDebugLevel(4)
@@ -199,10 +192,12 @@ if __name__=='__main__':
         oh_version=openhubo.__version__
     except AttributeError:
         oh_version='old'
+    virtualHuboLog("Detected OpenHubo version {}".format(oh_version))
 
     # Set up simulation options based on command line args
     options.ghost=True
-    if( 'nophysics' == flag ):
+
+    if flag == 'nophysics':
         options.physics=False
         options.stop=False
         print 'No Dynamics mode'
@@ -210,6 +205,10 @@ if __name__=='__main__':
         options.physics=True
         options.stop=True
 
+    options.simtime = (simtimeFlag == 'simtime')
+
+
+    # Detect Load robot and scene based on openhubo version
     if oh_version=='0.8.0':
         [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options)
     elif oh_version=='0.7.0':
@@ -217,7 +216,7 @@ if __name__=='__main__':
     else:
         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
 
-    # Hubo-Ach Start and setup:
+    # Setup ACH channels to interface with hubo
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
     s.flush()
     state = ha.HUBO_STATE()
@@ -229,45 +228,38 @@ if __name__=='__main__':
     fs = ach.Channel(ha.HUBO_CHAN_VIRTUAL_FROM_SIM_NAME)
     fs.flush()
 
-# start edit here
-#    print('Press ENTER to start sim')
-#    tmp = raw_input()
-#    print tmp
-
-    print('Starting Sim')
+    virtualHuboLog('Starting Simulation...',3)
 
     fs.put(sim)
-    while(1):
+    while True:
       with Timer('Get_Pose'):
-        if(( 'physics' == flag) | ('simtime' == simtimeFlag )):
-            [statuss, framesizes] = ts.get(sim, wait=True, last=False)
+        if options.physics or options.simtime:
+            [status, framesizes] = ts.get(sim, wait=True, last=False)
 
-        [statuss, framesizes] = s.get(state, wait=False, last=True)
+        [status, framesizes] = s.get(state, wait=False, last=True)
 
-        if( 'nophysics' == flag ):
-            pose = ref2robot(ref, state)
-            ref.SetDOFValues(pose)
-            pose = pos2robot(robot, state)
-            robot.SetDOFValues(pose)
-#            pose = ref2robot(robot, state)
+        if not options.physics:
+            ref_pose = ref2robot(ref, state)
+            ref.SetDOFValues(ref_pose)
+
+            body_pose = pos2robot(robot, state)
+            robot.SetDOFValues(body_pose)
         else:
             # Set Reference from simulation
-            pose = ref2robot(robot, state)
-            ctrl.SetDesired(pose)   # sends to robot
+            ref_pose = ref2robot(robot, state)
+            ctrl.SetDesired(ref_pose)   # sends to robot
 
-
-
-    # this will step the simulation  note: i can run env step in a loop if nothign else changes
-
-        if( ('physics' == flag ) | ('simtime' == simtimeFlag)):
+        if options.physics or options.simtime:
             N = np.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
             T = 1/N*ha.HUBO_LOOP_PERIOD
-    #        print 'openhubo.TIMESTEP = ',openhubo.TIMESTEP, ' : N = ', N, ' : T = ', T
+            virtualHuboLog('TIMESTEP = {}, N = {}, T = {}'.format(openhubo.TIMESTEP,N,T),5)
             for x in range(0,int(N)):
                 env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
                 sim.time = sim.time + openhubo.TIMESTEP
-            if('physics' == flag ):
+
+            if options.physics:
                 pose = sim2state(robot,state)
+
             s.put(state)
             fs.put(sim)
         else:
