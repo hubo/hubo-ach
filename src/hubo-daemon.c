@@ -954,6 +954,7 @@ void fSetCurGain1(int jnt, hubo_param_t *h, struct can_frame *f, int Kp, int Ki,
 }
 // 30
 
+/*
 void RBpwmCommandHR2ch(unsigned char _canch, unsigned char _bno, int _duty1, int _duty2, unsigned char _zeroduty) // High resolution, 0.1%
 {
 	// MsgID		Byte0	Byte1	Byte2		Byte3	Byte4	Byte5	Byte6
@@ -999,7 +1000,7 @@ void RBpwmCommandHR2ch(unsigned char _canch, unsigned char _bno, int _duty1, int
 		return false;
 }
 
-
+*/
 
 void fSetOpenLoopPwmDutyCycle(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, int the_mode){
 // For DRC-Hubo

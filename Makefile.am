@@ -24,7 +24,7 @@ include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonI
 
 huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = tables/joint.table tables/sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
+huboachconf_DATA = tables/huboplus.joint.table tables/drc-hubo.joint.table tables/joint.table tables/sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
 
 #hubo_jointparamsdir = $(prefix)/lib
 hubo_jointparamsdir = /usr/lib

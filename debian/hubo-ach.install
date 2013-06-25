@@ -3,6 +3,8 @@ usr/bin/hubo-console
 usr/bin/hubo-read
 usr/bin/hubo-ach
 etc/hubo-ach/joint.table
+etc/hubo-ach/huboplus.joint.table
+etc/hubo-ach/drc-hubo.joint.table
 etc/hubo-ach/sensor.table
 etc/hubo-ach/virtualHubo.py
 etc/hubo-ach/hubo-ach-safe-clean.sh
