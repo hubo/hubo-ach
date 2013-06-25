@@ -20,17 +20,17 @@ __license__ = 'GPLv3 license'
 import hubo_ach as ha
 import ach
 import time
-from ctypes import *
+import numpy as np
+# from ctypes import *
 
-from optparse import OptionParser
-import select
+# from optparse import OptionParser
+# import select
 
-from openravepy import *
-from numpy import *
-import time
+# from openravepy import *
+from numpy import pi
+# import time
 import sys
-from servo import *
-import openhubo 
+import openhubo
 
 skip = 100
 skipi = 0
@@ -62,14 +62,14 @@ class Timer(object):
 def sim2state(robot,state):
 
         pose=robot.GetDOFValues() # gets the current state
-        # Get current state from simulation 
+        # Get current state from simulation
         state.joint[ha.RSP].pos = pose[ind('RSP')]
         state.joint[ha.RSR].pos = pose[ind('RSR')]
         state.joint[ha.RSY].pos = pose[ind('RSY')]
         state.joint[ha.REB].pos = pose[ind('REP')]
         state.joint[ha.RWY].pos = pose[ind('RWY')]
         state.joint[ha.RWP].pos = pose[ind('RWP')]
-        
+
         state.joint[ha.LSP].pos = pose[ind('LSP')]
         state.joint[ha.LSR].pos = pose[ind('LSR')]
         state.joint[ha.LSY].pos = pose[ind('LSY')]
@@ -139,7 +139,7 @@ def ref2robot(robot, state):
         pose[ind('REP')] = state.joint[ha.REB].ref
         pose[ind('RWY')] = state.joint[ha.RWY].ref
         pose[ind('RWP')] = state.joint[ha.RWP].ref
-        
+
         pose[ind('LSP')] = state.joint[ha.LSP].ref
         pose[ind('LSR')] = state.joint[ha.LSR].ref
         pose[ind('LSY')] = state.joint[ha.LSY].ref
@@ -169,43 +169,43 @@ def ref2robot(robot, state):
 
 if __name__=='__main__':
 
-    parser = OptionParser()
+#    parser = OptionParser()
 #    parser.add_option("-n", "--file", dest="filename",
 #        help="write report to FILE", metavar="FILE")
 #    parser.add_option("-q", "--quiet",
 #        action="store_false", dest="verbose", default=True,
 #        help="don't print status messages to stdout")
 
-    (options, args) = parser.parse_args()
+#    options(options, args) = parser.parse_args()
 
 
 #    print 'options: ', options
 #    print 'args: ', args[0], ' : num args = ',len(args)
 
     try:
-        flag = args[0]
+        flag = sys.args[0]
     except:
         flag = -1
 
     try:
-	simtimeFlag = args[1]
+        simtimeFlag = sys.args[1]
     except:
-	simtimeFlag = -1
+        simtimeFlag = -1
 
     (env,options)=openhubo.setup('qtcoin',True)
     env.SetDebugLevel(4)
     time.sleep(.25)
 
     if( 'nophysics' == flag ):
-         print 'No Dynamic mode'
-         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True, None, True)  # this will disable physics
+         print 'No Dynamics mode'
+         [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,True, False, True)  # this will disable physics
     else:
-         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True)
+         [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,True)
          ctrl.SendCommand('set radians ')
     time.sleep(.5)
     env.StartSimulation(openhubo.TIMESTEP)
     time.sleep(.5)
-   
+
     #Change the pose to lift the elbows and send
 
 
@@ -213,11 +213,11 @@ if __name__=='__main__':
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
     s.flush()
     state = ha.HUBO_STATE()
-    
+
     ts = ach.Channel(ha.HUBO_CHAN_VIRTUAL_TO_SIM_NAME)
     ts.flush()
     sim = ha.HUBO_VIRTUAL()
-    
+
     fs = ach.Channel(ha.HUBO_CHAN_VIRTUAL_FROM_SIM_NAME)
     fs.flush()
 
@@ -231,7 +231,7 @@ if __name__=='__main__':
     if( 'physics' == flag ):
         env.StopSimulation()
 
-    fs.put(sim) 
+    fs.put(sim)
     while(1):
       with Timer('Get_Pose'):
         if(( 'physics' == flag) | ('simtime' == simtimeFlag )):
@@ -255,7 +255,7 @@ if __name__=='__main__':
     # this will step the simulation  note: i can run env step in a loop if nothign else changes
 
         if( ('physics' == flag ) | ('simtime' == simtimeFlag)):
-            N = numpy.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
+            N = np.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
             T = 1/N*ha.HUBO_LOOP_PERIOD
     #        print 'openhubo.TIMESTEP = ',openhubo.TIMESTEP, ' : N = ', N, ' : T = ', T
             for x in range(0,int(N)):
@@ -264,7 +264,7 @@ if __name__=='__main__':
             if('physics' == flag ):
                 pose = sim2state(robot,state)
             s.put(state)
-            fs.put(sim) 
+            fs.put(sim)
         else:
             env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
 # put the current state
@@ -275,7 +275,7 @@ if __name__=='__main__':
 # end here
     openhubo.pause(2)
 
-    #Hack to get hand 
+    #Hack to get hand
     if robot.GetName() == 'rlhuboplus' or robot.GetName() == 'huboplus':
         ctrl.SendCommand('openloop '+' '.join(['{}'.format(x) for x in range(42,57)]))
         for i in range(42,57):
