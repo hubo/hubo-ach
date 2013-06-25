@@ -61,110 +61,109 @@ class Timer(object):
 
 def sim2state(robot,state):
 
-        pose=robot.GetDOFValues() # gets the current state
-        # Get current state from simulation
-        state.joint[ha.RSP].pos = pose[ind('RSP')]
-        state.joint[ha.RSR].pos = pose[ind('RSR')]
-        state.joint[ha.RSY].pos = pose[ind('RSY')]
-        state.joint[ha.REB].pos = pose[ind('REP')]
-        state.joint[ha.RWY].pos = pose[ind('RWY')]
-        state.joint[ha.RWP].pos = pose[ind('RWP')]
+    pose=robot.GetDOFValues() # gets the current state
+    # Get current state from simulation
+    state.joint[ha.RSP].pos = pose[ind('RSP')]
+    state.joint[ha.RSR].pos = pose[ind('RSR')]
+    state.joint[ha.RSY].pos = pose[ind('RSY')]
+    state.joint[ha.REB].pos = pose[ind('REP')]
+    state.joint[ha.RWY].pos = pose[ind('RWY')]
+    state.joint[ha.RWP].pos = pose[ind('RWP')]
 
-        state.joint[ha.LSP].pos = pose[ind('LSP')]
-        state.joint[ha.LSR].pos = pose[ind('LSR')]
-        state.joint[ha.LSY].pos = pose[ind('LSY')]
-        state.joint[ha.LEB].pos = pose[ind('LEP')]
-        state.joint[ha.LWY].pos = pose[ind('LWY')]
-        state.joint[ha.LWP].pos = pose[ind('LWP')]
+    state.joint[ha.LSP].pos = pose[ind('LSP')]
+    state.joint[ha.LSR].pos = pose[ind('LSR')]
+    state.joint[ha.LSY].pos = pose[ind('LSY')]
+    state.joint[ha.LEB].pos = pose[ind('LEP')]
+    state.joint[ha.LWY].pos = pose[ind('LWY')]
+    state.joint[ha.LWP].pos = pose[ind('LWP')]
 
-        state.joint[ha.WST].pos = pose[ind('HPY')]
+    state.joint[ha.WST].pos = pose[ind('HPY')]
 
-        state.joint[ha.RHY].pos = pose[ind('RHY')]
-        state.joint[ha.RHR].pos = pose[ind('RHR')]
-        state.joint[ha.RHP].pos = pose[ind('RHP')]
-        state.joint[ha.RKN].pos = pose[ind('RKP')]
-        state.joint[ha.RAP].pos = pose[ind('RAP')]
-        state.joint[ha.RAR].pos = pose[ind('RAR')]
+    state.joint[ha.RHY].pos = pose[ind('RHY')]
+    state.joint[ha.RHR].pos = pose[ind('RHR')]
+    state.joint[ha.RHP].pos = pose[ind('RHP')]
+    state.joint[ha.RKN].pos = pose[ind('RKP')]
+    state.joint[ha.RAP].pos = pose[ind('RAP')]
+    state.joint[ha.RAR].pos = pose[ind('RAR')]
 
-        state.joint[ha.LHY].pos = pose[ind('LHY')]
-        state.joint[ha.LHR].pos = pose[ind('LHR')]
-        state.joint[ha.LHP].pos = pose[ind('LHP')]
-        state.joint[ha.LKN].pos = pose[ind('LKP')]
-        state.joint[ha.LAP].pos = pose[ind('LAP')]
-        state.joint[ha.LAR].pos = pose[ind('LAR')]
+    state.joint[ha.LHY].pos = pose[ind('LHY')]
+    state.joint[ha.LHR].pos = pose[ind('LHR')]
+    state.joint[ha.LHP].pos = pose[ind('LHP')]
+    state.joint[ha.LKN].pos = pose[ind('LKP')]
+    state.joint[ha.LAP].pos = pose[ind('LAP')]
+    state.joint[ha.LAR].pos = pose[ind('LAR')]
 
-        return pose
+    return pose
 
 def pos2robot(robot, state):
     # Sets the CMD reference to the robot
-        pose=robot.GetDOFValues() # gets the current state
-        pose[ind('RSP')] = state.joint[ha.RSP].pos
-        pose[ind('RSR')] = state.joint[ha.RSR].pos
-        pose[ind('RSY')] = state.joint[ha.RSY].pos
-        pose[ind('REP')] = state.joint[ha.REB].pos
-        pose[ind('RWY')] = state.joint[ha.RWY].pos
-        pose[ind('RWP')] = state.joint[ha.RWP].pos
+    pose=robot.GetDOFValues() # gets the current state
+    pose[ind('RSP')] = state.joint[ha.RSP].pos
+    pose[ind('RSR')] = state.joint[ha.RSR].pos
+    pose[ind('RSY')] = state.joint[ha.RSY].pos
+    pose[ind('REP')] = state.joint[ha.REB].pos
+    pose[ind('RWY')] = state.joint[ha.RWY].pos
+    pose[ind('RWP')] = state.joint[ha.RWP].pos
 
-        pose[ind('LSP')] = state.joint[ha.LSP].pos
-        pose[ind('LSR')] = state.joint[ha.LSR].pos
-        pose[ind('LSY')] = state.joint[ha.LSY].pos
-        pose[ind('LEP')] = state.joint[ha.LEB].pos
-        pose[ind('LWY')] = state.joint[ha.LWY].pos
-        pose[ind('LWP')] = state.joint[ha.LWP].pos
+    pose[ind('LSP')] = state.joint[ha.LSP].pos
+    pose[ind('LSR')] = state.joint[ha.LSR].pos
+    pose[ind('LSY')] = state.joint[ha.LSY].pos
+    pose[ind('LEP')] = state.joint[ha.LEB].pos
+    pose[ind('LWY')] = state.joint[ha.LWY].pos
+    pose[ind('LWP')] = state.joint[ha.LWP].pos
 
-        pose[ind('HPY')] = state.joint[ha.WST].pos
+    pose[ind('HPY')] = state.joint[ha.WST].pos
 
-        pose[ind('RHY')] = state.joint[ha.RHY].pos
-        pose[ind('RHR')] = state.joint[ha.RHR].pos
-        pose[ind('RHP')] = state.joint[ha.RHP].pos
-        pose[ind('RKP')] = state.joint[ha.RKN].pos
-        pose[ind('RAP')] = state.joint[ha.RAP].pos
-        pose[ind('RAR')] = state.joint[ha.RAR].pos
+    pose[ind('RHY')] = state.joint[ha.RHY].pos
+    pose[ind('RHR')] = state.joint[ha.RHR].pos
+    pose[ind('RHP')] = state.joint[ha.RHP].pos
+    pose[ind('RKP')] = state.joint[ha.RKN].pos
+    pose[ind('RAP')] = state.joint[ha.RAP].pos
+    pose[ind('RAR')] = state.joint[ha.RAR].pos
 
-        pose[ind('LHY')] = state.joint[ha.LHY].pos
-        pose[ind('LHR')] = state.joint[ha.LHR].pos
-        pose[ind('LHP')] = state.joint[ha.LHP].pos
-        pose[ind('LKP')] = state.joint[ha.LKN].pos
-        pose[ind('LAP')] = state.joint[ha.LAP].pos
-        pose[ind('LAR')] = state.joint[ha.LAR].pos
+    pose[ind('LHY')] = state.joint[ha.LHY].pos
+    pose[ind('LHR')] = state.joint[ha.LHR].pos
+    pose[ind('LHP')] = state.joint[ha.LHP].pos
+    pose[ind('LKP')] = state.joint[ha.LKN].pos
+    pose[ind('LAP')] = state.joint[ha.LAP].pos
+    pose[ind('LAR')] = state.joint[ha.LAR].pos
 
-        return pose
+    return pose
 
 def ref2robot(robot, state):
     # Sets the CMD reference to the robot
-        pose=robot.GetDOFValues() # gets the current state
-        pose[ind('RSP')] = state.joint[ha.RSP].ref
-        pose[ind('RSR')] = state.joint[ha.RSR].ref
-        pose[ind('RSY')] = state.joint[ha.RSY].ref
-        pose[ind('REP')] = state.joint[ha.REB].ref
-        pose[ind('RWY')] = state.joint[ha.RWY].ref
-        pose[ind('RWP')] = state.joint[ha.RWP].ref
+    pose=robot.GetDOFValues() # gets the current state
+    pose[ind('RSP')] = state.joint[ha.RSP].ref
+    pose[ind('RSR')] = state.joint[ha.RSR].ref
+    pose[ind('RSY')] = state.joint[ha.RSY].ref
+    pose[ind('REP')] = state.joint[ha.REB].ref
+    pose[ind('RWY')] = state.joint[ha.RWY].ref
+    pose[ind('RWP')] = state.joint[ha.RWP].ref
 
-        pose[ind('LSP')] = state.joint[ha.LSP].ref
-        pose[ind('LSR')] = state.joint[ha.LSR].ref
-        pose[ind('LSY')] = state.joint[ha.LSY].ref
-        pose[ind('LEP')] = state.joint[ha.LEB].ref
-        pose[ind('LWY')] = state.joint[ha.LWY].ref
-        pose[ind('LWP')] = state.joint[ha.LWP].ref
+    pose[ind('LSP')] = state.joint[ha.LSP].ref
+    pose[ind('LSR')] = state.joint[ha.LSR].ref
+    pose[ind('LSY')] = state.joint[ha.LSY].ref
+    pose[ind('LEP')] = state.joint[ha.LEB].ref
+    pose[ind('LWY')] = state.joint[ha.LWY].ref
+    pose[ind('LWP')] = state.joint[ha.LWP].ref
 
-        pose[ind('HPY')] = state.joint[ha.WST].ref
+    pose[ind('HPY')] = state.joint[ha.WST].ref
 
-        pose[ind('RHY')] = state.joint[ha.RHY].ref
-        pose[ind('RHR')] = state.joint[ha.RHR].ref
-        pose[ind('RHP')] = state.joint[ha.RHP].ref
-        pose[ind('RKP')] = state.joint[ha.RKN].ref
-        pose[ind('RAP')] = state.joint[ha.RAP].ref
-        pose[ind('RAR')] = state.joint[ha.RAR].ref
+    pose[ind('RHY')] = state.joint[ha.RHY].ref
+    pose[ind('RHR')] = state.joint[ha.RHR].ref
+    pose[ind('RHP')] = state.joint[ha.RHP].ref
+    pose[ind('RKP')] = state.joint[ha.RKN].ref
+    pose[ind('RAP')] = state.joint[ha.RAP].ref
+    pose[ind('RAR')] = state.joint[ha.RAR].ref
 
-        pose[ind('LHY')] = state.joint[ha.LHY].ref
-        pose[ind('LHR')] = state.joint[ha.LHR].ref
-        pose[ind('LHP')] = state.joint[ha.LHP].ref
-        pose[ind('LKP')] = state.joint[ha.LKN].ref
-        pose[ind('LAP')] = state.joint[ha.LAP].ref
-        pose[ind('LAR')] = state.joint[ha.LAR].ref
+    pose[ind('LHY')] = state.joint[ha.LHY].ref
+    pose[ind('LHR')] = state.joint[ha.LHR].ref
+    pose[ind('LHP')] = state.joint[ha.LHP].ref
+    pose[ind('LKP')] = state.joint[ha.LKN].ref
+    pose[ind('LAP')] = state.joint[ha.LAP].ref
+    pose[ind('LAR')] = state.joint[ha.LAR].ref
 
-        return pose
-
+    return pose
 
 
 if __name__=='__main__':
@@ -196,18 +195,27 @@ if __name__=='__main__':
     env.SetDebugLevel(4)
     time.sleep(.25)
 
+    try:
+        oh_version=openhubo.__version__
+    except AttributeError:
+        oh_version='old'
+
+    # Set up simulation options based on command line args
+    options.ghost=True
     if( 'nophysics' == flag ):
-         print 'No Dynamics mode'
-         [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,True, False, True)  # this will disable physics
+        options.physics=False
+        options.stop=False
+        print 'No Dynamics mode'
     else:
-         [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,True)
-         ctrl.SendCommand('set radians ')
-    time.sleep(.5)
-    env.StartSimulation(openhubo.TIMESTEP)
-    time.sleep(.5)
+        options.physics=True
+        options.stop=True
 
-    #Change the pose to lift the elbows and send
-
+    if oh_version=='0.8.0':
+        [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options)
+    elif oh_version=='0.7.0':
+        [robot,ctrl,ind,ref,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
+    else:
+        [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
 
     # Hubo-Ach Start and setup:
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
@@ -227,9 +235,6 @@ if __name__=='__main__':
 #    print tmp
 
     print('Starting Sim')
-
-    if( 'physics' == flag ):
-        env.StopSimulation()
 
     fs.put(sim)
     while(1):
