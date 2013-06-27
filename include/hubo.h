@@ -124,6 +124,8 @@ extern "C" {
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 #define         HUBO_LOOP_PERIOD         0.005  ///> period for main loopin sec (0.005 = 200hz)
+// finger control mode current
+#define         HUBO_FINGER_CURRENT_CTRL_MODE 0x01
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
