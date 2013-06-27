@@ -457,9 +457,9 @@ void huboLoop(hubo_param_t *H_param, int vflag, int hubo_type) {
 
         /* put data back in ACH channel */
         ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
-        if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
-            ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
-        }
+        /*if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {*/
+        ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
+        /*}*/
 
         t.tv_nsec+=interval;
         tsnorm(&t);

@@ -30,3 +30,6 @@ sudo /sbin/modprobe pcan
 cd ~/hubo-ach
 autoreconf -i
 ./hubo-ach-install.sh
+# Install ACH python bindings
+sudo apt-get install python-pip
+sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
