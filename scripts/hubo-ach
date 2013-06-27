@@ -27,6 +27,7 @@ DAEMON_DIR='/etc/hubo-ach'
 DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
+FLAG_CONSOLE=0
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -208,7 +209,13 @@ StartHubo()
    esac
  
    RunDaemon
-   StartConsole
+   if [[ $FLAG_NOCONSOLE -eq 0 ]]
+   then
+       echo 'Starting in Console Mode'
+       StartConsole
+   else
+       echo 'Starting in No Console Mode'
+   fi
 }
 
 RunDaemon()
@@ -662,6 +669,7 @@ ShowUsage()
         echo '              :Options:'
         echo '                     (no-arg)      : loads Hubo Plus joint table'
         echo '                     drc           : loads drc-hubo joint table'
+	echo 'daemon        : Same as "start" but does not run hubo-ach console'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
@@ -724,6 +732,12 @@ case "$1" in
 	'start' )
 		StartHubo $@
 	;;
+
+# runs in daemon only mode no console
+	'daemon' )
+                FLAG_NOCONSOLE=1
+		StartHubo $@
+        ;;
 
 # Start remote via achd
 	'remote' )
