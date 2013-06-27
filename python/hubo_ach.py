@@ -14,7 +14,7 @@
 #     * Neither the name of the author nor the names of its contributors may
 #       be used to endorse or promote products derived from this software
 #       without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,9 +27,10 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # */
 
-from ctypes import *
-import ach
-import sys
+# from ctypes import *
+from ctypes import Structure,c_uint16,c_double,c_ubyte,c_uint32,c_int16
+# import ach
+# import sys
 
 
 HUBO_FT_R_HAND    = 0 # Index of right hand FT
@@ -43,46 +44,46 @@ HUBO_IMU2	  = 6 # Index of IMU2
 HUBO_JOINT_COUNT                  = 42
 HUBO_JMC_COUNT                    = 0x26
 HUBO_IMU_COUNT                    = 3
-HUBO_CHAN_REF_NAME                = 'hubo-ref'        
+HUBO_CHAN_REF_NAME                = 'hubo-ref'
 HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
-HUBO_CHAN_STATE_NAME              = 'hubo-state'     
-HUBO_CHAN_VIRTUAL_TO_SIM_NAME     = 'hubo-virtual-to-sim'     
-HUBO_CHAN_VIRTUAL_FROM_SIM_NAME   = 'hubo-virtual-from-sim'     
+HUBO_CHAN_STATE_NAME              = 'hubo-state'
+HUBO_CHAN_VIRTUAL_TO_SIM_NAME     = 'hubo-virtual-to-sim'
+HUBO_CHAN_VIRTUAL_FROM_SIM_NAME   = 'hubo-virtual-from-sim'
 HUBO_LOOP_PERIOD                  = 0.005
 
-RHY = 26# Right Hip Yaw
-RHR = 27# Right Hip Roll
-RHP = 28# Right Hip Pitch
-RKN = 29# Right Knee Pitch
-RAP = 30# Right Ankle Pitch
-RAR = 31# Right Ankle Roll
+RHY = 26 # Right Hip Yaw
+RHR = 27 # Right Hip Roll
+RHP = 28 # Right Hip Pitch
+RKN = 29 # Right Knee Pitch
+RAP = 30 # Right Ankle Pitch
+RAR = 31 # Right Ankle Roll
 
-LHY = 19# Left Hip Yaw
-LHR = 20# Left Hip Roll
-LHP = 21# Left Hip Pitch
-LKN = 22# Left Knee Pitch
-LAP = 23# Left Ankle Pitch
-LAR = 24# Left Ankle Roll
+LHY = 19 # Left Hip Yaw
+LHR = 20 # Left Hip Roll
+LHP = 21 # Left Hip Pitch
+LKN = 22 # Left Knee Pitch
+LAP = 23 # Left Ankle Pitch
+LAR = 24 # Left Ankle Roll
 
-RSP = 11# Right Shoulder Pitch
-RSR = 12# Right Shoulder Roll
-RSY = 13# Right Shoulder Yaw
-REB = 14# Right Elbow Pitch
-RWY = 15# right wrist yaw
-RWR = 16# right wrist roll
-RWP = 17# right wrist Pitch
+RSP = 11 # Right Shoulder Pitch
+RSR = 12 # Right Shoulder Roll
+RSY = 13 # Right Shoulder Yaw
+REB = 14 # Right Elbow Pitch
+RWY = 15 # Right Wrist Yaw
+RWR = 16 # Right Wrist Roll
+RWP = 17 # Right Wrist Pitch
 
 LSP = 4 # Left Shoulder Pitch
 LSR = 5 # Left Shoulder Yaw
 LSY = 6 # Left Shoulder Roll
 LEB = 7 # Left Elbow Pitch
-LWY = 8 # left wrist yaw
-LWR = 9 # left wrist roll
-LWP = 10# left wrist pitch
+LWY = 8 # Left Wrist yaw
+LWR = 9 # Left Wrist Roll
+LWP = 10# Left Wrist Pitch
 
-NKY = 1 # neck yaw
-NK1 = 2 # neck 1
-NK2 = 3 # neck 2
+NKY = 1 # Neck Yaw
+NK1 = 2 # Neck 1
+NK2 = 3 # Neck 2
 
 WST = 0 # Trunk Yaw
 
@@ -114,14 +115,14 @@ class HUBO_JOINT_PARAM(Structure):
     _pack_ = 1
     _fields_ = [("refEnc"   , c_uint32),
                 ("motNo"    , c_uint16),
-                ("jntNo"    , c_uint16), 
-                ("drive"    , c_uint16), 
-                ("driven"   , c_uint16), 
-                ("harmonic" , c_uint16), 
-                ("enc"      , c_uint16), 
-                ("jmc"      , c_uint16), 
-                ("dir"      , c_ubyte), 
-                ("can"      , c_ubyte), 
+                ("jntNo"    , c_uint16),
+                ("drive"    , c_uint16),
+                ("driven"   , c_uint16),
+                ("harmonic" , c_uint16),
+                ("enc"      , c_uint16),
+                ("jmc"      , c_uint16),
+                ("dir"      , c_ubyte),
+                ("can"      , c_ubyte),
                 ("numMot"   , c_ubyte),
                 ("name"     , c_ubyte*4)]
 
@@ -158,6 +159,7 @@ class HUBO_JOINT_STATE(Structure):
                 ("pos"   , c_double),
                 ("cur"   , c_double),
                 ("vel"   , c_double),
+                ("duty"   , c_double),
                 ("heat"  , c_double),
                 ("tmp"   , c_double),
                 ("active", c_ubyte),
