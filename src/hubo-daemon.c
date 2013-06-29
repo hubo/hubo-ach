@@ -839,15 +839,17 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
          f->can_id = 0x01;
 
 
-         unsigned long tempPulse = signConvention((int)getEncRef(jntW, s, h)); // RWY2
-         unsigned long currentPulse = DrcSignConvention(tempPulse);
+         //unsigned long tempPulse = signConvention((int)getEncRef(jntW, s, h)); // RWY2
+         int tempPulse = (int)((double)getEncRef(jntW, s, h)/31.4); // RWY2
+         //int tempPulse = 0;
+         unsigned int currentPulse = DrcSignConvention(tempPulse);
          f->data[0] = (unsigned char)(currentPulse & 0x000000FF);
          f->data[1] = (unsigned char)( (currentPulse>>8) & 0x000000FF );
          f->data[2] = (unsigned char)( (currentPulse>>16) & 0x000000FF );
 
          //short short_temp = (short)(Joint[RF2].RefVelCurrent);	 // gripping, referene current 
          short short_temp = 0x0000;	 // gripping, referene current 
-         short short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
+         unsigned short short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
          f->data[3] = (unsigned char)(short_currentPulse & 0x000000FF);
 
          //short_temp = (short)(Joint[RF3].RefVelCurrent); //triggering, reference current
@@ -3012,7 +3014,7 @@ int main(int argc, char **argv) {
         }
         if(strcmp(argv[i], "-drc") == 0){
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
-            printf("DRC Hubo Type \n");
+            printf("DRC-Hubo Type \n");
         }
         i++;
     }
