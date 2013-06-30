@@ -857,7 +857,15 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
     }
     else if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
       if ( (NKY == jnt) | (NK1 == jnt) | (NK2 == jnt) ){
-
+         int16_t jntTmp = (int16_t)s->joint[NKY].ref;
+         f->data[0] =  jntTmp      & 0x00FF;
+         f->data[1] = (jntTmp>>8)  & 0x00FF;
+         jntTmp = (int16_t)s->joint[NK1].ref;
+         f->data[2] =  jntTmp      & 0x00FF;
+         f->data[3] = (jntTmp>>8)  & 0x00FF;
+         jntTmp = (int16_t)s->joint[NK2].ref;
+         f->data[4] =  jntTmp      & 0x00FF;
+         f->data[5] = (jntTmp>>8)  & 0x00FF;
       }
       else if((RWR == jnt) | (LWR == jnt) | (RF1 == jnt) | (RF2 == jnt) | (LF1 == jnt) | (LF2 == jnt)) { // Fingers and wrist 2 (W2)
          int jntF1 = RF1;
