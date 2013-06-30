@@ -27,7 +27,8 @@ DAEMON_DIR='/etc/hubo-ach'
 DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
-FLAG_CONSOLE=0
+FLAG_NOCONSOLE=0
+FLAG_DRC_MODE=0
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -200,6 +201,7 @@ StartHubo()
    'drc')
         sudo rm /etc/hubo-ach/joint.table
         sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        FLAG_DRC_MODE=1
         echo 'Loaded DRC-Hubo Joint Table'
     ;;
     *)   
@@ -274,7 +276,11 @@ RunDaemon()
 					DAEMON_ARGS+=" $IN_ARG"
 				fi
 			done
-       	             	    sudo hubo-daemon $DAEMON_ARGS 
+                        if [[ $FLAG_DRC_MODE -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -drc"
+                        fi
+       	             	sudo hubo-daemon $DAEMON_ARGS 
                 fi
 	;;
 	esac
