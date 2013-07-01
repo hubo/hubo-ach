@@ -586,12 +586,12 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
             /* --- Choose Hubo Type ---- */
             /* ------------------------- */
             if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
-                if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
-                    (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
-                else {
+               // if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+               //     (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+               // else {
                     hSetEncRef(i, s, h, f);
                     c[jmc] = 1;
-                }
+               // }
             }
             else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type) {
                 if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
@@ -900,12 +900,12 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
          f->data[2] =     int_to_bytes(pos0,3);
 
          //short short_temp = (short)(Joint[RF2].RefVelCurrent);	 // gripping, referene current 
-         short short_temp = 0;	 // gripping, referene current 
+         short short_temp = (short)(s->joint[jntF1].ref*30.0);	 // gripping, referene current 
          unsigned short short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
          f->data[3] = (unsigned char)(short_currentPulse & 0x000000FF);
 
          //short_temp = (short)(Joint[RF3].RefVelCurrent); //triggering, reference current
-         short_temp = 0x0000; //triggering, reference current
+         short_temp = (short)(s->joint[jntF1].ref*30.0); //triggering, reference current
          short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
          f->data[4] = (unsigned char)(short_currentPulse & 0x000000FF);
         
