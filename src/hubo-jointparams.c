@@ -27,7 +27,7 @@
 
 //set number of parameters per joint in the parameters file
 #define	NUM_OF_JOINT_PARAMETERS 13
-#define NUM_OF_SENSOR_PARAMETERS 4
+#define NUM_OF_SENSOR_PARAMETERS 7
 
 //set file location
 static char *jointFileLocation = "/etc/" PACKAGE_NAME "/joint.table";
@@ -83,11 +83,14 @@ int setSensorDefaults( hubo_param_t *h ) {
 
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_SENSOR_PARAMETERS == sscanf(buff, "%s%hu%hhu%hu",
+		if (NUM_OF_SENSOR_PARAMETERS == sscanf(buff, "%s%hu%hhu%hu%hhd%hhd%hhd",
 			tp.name,
 			&tp.can,
 			&tp.active,
-			&tp.boardNo	) ) // check that all values are found
+			&tp.boardNo,
+            &tp.xsign,
+            &tp.ysign,
+            &tp.zsign	) ) // check that all values are found
 		{
 
 			// check to make sure jointName is valid
@@ -189,7 +192,7 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhu%s%hhu%hhu%hhu%hhu",
+		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhd%s%hhu%hhu%hhu%hhu",
 			tp.name,
 			&tp.motNo,
 			&tp.refEnc,
