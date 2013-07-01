@@ -796,6 +796,7 @@ unsigned long signConvention(long _input) {
 
 void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+    memset(f, 0, sizeof(*f));
     // set ref
     f->can_id     = REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
     uint16_t jmc = h->joint[jnt].jmc;
@@ -866,8 +867,11 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
          jntTmp = (int16_t)s->joint[NK2].ref;
          f->data[4] =  jntTmp      & 0x00FF;
          f->data[5] = (jntTmp>>8)  & 0x00FF;
+         f->can_dlc = 6;
       }
       else if((RWR == jnt) | (LWR == jnt) | (RF1 == jnt) | (RF2 == jnt) | (LF1 == jnt) | (LF2 == jnt)) { // Fingers and wrist 2 (W2)
+
+
          int jntF1 = RF1;
          int jntF2 = RF2;
          int jntW = RWR;
@@ -882,11 +886,10 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
             jntW  = LWR;
          }
          
-         f->can_id = 0x01;
-
+//         f->can_id = 0x01;
 
          //unsigned long tempPulse = signConvention((int)getEncRef(jntW, s, h)); // RWY2
-         int tempPulse = (int)((double)getEncRef(jntW, s, h)); // RWY2
+//         int tempPulse = (int)((double)getEncRef(jntW, s, h)); // RWY2
          //int tempPulse = (int)0; // RWY2
          //int tempPulse = 0;
 //         unsigned int currentPulse = DrcSignConvention(tempPulse);
@@ -900,15 +903,30 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
          f->data[2] =     int_to_bytes(pos0,3);
 
          //short short_temp = (short)(Joint[RF2].RefVelCurrent);	 // gripping, referene current 
-         short short_temp = (short)(s->joint[jntF1].ref*30.0);	 // gripping, referene current 
+/*         short short_temp = (short)(s->joint[jntF1].ref*30.0);	 // gripping, referene current 
          unsigned short short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
-         f->data[3] = (unsigned char)(short_currentPulse & 0x000000FF);
+         f->data[3] = (unsigned char)(short_currentPulse & 0x000000FF);*/
+
+         if(s->joint[jntF1].ref > 10)
+            s->joint[jntF1].ref = 10;
+         else if(s->joint[jntF1].ref < -10)
+            s->joint[jntF1].ref = -10;
+
+         f->data[3] = DrcFingerSignConvention((short)(s->joint[jntF1].ref), HUBO_FINGER_CURRENT_CTRL_MODE);
 
          //short_temp = (short)(Joint[RF3].RefVelCurrent); //triggering, reference current
-         short_temp = (short)(s->joint[jntF1].ref*30.0); //triggering, reference current
+/*         short_temp = (short)(s->joint[jntF2].ref*30.0); //triggering, reference current
          short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
          f->data[4] = (unsigned char)(short_currentPulse & 0x000000FF);
-        
+*/
+
+         if(s->joint[jntF2].ref > 10)
+            s->joint[jntF2].ref = 10;
+         else if(s->joint[jntF1].ref < -10)
+            s->joint[jntF2].ref = -10;
+
+         f->data[4] = DrcFingerSignConvention((short)(s->joint[jntF2].ref), HUBO_FINGER_CURRENT_CTRL_MODE);
+      
          f->can_dlc = 5;
          
       }
