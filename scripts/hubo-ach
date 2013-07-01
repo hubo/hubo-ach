@@ -199,11 +199,15 @@ StartHubo()
    'drc')
         sudo rm /etc/hubo-ach/joint.table
         sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
         echo 'Loaded DRC-Hubo Joint Table'
     ;;
     *)   
         sudo rm /etc/hubo-ach/joint.table
-        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
         echo 'Loaded Hubo Plus Joint Table'
    esac
  

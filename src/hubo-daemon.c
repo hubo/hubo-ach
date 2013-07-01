@@ -2546,9 +2546,9 @@ void decodeFTFrame(int num, struct hubo_state *s, struct hubo_param *h, struct c
     double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
     double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
     double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
-    s->ft[num].m_x = Mx*h->sensor[num2].xsign;
-    s->ft[num].m_y = My*h->sensor[num2].ysign;
-    s->ft[num].f_z = Fz*h->sensor[num2].zsign;
+    s->ft[num].m_x = Mx*h->sensor[num].xsign;
+    s->ft[num].m_y = My*h->sensor[num].ysign;
+    s->ft[num].f_z = Fz*h->sensor[num].zsign;
 }
 
 
@@ -2964,8 +2964,6 @@ int main(int argc, char **argv) {
     // set joint parameters for Hubo
     setJointParams(&H_param, &H_state);
     setSensorDefaults(&H_param);
-
-    fprintf(stdout, "%d", H_param.sensor[HUBO_FT_R_HAND].xsign);
 
     // open hubo reference
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
