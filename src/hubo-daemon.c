@@ -261,7 +261,8 @@ ach_channel_t chan_hubo_from_sim;    // hubo-ach-from-sim
 //int hubo_ver_can = 0;
 /* time for the ref not to be sent while a joint is being moved */
 //double hubo_noRefTime[HUBO_JOINT_NUM];
-double hubo_noRefTimeAll = 0.0;
+//double hubo_noRefTimeAll = 0.0;
+double hubo_noRefTimeAll = HUBO_STARTUP_SEND_REF_DELAY;
 int slowLoop  = 0;
 int slowLoopi = 0;
 int statusJnt = 0;
@@ -412,6 +413,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             getBoardStatusAllSlow( &H_state, H_param, &frame);
             for( i = 0; i < HUBO_JOINT_COUNT; i++ ){
                 if(H_state.status[i].homeFlag == HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
+                if(H_state.status[LWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[LWR].zeroed = 1;
+                if(H_state.status[RWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[RWR].zeroed = 1;
             }
             startFlag = 0;
         }
@@ -885,47 +888,30 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
             jntF2 = LF2;
             jntW  = LWR;
          }
-         
-//         f->can_id = 0x01;
 
-         //unsigned long tempPulse = signConvention((int)getEncRef(jntW, s, h)); // RWY2
-//         int tempPulse = (int)((double)getEncRef(jntW, s, h)); // RWY2
-         //int tempPulse = (int)0; // RWY2
-         //int tempPulse = 0;
-//         unsigned int currentPulse = DrcSignConvention(tempPulse);
-//         f->data[0] = (unsigned char)(currentPulse & 0x000000FF);
-//         f->data[1] = (unsigned char)( (currentPulse>>8) & 0x000000FF );
-//         f->data[2] = (unsigned char)( (currentPulse>>16) & 0x000000FF );
+         double jntF1Val = s->joint[jntF1].ref * (double)h->joint[jntF1].dir;
+         double jntF2Val = s->joint[jntF2].ref * (double)h->joint[jntF2].dir;
 
          unsigned long pos0 = signConvention((int)getEncRef(jntW, s, h));
          f->data[0] =     int_to_bytes(pos0,1);
          f->data[1] =     int_to_bytes(pos0,2);
          f->data[2] =     int_to_bytes(pos0,3);
+         
+         short jntFinVal = (short)(jntF1Val/0.01);  // convert from amps to units
+         if(jntFinVal > HUBO_FINGER_SAT_VALUE)
+            jntFinVal = HUBO_FINGER_SAT_VALUE;
+         else if(jntFinVal < -HUBO_FINGER_SAT_VALUE)
+            jntFinVal = -HUBO_FINGER_SAT_VALUE;
 
-         //short short_temp = (short)(Joint[RF2].RefVelCurrent);	 // gripping, referene current 
-/*         short short_temp = (short)(s->joint[jntF1].ref*30.0);	 // gripping, referene current 
-         unsigned short short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
-         f->data[3] = (unsigned char)(short_currentPulse & 0x000000FF);*/
+         f->data[3] = DrcFingerSignConvention((short)(jntFinVal), HUBO_FINGER_CURRENT_CTRL_MODE);
+         
+         jntFinVal = (short)(jntF2Val/0.01);  // convert from amps to units
+         if(jntFinVal > HUBO_FINGER_SAT_VALUE)
+            jntFinVal = HUBO_FINGER_SAT_VALUE;
+         else if(jntFinVal < -HUBO_FINGER_SAT_VALUE)
+            jntFinVal = -HUBO_FINGER_SAT_VALUE;
 
-         if(s->joint[jntF1].ref > 10)
-            s->joint[jntF1].ref = 10;
-         else if(s->joint[jntF1].ref < -10)
-            s->joint[jntF1].ref = -10;
-
-         f->data[3] = DrcFingerSignConvention((short)(s->joint[jntF1].ref), HUBO_FINGER_CURRENT_CTRL_MODE);
-
-         //short_temp = (short)(Joint[RF3].RefVelCurrent); //triggering, reference current
-/*         short_temp = (short)(s->joint[jntF2].ref*30.0); //triggering, reference current
-         short_currentPulse = DrcFingerSignConvention(short_temp, HUBO_FINGER_CURRENT_CTRL_MODE);
-         f->data[4] = (unsigned char)(short_currentPulse & 0x000000FF);
-*/
-
-         if(s->joint[jntF2].ref > 10)
-            s->joint[jntF2].ref = 10;
-         else if(s->joint[jntF1].ref < -10)
-            s->joint[jntF2].ref = -10;
-
-         f->data[4] = DrcFingerSignConvention((short)(s->joint[jntF2].ref), HUBO_FINGER_CURRENT_CTRL_MODE);
+         f->data[4] = DrcFingerSignConvention((short)(jntFinVal), HUBO_FINGER_CURRENT_CTRL_MODE);
       
          f->can_dlc = 5;
          
@@ -2555,12 +2541,23 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 // Not tested DML 2013-02-07                    hOpenLoopPWM( c, h, f );
                     break;
                 case D_CTRL_ON_OFF:
-                    if(true == s->joint[c->joint].active & HUBO_HOME_OK == s->status[c->joint].homeFlag) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                
+                    if(true == s->joint[c->joint].active & HUBO_HOME_OK == s->status[c->joint].homeFlag) 
+                       {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    else if(RWR == c->joint | LWR == c->joint) {
+                       if(true == s->joint[c->joint].active & HUBO_HOME_OK_WRIST == s->status[c->joint].homeFlag) 
+                          {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    }
                     //if( 0 < s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
                     break;
                 case D_CTRL_ON_OFF_ALL:
                    for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-                       if(true == s->joint[i].active & HUBO_HOME_OK == s->status[i].homeFlag ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       if(true == s->joint[i].active & HUBO_HOME_OK == s->status[i].homeFlag ) 
+                           {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       else if(RWR == c->joint | LWR == c->joint) {
+                          if(true == s->joint[i].active & HUBO_HOME_OK_WRIST == s->status[i].homeFlag ) 
+                            {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                          }
                        }
                    break;
                 case D_CTRL_ON:
