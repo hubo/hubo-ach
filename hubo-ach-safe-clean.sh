@@ -10,6 +10,7 @@ sudo rm /etc/hubo-ach/joint.table
 sudo rm /etc/hubo-ach/sensor.table
 sudo rm /etc/hubo-ach/virtualHubo.py
 sudo rm /etc/hubo-ach/hubo-ach-safe-clean.sh
+sudo rm -R /etc/hubo-ach
 sudo rm $(locate libhuboparams.so | grep /usr)
 sudo rm $(locate hubo_ach.pyc | grep /usr)
 sudo rm $(locate hubo_ach.pyo | grep /usr)

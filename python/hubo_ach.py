@@ -121,7 +121,7 @@ class HUBO_JOINT_PARAM(Structure):
                 ("harmonic" , c_uint16),
                 ("enc"      , c_uint16),
                 ("jmc"      , c_uint16),
-                ("dir"      , c_ubyte),
+                ("dir"      , c_byte),
                 ("can"      , c_ubyte),
                 ("numMot"   , c_ubyte),
                 ("name"     , c_ubyte*4)]

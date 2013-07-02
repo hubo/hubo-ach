@@ -121,7 +121,7 @@ void hInitilizeBoard(int jnt, hubo_ref_t *r, hubo_param_t *h, struct can_frame *
 void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
-void huboLoop(hubo_param_t *H_param, int vflag, int hubo_type);
+void huboLoop(hubo_param_t *H_param, int vflag);
 void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hFeedbackControllerOnOff(int jnt, hubo_ref_t *r, hubo_state_t *s, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
 void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
@@ -239,6 +239,8 @@ hubo_can_t sensorSocket( hubo_param_t *h, hubo_sensor_index_t board) {return hub
 
 uint8_t int_to_bytes(int d, int index);
 uint8_t duty_to_byte(int dir, int duty);
+unsigned short DrcFingerSignConvention(short h_input,unsigned char h_type);
+unsigned long DrcSignConvention(long h_input);
 
 
 
@@ -259,15 +261,17 @@ ach_channel_t chan_hubo_from_sim;    // hubo-ach-from-sim
 //int hubo_ver_can = 0;
 /* time for the ref not to be sent while a joint is being moved */
 //double hubo_noRefTime[HUBO_JOINT_NUM];
-double hubo_noRefTimeAll = 0.0;
+//double hubo_noRefTimeAll = 0.0;
+double hubo_noRefTimeAll = HUBO_STARTUP_SEND_REF_DELAY;
 int slowLoop  = 0;
 int slowLoopi = 0;
 int statusJnt = 0;
 int statusJntItt = 5;
 int statusJnti = 0;
 int readBuffi = 3;
+int hubo_type = HUBO_ROBOT_TYPE_HUBO_PLUS;
 
-void huboLoop(hubo_param_t *H_param, int vflag, int hubo_type) {
+void huboLoop(hubo_param_t *H_param, int vflag) {
     int i = 0;  // iterator
     // get initial values for hubo
     hubo_ref_t H_ref;
@@ -409,6 +413,8 @@ void huboLoop(hubo_param_t *H_param, int vflag, int hubo_type) {
             getBoardStatusAllSlow( &H_state, H_param, &frame);
             for( i = 0; i < HUBO_JOINT_COUNT; i++ ){
                 if(H_state.status[i].homeFlag == HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
+                if(H_state.status[LWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[LWR].zeroed = 1;
+                if(H_state.status[RWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[RWR].zeroed = 1;
             }
             startFlag = 0;
         }
@@ -568,32 +574,39 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
 	int canChan = 0;
 
 	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
-		for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-			jmc = h->joint[i].jmc;
-			if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
-
-				if( slowLoopi < slowLoopSplit ) {
-					slowLoop = 1;
-					slowLoopi = 0;
-				}
-				else {
-					slowLoop = 0;
-					slowLoopi = slowLoopi+1;
-				}
-
-				if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
-				    (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
-			//	else if( ((i == RF1) | (i == LF1)) & slowLoop == 1) {
-			//		hSetEncRef(i, r, h, f);
-			//		c[jmc] = 1;
-			//	}
-				else {
-					hSetEncRef(i, s, h, f);
-					c[jmc] = 1;
-				}
-			}
-		}
-	}
+            for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+                jmc = h->joint[i].jmc;
+                if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
+            if( slowLoopi < slowLoopSplit ) {
+                slowLoop = 1;
+                slowLoopi = 0;
+            }
+            else {
+                slowLoop = 0;
+                slowLoopi = slowLoopi+1;
+            }
+            /* ------------------------- */
+            /* --- Choose Hubo Type ---- */
+            /* ------------------------- */
+            if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
+               // if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+               //     (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+               // else {
+                    hSetEncRef(i, s, h, f);
+                    c[jmc] = 1;
+               // }
+            }
+            else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type) {
+                if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+                    (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+                else {
+                    hSetEncRef(i, s, h, f);
+                    c[jmc] = 1;
+                }
+        }
+      }
+    }
+  }
 }
 
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) 
@@ -786,10 +799,12 @@ unsigned long signConvention(long _input) {
 
 void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+    memset(f, 0, sizeof(*f));
     // set ref
     f->can_id     = REF_BASE_TXDF + h->joint[jnt].jmc;  //CMD_TXD;F// Set ID
     uint16_t jmc = h->joint[jnt].jmc;
-    if(h->joint[jnt].numMot <= 2) {
+    if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type){
+      if(h->joint[jnt].numMot <= 2) {
         
         int m0 = h->driver[jmc].joints[0];
         int m1;
@@ -813,24 +828,23 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
         f->can_dlc = 6; //= strlen( data );    // Set DLC
 
 
-    }
-	else if(h->joint[jnt].numMot == 5) { // Fingers
-
-		int fing[5];
-		if(jnt == RF1) {
-			fing[0] = RF1;
-			fing[1] = RF2;
-			fing[2] = RF3;
-			fing[3] = RF4;
-			fing[4] = RF5;
-		}
-		else if(jnt == LF1) {
-			fing[0] = LF1;
-			fing[1] = LF2;
-			fing[2] = LF3;
-			fing[3] = LF4;
-			fing[4] = LF5;
-		}
+      }
+      else if(h->joint[jnt].numMot == 5) { // Fingers
+        int fing[5];
+	if(jnt == RF1) {
+            fing[0] = RF1;
+            fing[1] = RF2;
+            fing[2] = RF3;
+            fing[3] = RF4;
+            fing[4] = RF5;
+        }
+        else if(jnt == LF1) {
+            fing[0] = LF1;
+            fing[1] = LF2;
+            fing[2] = LF3;
+            fing[3] = LF4;
+            fing[4] = LF5;
+        }
 
         f->can_id = 0x01;
         f->data[0] = (uint8_t)h->joint[jnt].jmc;
@@ -843,8 +857,110 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
         f->data[7] = getFingerInt(s->joint[fing[4]].ref);
 
         f->can_dlc = 8;
-	}
+      }
+    }
+    else if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
+      if ( (NKY == jnt) | (NK1 == jnt) | (NK2 == jnt) ){
+         int16_t jntTmp = (int16_t)s->joint[NKY].ref;
+         f->data[0] =  jntTmp      & 0x00FF;
+         f->data[1] = (jntTmp>>8)  & 0x00FF;
+         jntTmp = (int16_t)s->joint[NK1].ref;
+         f->data[2] =  jntTmp      & 0x00FF;
+         f->data[3] = (jntTmp>>8)  & 0x00FF;
+         jntTmp = (int16_t)s->joint[NK2].ref;
+         f->data[4] =  jntTmp      & 0x00FF;
+         f->data[5] = (jntTmp>>8)  & 0x00FF;
+         f->can_dlc = 6;
+      }
+      else if((RWR == jnt) | (LWR == jnt) | (RF1 == jnt) | (RF2 == jnt) | (LF1 == jnt) | (LF2 == jnt)) { // Fingers and wrist 2 (W2)
 
+
+         int jntF1 = RF1;
+         int jntF2 = RF2;
+         int jntW = RWR;
+         if(jnt == RWR){
+            jntF1 = RF1;
+            jntF2 = RF2;
+            jntW  = RWR;
+         }
+         else if (jnt == LWR){
+            jntF1 = LF1;
+            jntF2 = LF2;
+            jntW  = LWR;
+         }
+
+         double jntF1Val = s->joint[jntF1].ref * (double)h->joint[jntF1].dir;
+         double jntF2Val = s->joint[jntF2].ref * (double)h->joint[jntF2].dir;
+
+         unsigned long pos0 = signConvention((int)getEncRef(jntW, s, h));
+         f->data[0] =     int_to_bytes(pos0,1);
+         f->data[1] =     int_to_bytes(pos0,2);
+         f->data[2] =     int_to_bytes(pos0,3);
+         
+         short jntFinVal = (short)(jntF1Val/0.01);  // convert from amps to units
+         if(jntFinVal > HUBO_FINGER_SAT_VALUE)
+            jntFinVal = HUBO_FINGER_SAT_VALUE;
+         else if(jntFinVal < -HUBO_FINGER_SAT_VALUE)
+            jntFinVal = -HUBO_FINGER_SAT_VALUE;
+
+         f->data[3] = DrcFingerSignConvention((short)(jntFinVal), HUBO_FINGER_CURRENT_CTRL_MODE);
+         
+         jntFinVal = (short)(jntF2Val/0.01);  // convert from amps to units
+         if(jntFinVal > HUBO_FINGER_SAT_VALUE)
+            jntFinVal = HUBO_FINGER_SAT_VALUE;
+         else if(jntFinVal < -HUBO_FINGER_SAT_VALUE)
+            jntFinVal = -HUBO_FINGER_SAT_VALUE;
+
+         f->data[4] = DrcFingerSignConvention((short)(jntFinVal), HUBO_FINGER_CURRENT_CTRL_MODE);
+      
+         f->can_dlc = 5;
+         
+      }
+      else if((h->joint[jnt].numMot <= 2) ){
+        int m0 = h->driver[jmc].joints[0];
+        int m1;
+        
+        unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
+        f->data[0] =     int_to_bytes(pos0,1);
+        f->data[1] =     int_to_bytes(pos0,2);
+        f->data[2] =     int_to_bytes(pos0,3);
+
+        if(h->joint[jnt].numMot == 1)
+            m1 = m0; // If there is not a second joint, use the ref of the first
+        else
+            m1 = h->driver[jmc].joints[1];
+
+        unsigned long pos1 = signConvention((int)getEncRef(m1, s, h));
+
+        f->data[3] =     int_to_bytes(pos1,1);
+        f->data[4] =     int_to_bytes(pos1,2);
+        f->data[5] =     int_to_bytes(pos1,3);
+
+        f->can_dlc = 6; //= strlen( data );    // Set DLC
+      }
+    }
+}
+
+unsigned long DrcSignConvention(long h_input)
+{
+	if (h_input < 0) return (unsigned long)( ((-h_input)&0x007FFFFF) | (1<<23) );
+	else return (unsigned long)h_input;
+			
+}
+
+unsigned short DrcFingerSignConvention(short h_input,unsigned char h_type)
+{
+	if(h_type == 0x00) // Position
+	{
+		if (h_input < 0) return ((h_input)&0x000000FF);
+		else return (unsigned short)h_input;
+	}
+	else if(h_type == 0x01) // Current
+	{
+		if (h_input < 0) return (unsigned short)( ((-h_input)&0x0000007F) | (1<<7) );
+		else return (unsigned short)h_input;
+	}
+	else return 0x00;
 }
 
 uint8_t getFingerInt(double n){
@@ -1803,35 +1919,38 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f) 
     uint16_t jmc = h->joint[jnt].jmc;
     if(h->joint[jnt].numMot <= 2)
     {    
-        int i;
-        for(i=0; i<h->joint[jnt].numMot; i++)
+      int i;
+      for(i=0; i<h->joint[jnt].numMot; i++)
+      {
+        int j = h->driver[jmc].joints[i];
+        if( s->joint[j].zeroed==2)
         {
-            int j = h->driver[jmc].joints[i];
-            if( s->joint[j].zeroed==2)
-            {
-                if( s->status[j].homeFlag==H_HOME_SUCCESS) // && s->status[j].bigError==0 )
-                {
-                    s->joint[j].zeroed=1;
-                }
-                else
-                {
-                    s->joint[j].zeroed=0;
-                    fprintf(stdout, "Joint number %d was not homed correctly!\n\t", j );
-                }
-            }
-
-            if( s->joint[j].zeroed==1 )
-                check--;
+          if( s->status[j].homeFlag==H_HOME_SUCCESS) // && s->status[j].bigError==0 )
+          {
+            s->joint[j].zeroed=1;
+          }
+          else
+          {
+            s->joint[j].zeroed=0;
+            fprintf(stdout, "Joint number %d was not homed correctly!\n\t", j );
+          }
         }
+        if( s->joint[j].zeroed==1 )
+        check--;
+      }
     }
 
 //    if( check==0 | jnt == RF1 | jnt == LF1 )
-      if( jnt != RF2 & jnt != RF3 & jnt != RF4 & jnt !=RF5 &
-          jnt != LF2 & jnt != LF3 & jnt != LF4 & jnt !=LF5) 
-      {
-        fSetEncRef(jnt, s, h, f);
-        sendCan(getSocket(h,jnt), f);
-      }
+    if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
+      fSetEncRef(jnt, s, h, f);
+      sendCan(getSocket(h,jnt), f);
+    }
+    else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type & (jnt != RF2) & (jnt != RF3) & (jnt != RF4) & (jnt !=RF5) &
+                                                     (jnt != LF2) & (jnt != LF3) & (jnt != LF4) & (jnt !=LF5)) 
+    {
+      fSetEncRef(jnt, s, h, f);
+      sendCan(getSocket(h,jnt), f);
+    }
 }
 
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
@@ -2422,12 +2541,23 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 // Not tested DML 2013-02-07                    hOpenLoopPWM( c, h, f );
                     break;
                 case D_CTRL_ON_OFF:
-                    if(true == s->joint[c->joint].active & HUBO_HOME_OK == s->status[c->joint].homeFlag) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                
+                    if(true == s->joint[c->joint].active & HUBO_HOME_OK == s->status[c->joint].homeFlag) 
+                       {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    else if(RWR == c->joint | LWR == c->joint) {
+                       if(true == s->joint[c->joint].active & HUBO_HOME_OK_WRIST == s->status[c->joint].homeFlag) 
+                          {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
+                    }
                     //if( 0 < s->joint[c->joint].zeroed) {hFeedbackControllerOnOff(c->joint,r,s,h,f,c->param[0]);}
                     break;
                 case D_CTRL_ON_OFF_ALL:
                    for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-                       if(true == s->joint[i].active & HUBO_HOME_OK == s->status[i].homeFlag ) {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       if(true == s->joint[i].active & HUBO_HOME_OK == s->status[i].homeFlag ) 
+                           {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                       else if(RWR == c->joint | LWR == c->joint) {
+                          if(true == s->joint[i].active & HUBO_HOME_OK_WRIST == s->status[i].homeFlag ) 
+                            {hFeedbackControllerOnOff(i,r,s,h,f,c->param[0]);}
+                          }
                        }
                    break;
                 case D_CTRL_ON:
@@ -2541,14 +2671,14 @@ double doubleFromBytePair(uint8_t data0, uint8_t data1){
 
 
 
-void decodeFTFrame(int num, struct hubo_state *s, struct can_frame *f){
+void decodeFTFrame(int num, struct hubo_state *s, struct hubo_param *h, struct can_frame *f){
 
     double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
     double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
     double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
-    s->ft[num].m_x = Mx;
-    s->ft[num].m_y = My;
-    s->ft[num].f_z = Fz;
+    s->ft[num].m_x = Mx*h->sensor[num].xsign;
+    s->ft[num].m_y = My*h->sensor[num].ysign;
+    s->ft[num].f_z = Fz*h->sensor[num].zsign;
 }
 
 
@@ -2594,8 +2724,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
             int num2 = HUBO_FT_R_FOOT;
-            decodeFTFrame(num2,s,f);
-
+            decodeFTFrame(num2,s,h,f);
 /*
             val = (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
@@ -2610,7 +2739,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
         {
             int num2 = HUBO_FT_L_FOOT;
-            decodeFTFrame(num2,s,f);
+            decodeFTFrame(num2,s,h,f);
 
 /*
             val =  (f->data[1]<<8) | f->data[0];
@@ -2627,7 +2756,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         else if(num==h->sensor[HUBO_FT_R_HAND].boardNo)
         {
             int num2 = HUBO_FT_R_HAND;
-            decodeFTFrame(num2,s,f);
+            decodeFTFrame(num2,s,h,f);
 
 /*
             val =  (f->data[1]<<8) | f->data[0];
@@ -2655,7 +2784,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         else if(num==h->sensor[HUBO_FT_L_HAND].boardNo)
         {
             int num2 = HUBO_FT_L_HAND;
-            decodeFTFrame(num2,s,f);
+            decodeFTFrame(num2,s,h,f);
 
 /*
             val =  (f->data[1]<<8) | f->data[0];
@@ -2925,7 +3054,6 @@ int main(int argc, char **argv) {
     int vflag = HUBO_VIRTUAL_MODE_NONE;
     debug = 0;
 
-    int hubo_type = HUBO_ROBOT_TYPE_HUBO_PLUS;
 
 
     int i = 1;
@@ -2942,7 +3070,7 @@ int main(int argc, char **argv) {
         }
         if(strcmp(argv[i], "-drc") == 0){
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
-            printf("DRC Hubo Type \n");
+            printf("DRC-Hubo Type \n");
         }
         i++;
     }
@@ -2993,7 +3121,7 @@ int main(int argc, char **argv) {
     ach_put(&chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
 
     // run hubo main loop
-    huboLoop(&H_param, vflag, hubo_type);
+    huboLoop(&H_param, vflag);
 
     hubo_daemon_close();
     

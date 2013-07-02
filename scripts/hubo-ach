@@ -27,6 +27,8 @@ DAEMON_DIR='/etc/hubo-ach'
 DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
+FLAG_NOCONSOLE=0
+FLAG_DRC_MODE=0
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -51,6 +53,8 @@ Clean()
 
 Update()
 {
+        sudo apt-get install python-pip
+        sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
 	sudo rm /tmp/hubo-ach* 
 	cat /etc/hubo-ach/hubo-ach-safe-clean.sh > /tmp/hubo-ach.update
 #	sudo echo "sudo rm $(ls /tmp/ | grep hubo | grep deb)" >> /tmp/hubo-ach.update
@@ -199,16 +203,27 @@ StartHubo()
    'drc')
         sudo rm /etc/hubo-ach/joint.table
         sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
+        FLAG_DRC_MODE=1
         echo 'Loaded DRC-Hubo Joint Table'
     ;;
     *)   
         sudo rm /etc/hubo-ach/joint.table
-        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
         echo 'Loaded Hubo Plus Joint Table'
    esac
  
    RunDaemon
-   StartConsole
+   if [[ $FLAG_NOCONSOLE -eq 0 ]]
+   then
+       echo 'Starting in Console Mode'
+       StartConsole
+   else
+       echo 'Starting in No Console Mode'
+   fi
 }
 
 RunDaemon()
@@ -267,7 +282,11 @@ RunDaemon()
 					DAEMON_ARGS+=" $IN_ARG"
 				fi
 			done
-       	             	    sudo hubo-daemon $DAEMON_ARGS 
+                        if [[ $FLAG_DRC_MODE -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -drc"
+                        fi
+       	             	sudo hubo-daemon $DAEMON_ARGS 
                 fi
 	;;
 	esac
@@ -662,6 +681,7 @@ ShowUsage()
         echo '              :Options:'
         echo '                     (no-arg)      : loads Hubo Plus joint table'
         echo '                     drc           : loads drc-hubo joint table'
+	echo 'daemon        : Same as "start" but does not run hubo-ach console'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
@@ -724,6 +744,12 @@ case "$1" in
 	'start' )
 		StartHubo $@
 	;;
+
+# runs in daemon only mode no console
+	'daemon' )
+                FLAG_NOCONSOLE=1
+		StartHubo $@
+        ;;
 
 # Start remote via achd
 	'remote' )

@@ -124,6 +124,10 @@ extern "C" {
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 #define         HUBO_LOOP_PERIOD         0.005  ///> period for main loopin sec (0.005 = 200hz)
+// finger control mode current
+#define         HUBO_FINGER_CURRENT_CTRL_MODE 0x01
+#define         HUBO_STARTUP_SEND_REF_DELAY 0.8  ///> setup delay in secons
+#define         HUBO_FINGER_SAT_VALUE 10         ///> value in 0.01A units
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
@@ -173,7 +177,8 @@ typedef enum {
 }__attribute__((packed)) hubo_imu_index_t;
 
 typedef enum {
-   HUBO_HOME_OK = 6
+   HUBO_HOME_OK       = 6,
+   HUBO_HOME_OK_WRIST = 2
 }__attribute__((packed)) hubo_status_return_t;
 
 typedef enum {
@@ -193,6 +198,9 @@ typedef struct hubo_sensor_param {
 	uint16_t boardNo;	///< Sensor Board Nuber
 	uint8_t active;		///< Active sensor
 	char name[5];		///< Name of sensor
+    int8_t xsign;
+    int8_t ysign;
+    int8_t zsign;
 }__attribute__((packed)) hubo_sensor_param_t;
 
 typedef struct hubo_joint_param {
@@ -204,7 +212,7 @@ typedef struct hubo_joint_param {
 	uint16_t harmonic;	///< gear ratio of harmonic drive
 	uint16_t enc;		///< encoder size
 	uint16_t jmc;		///< motor controller number
-	uint8_t dir;		///< direction
+	int8_t dir;		    ///< direction
 	uint8_t can;		///< can channel
 	uint8_t numMot;		///< number of motors
 	char name[4];		///< name
