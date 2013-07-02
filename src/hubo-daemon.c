@@ -2671,14 +2671,14 @@ double doubleFromBytePair(uint8_t data0, uint8_t data1){
 
 
 
-void decodeFTFrame(int num, struct hubo_state *s, struct can_frame *f){
+void decodeFTFrame(int num, struct hubo_state *s, struct hubo_param *h, struct can_frame *f){
 
     double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
     double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
     double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
-    s->ft[num].m_x = Mx;
-    s->ft[num].m_y = My;
-    s->ft[num].f_z = Fz;
+    s->ft[num].m_x = Mx*h->sensor[num].xsign;
+    s->ft[num].m_y = My*h->sensor[num].ysign;
+    s->ft[num].f_z = Fz*h->sensor[num].zsign;
 }
 
 
@@ -2724,8 +2724,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
             int num2 = HUBO_FT_R_FOOT;
-            decodeFTFrame(num2,s,f);
-
+            decodeFTFrame(num2,s,h,f);
 /*
             val = (f->data[1]<<8) | f->data[0];
             s->ft[HUBO_FT_R_FOOT].m_x = ((double)(val))/100.0;
@@ -2740,7 +2739,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
         {
             int num2 = HUBO_FT_L_FOOT;
-            decodeFTFrame(num2,s,f);
+            decodeFTFrame(num2,s,h,f);
 
 /*
             val =  (f->data[1]<<8) | f->data[0];
@@ -2757,7 +2756,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         else if(num==h->sensor[HUBO_FT_R_HAND].boardNo)
         {
             int num2 = HUBO_FT_R_HAND;
-            decodeFTFrame(num2,s,f);
+            decodeFTFrame(num2,s,h,f);
 
 /*
             val =  (f->data[1]<<8) | f->data[0];
@@ -2785,7 +2784,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         else if(num==h->sensor[HUBO_FT_L_HAND].boardNo)
         {
             int num2 = HUBO_FT_L_HAND;
-            decodeFTFrame(num2,s,f);
+            decodeFTFrame(num2,s,h,f);
 
 /*
             val =  (f->data[1]<<8) | f->data[0];

@@ -198,6 +198,9 @@ typedef struct hubo_sensor_param {
 	uint16_t boardNo;	///< Sensor Board Nuber
 	uint8_t active;		///< Active sensor
 	char name[5];		///< Name of sensor
+    int8_t xsign;
+    int8_t ysign;
+    int8_t zsign;
 }__attribute__((packed)) hubo_sensor_param_t;
 
 typedef struct hubo_joint_param {
@@ -209,7 +212,7 @@ typedef struct hubo_joint_param {
 	uint16_t harmonic;	///< gear ratio of harmonic drive
 	uint16_t enc;		///< encoder size
 	uint16_t jmc;		///< motor controller number
-	uint8_t dir;		///< direction
+	int8_t dir;		    ///< direction
 	uint8_t can;		///< can channel
 	uint8_t numMot;		///< number of motors
 	char name[4];		///< name
