@@ -6,6 +6,8 @@ etc/hubo-ach/joint.table
 etc/hubo-ach/huboplus.joint.table
 etc/hubo-ach/drc-hubo.joint.table
 etc/hubo-ach/sensor.table
+etc/hubo-ach/huboplus.sensor.table
+etc/hubo-ach/drc-hubo.sensor.table
 etc/hubo-ach/virtualHubo.py
 etc/hubo-ach/hubo-ach-safe-clean.sh
 usr/lib/libhuboparams.so

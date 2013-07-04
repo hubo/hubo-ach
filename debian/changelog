@@ -1,3 +1,24 @@
+hubo-ach (0.1.20130702-2) stable; urgency=low
+
+  * Added Sensor Joint Tables
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 02 Jun 2013 15:38:00 -0400
+
+hubo-ach (0.1.20130702) stable; urgency=low
+
+  * DRC Hubo hands working
+  * DRC Hubo Wrist Roll working
+  * Changed direction of FT
+  * Added Pip and ach python install on update
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 02 Jun 2013 12:56:00 -0400
+
+hubo-ach (0.1.20130628) stable; urgency=low
+
+  * disabled hands on joint table
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Fri, 28 Jun 2013 16:45:00 -0400
+
 hubo-ach (0.1.20130626) stable; urgency=low
 
   * added drc-hubo joint table

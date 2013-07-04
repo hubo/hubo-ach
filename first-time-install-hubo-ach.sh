@@ -1,3 +1,6 @@
+sudo apt-get update
+sudo apt-get install build-essential
+sudo apt-get install python-dev
 sudo apt-get install linux-headers-$(uname -r)
 cd ~/
 rm tmp.hubo-ach
@@ -18,6 +21,7 @@ sudo apt-get install libreadline-dev
 sudo apt-get install gcc
 sudo apt-get install g++
 sudo apt-get install libpopt-dev
+source ~/.bashrc
 git clone https://github.com/hubo/hubo-ach.git
 cd hubo-ach/drivers
 tar -xzf peak-linux-driver-7.7.tar.gz

@@ -53,6 +53,8 @@ Clean()
 
 Update()
 {
+        sudo apt-get install python-pip
+        sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
 	sudo rm /tmp/hubo-ach* 
 	cat /etc/hubo-ach/hubo-ach-safe-clean.sh > /tmp/hubo-ach.update
 #	sudo echo "sudo rm $(ls /tmp/ | grep hubo | grep deb)" >> /tmp/hubo-ach.update
