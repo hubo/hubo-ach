@@ -112,11 +112,11 @@ extern "C" {
 #define         BNO_SENSOR_BASE         0x2F
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
-#define		HUBO_CHAN_REF_NAME       "hubo-ref"                    ///> hubo ach channel
-#define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"              ///> hubo console channel for ach
-#define		HUBO_CHAN_STATE_NAME     "hubo-state"                  ///> hubo state ach channel
-#define		HUBO_CHAN_PARAM_NAME     "hubo-param"                  ///> hubo param ach channel
-#define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"            ///> hubo reference with filter ach channel
+#define		HUBO_CHAN_REF_NAME         "hubo-ref"                    ///> hubo ach channel
+#define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
+#define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
+#define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"                  ///> hubo param ach channel
+#define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
 #define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
@@ -222,8 +222,71 @@ typedef struct hubo_jmc_param {
 	uint8_t joints[5]; // other motors on the same drive
 }__attribute__((packed)) hubo_jmc_param_t;
 
+typedef struct hubo_board_joint_param {
+    
+    uint16_t deadZone;
+
+    int32_t homeOffsetRaw;
+    double homeOffset
+    uint8_t searchDirection;
+    uint8_t searchMode;
+    uint16_t searchLimitRaw;
+    double searchLimit;
+
+    uint16_t maxHomeAccelRaw;
+    double maxHomeAccel;
+    uint16_t maxHomeLimitVelRaw; ///< Maximum Velocity for Home limit search
+    double maxHomeLimitVel;
+    uint16_t maxHomeOffsetVelRaw; ///< Maximum Velocity to Offset position
+    double maxHomeOffset;
+
+    int32_t lowerLimitRaw;
+    double lowerLimit;
+    int32_t upperLimitRaw;
+    double upperLimit;
+    uint16_t maxAccelRaw;
+    double maxAccel;
+
+    uint16_t maxVelRaw;
+    double maxVel;
+    uint16_t maxPWM;
+    uint16_t maxCurrent;
+    
+    uint16_t Kp;
+    uint16_t Ki;
+    uint16_t Kd;
+    uint16_t Kpt; ///< Motor position gain ...t?
+    uint16_t Kdt; ///< Motor derivative gain ...t?
+    uint16_t Kft; ///< Motor current gain ...t?
+
+    uint16_t encoderResolution;
+    uint8_t motorDirection;
+    uint8_t autoScale;
+    
+    uint16_t canRate;
+    uint8_t boardType;
+
+    uint16_t jamTimeRaw;
+    double jamTime;
+    uint16_t pwmSaturationTimeRaw;
+    double pwmSaturationTime;
+    uint8_t pwmDutyLimit;
+    uint8_t pwmDutyJam;
+
+    uint16_t maxInputDifference;
+    uint16_t maxError;
+    uint16_t maxEncError; ///< Maximum error for encoder failure
+
+}__attribute__((packed)) hubo_board_chan_param_t;
+
+typedef struct hubo_board_param {
+    
+    hubo_board_joint_param_t joint[HUBO_JOINT_COUNT];
+    
+}__attribute__((packed)) hubo_board_param_t;
+
 typedef struct hubo_param {
-	hubo_joint_param_t joint[HUBO_JOINT_COUNT];	///< Joint param
+	hubo_joint_param_t joint[HUBO_JOINT_COUNT];     ///< Joint param
 	hubo_jmc_param_t driver[HUBO_JMC_COUNT];		///< Motor driver param
 	hubo_sensor_param_t sensor[HUBO_SENSOR_COUNT];	///< Sensor param
 }__attribute__((packed)) hubo_param_t;
