@@ -3022,8 +3022,23 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             }
 
         }
-        // TODO: Implement for 3 and 5 channel boards
-        
+        // TODO: Find out what the frames are for the new hybrid 3/2 board type
+        if( numMot >=3 )
+        {
+            int j=0;
+            for(j=0; j<numMot; j++)
+            {
+                jnt0 = h->driver[jmc].joints[j];
+                s->status[jnt0].driverOn    = (f->data[j])      & 0x01;
+                s->status[jnt0].ctrlOn      = (f->data[j]>>1)   & 0x01;
+                s->status[jnt0].mode        = (f->data[j]>>2)   & 0x01;
+                s->status[jnt0].limitSwitch = (f->data[j]>>3)   & 0x01;
+                s->status[jnt0].jam         = (f->data[j]>>4)   & 0x01;
+                s->status[jnt0].pwmSaturated= (f->data[j]>>5)   & 0x01;
+                s->status[jnt0].bigError    = (f->data[j]>>6)   & 0x01;
+                s->status[jnt0].encError    = (f->data[j]>>7)   & 0x01;
+            }
+        }
     } 
     
     return 0;
