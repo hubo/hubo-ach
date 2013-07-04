@@ -225,11 +225,10 @@ void fGetBoardParamG( int jnt, hubo_param_t *h, struct can_frame *f );
 void fGetBoardParamH( int jnt, hubo_param_t *h, struct can_frame *f );
 void fGetBoardParamI( int jnt, hubo_param_t *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h,
-                        hubo_board_param_t *b, struct can_frame *f );
+                        hubo_board_param_t *b, struct can_frame *f, int send );
 void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
-                         hubo_joint_state_t *s, struct can_frame *f );
-int decodeParamFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f,
-                       hubo_board_param_t *b, int type);
+                         hubo_state_t *s, struct can_frame *f );
+int decodeParamFrame(hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 
@@ -2432,7 +2431,7 @@ void fGetBoardParamI( int jnt, hubo_param_t *h, struct can_frame *f )
 }
 
 void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
-                         hubo_joint_state_t *s, struct can_frame *f )
+                         hubo_state_t *s, struct can_frame *f )
 {
     int i=0;
     for(i=0; i<HUBO_JOINT_COUNT; i++)
@@ -2453,60 +2452,60 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     fGetBoardParamA( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 1);
+    decodeParamFrame(b, h, f, 1);
 
     fGetBoardParamB( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 2);
+    decodeParamFrame(b, h, f, 2);
 
     fGetBoardParamC( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 3);
+    decodeParamFrame(b, h, f, 3);
 
     fGetBoardParamD( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 4);
+    decodeParamFrame(b, h, f, 4);
 
     fGetBoardParamE( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 5);
+    decodeParamFrame(b, h, f, 5);
 
     fGetBoardParamF( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 6);
+    decodeParamFrame(b, h, f, 6);
 
     // Note: These next three are redundant because they are params that are
     // shared among all the joints on a board
     fGetBoardParamG( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 7);
+    decodeParamFrame(b, h, f, 7);
 
     fGetBoardParamH( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 8);
+    decodeParamFrame(b, h, f, 8);
 
     fGetBoardParamI( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, s, h, f, 9);
+    decodeParamFrame(b, h, f, 9);
 
     b->joint[jnt].homeOffset   = enc2rad(jnt, b->joint[jnt].homeOffsetRaw, h);
     b->joint[jnt].searchLimit  = enc2rad(jnt, b->joint[jnt].searchLimitRaw, h);
     b->joint[jnt].maxHomeAccel = enc2rad(jnt, b->joint[jnt].maxHomeAccelRaw, h);
     b->joint[jnt].maxHomeLimitVel = enc2rad(jnt, b->joint[jnt].maxHomeLimitVelRaw, h);
-    b->joint[jnt].maxHomeOffset = enc2rad(jnt, b->joint[jnt].maxHomeOffsetRaw, h);
+    b->joint[jnt].maxHomeOffsetVel = enc2rad(jnt, b->joint[jnt].maxHomeOffsetVelRaw, h);
     b->joint[jnt].lowerLimit   = enc2rad(jnt, b->joint[jnt].lowerLimitRaw, h);
     b->joint[jnt].upperLimit   = enc2rad(jnt, b->joint[jnt].upperLimitRaw, h);
     b->joint[jnt].maxAccel     = enc2rad(jnt, b->joint[jnt].maxAccelRaw, h);
     b->joint[jnt].maxVel       = enc2rad(jnt, b->joint[jnt].maxVel, h);
-    b->joint[jnt].jamTime      = 0.1*b->joint[jnt].jameTimeRaw;
+    b->joint[jnt].jamTime      = 0.1*b->joint[jnt].jamTimeRaw;
     b->joint[jnt].pwmSaturationTime = 0.1*b->joint[jnt].pwmSaturationTimeRaw;
 
     if(send==1)
@@ -2538,13 +2537,13 @@ int decodeParamFrame(hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f
                 b->joint[num].homeOffsetRaw     = f->data[6] | (f->data[7]<<8);
                 break;
             case 3:
-                b->joint[num].homeOffsetRaw     = b->homeOffset[num] | f->data[0] | (f->data[1]<<8);
+                b->joint[num].homeOffsetRaw     = b->joint[num].homeOffsetRaw | f->data[0] | (f->data[1]<<8);
                 b->joint[num].lowerLimitRaw     = f->data[2] | (f->data[3]<<8)
                                             | (f->data[4]<<16) | (f->data[5]<<24);
                 b->joint[num].upperLimitRaw     = f->data[6] | (f->data[7]<<8);
                 break;
             case 4:
-                b->joint[num].upperLimitRaw     = b->joint[num].upperLimit | f->data[0] | (f->data[1]<<8);
+                b->joint[num].upperLimitRaw     = b->joint[num].upperLimitRaw | f->data[0] | (f->data[1]<<8);
                 b->joint[num].maxAccelRaw       = f->data[2] | (f->data[3]<<8);
                 b->joint[num].maxVelRaw         = f->data[4] | (f->data[5]<<8);
                 b->joint[num].maxPWM            = f->data[6] | (f->data[7]<<8);

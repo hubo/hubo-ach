@@ -227,7 +227,7 @@ typedef struct hubo_board_joint_param {
     uint16_t deadZone;
 
     int32_t homeOffsetRaw;
-    double homeOffset
+    double homeOffset;
     uint8_t searchDirection;
     uint8_t searchMode;
     uint16_t searchLimitRaw;
@@ -238,7 +238,7 @@ typedef struct hubo_board_joint_param {
     uint16_t maxHomeLimitVelRaw; ///< Maximum Velocity for Home limit search
     double maxHomeLimitVel;
     uint16_t maxHomeOffsetVelRaw; ///< Maximum Velocity to Offset position
-    double maxHomeOffset;
+    double maxHomeOffsetVel;
 
     int32_t lowerLimitRaw;
     double lowerLimit;
@@ -277,7 +277,7 @@ typedef struct hubo_board_joint_param {
     uint16_t maxError;
     uint16_t maxEncError; ///< Maximum error for encoder failure
 
-}__attribute__((packed)) hubo_board_chan_param_t;
+}__attribute__((packed)) hubo_board_joint_param_t;
 
 typedef struct hubo_board_param {
     
