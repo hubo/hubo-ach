@@ -96,6 +96,7 @@ int main() {
 	printf(" Support: Daniel M. Lofaro dan@danlofaro.com \n");
 	printf(" ******************************************* \n");
 
+	size_t fs;
 	// get initial values for hubo
 	// open ach channel
 	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
@@ -104,6 +105,14 @@ int main() {
 	// open hubo state
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
+
+    //FIXME: Remove this test junk
+    ach_channel_t chan_params;
+    r = ach_open(&chan_params, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
+    hubo_board_param_t b;
+    ach_get(&chan_params, &b, sizeof(b), &fs, NULL, ACH_O_WAIT);
+    fprintf(stdout, "%d \t Raw:%d\n", b.joint[RSP].homeOffset, b.joint[RSP].homeOffsetRaw);
+    
 
        // initialize control channel
        r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
@@ -125,7 +134,6 @@ int main() {
 	setJointParams(&H_param, &H_state);
         setSensorDefaults( &H_param );
 
-	size_t fs;
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
