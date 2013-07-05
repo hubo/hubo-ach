@@ -112,6 +112,7 @@ int main() {
     hubo_board_param_t b;
     ach_get(&chan_params, &b, sizeof(b), &fs, NULL, ACH_O_WAIT);
     fprintf(stdout, "%d \t Raw:%d\n", b.joint[RSP].homeOffset, b.joint[RSP].homeOffsetRaw);
+    fprintf(stdout, "%d \t Raw:%d\n", b.joint[RSR].homeOffset, b.joint[RSR].homeOffsetRaw);
     
 
        // initialize control channel

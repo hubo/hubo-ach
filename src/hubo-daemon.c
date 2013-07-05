@@ -228,7 +228,7 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h,
                         hubo_board_param_t *b, struct can_frame *f, int send );
 void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
                          hubo_state_t *s, struct can_frame *f );
-int decodeParamFrame(hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
+uint64_t decodeParamFrame(int jnt, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 
@@ -2444,57 +2444,71 @@ void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
 void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: Remove hubo_d_param_t
                         hubo_board_param_t *b, struct can_frame *f, int send )
 {
+    double giveUp = 1;
+    if( flushCan( hubo_socket[h->joint[jnt].can],
+            HUBO_CAN_TIMEOUT_DEFAULT, giveUp ) > 0 )
+    {
+        fprintf(stderr, "Could not flush the CAN within %f sec!"
+                        "\n -- We will not read the parameters for joint %d\n",
+                        giveUp, jnt);
+        return;
+    }
+
+    fprintf(stdout, "Successfully flushed %d. We will attempt to read its parameters\n", jnt);
+
     int offset = 0;
     if(h->joint[jnt].motNo >= 3)
         offset = 5;
 
+    uint64_t bytes = 0;
+
     // TODO: Make a loop here instead of this stupidity
     fGetBoardParamA( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 1);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    bytes += decodeParamFrame(jnt, b, h, f, 1);
 
     fGetBoardParamB( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 2);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    bytes += decodeParamFrame(jnt, b, h, f, 2);
 
     fGetBoardParamC( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 3);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    bytes += decodeParamFrame(jnt, b, h, f, 3);
 
     fGetBoardParamD( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 4);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    bytes += decodeParamFrame(jnt, b, h, f, 4);
 
     fGetBoardParamE( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 5);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    bytes += decodeParamFrame(jnt, b, h, f, 5);
 
     fGetBoardParamF( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 6);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    bytes += decodeParamFrame(jnt, b, h, f, 6);
 
     // Note: These next three are redundant because they are params that are
     // shared among all the joints on a board
     fGetBoardParamG( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 7);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    decodeParamFrame(jnt, b, h, f, 7);
 
     fGetBoardParamH( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 8);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    decodeParamFrame(jnt, b, h, f, 8);
 
     fGetBoardParamI( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeParamFrame(b, h, f, 9);
+    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    decodeParamFrame(jnt, b, h, f, 9);
 
     b->joint[jnt].homeOffset   = enc2rad(jnt, b->joint[jnt].homeOffsetRaw, h);
     b->joint[jnt].searchLimit  = enc2rad(jnt, b->joint[jnt].searchLimitRaw, h);
@@ -2508,17 +2522,20 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     b->joint[jnt].jamTime      = 0.1*b->joint[jnt].jamTimeRaw;
     b->joint[jnt].pwmSaturationTime = 0.1*b->joint[jnt].pwmSaturationTimeRaw;
 
+    if(bytes&0xFF != 0)
+        fprintf(stdout, "Failed to read frames for joint %d correctly!\n", jnt);
+
     if(send==1)
         ach_put(&chan_hubo_board_param, b, sizeof(*b));
 }
 
-int decodeParamFrame(hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type)
+uint64_t decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type)
 {
     int fs = (int)f->can_id;
 
     if( (fs >= H_CURRENT_BASE_RXDF) && (fs < H_CURRENT_MAX_RXDF) ) 
     {
-        int num = fs - H_CURRENT_BASE_RXDF;
+//        int num = fs - H_CURRENT_BASE_RXDF;
         switch( type )
         {
             case 1:
@@ -2575,11 +2592,20 @@ int decodeParamFrame(hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f
                 b->joint[num].maxError      = f->data[4] | (f->data[5]<<8);
                 b->joint[num].maxEncError   = f->data[6] | (f->data[7]<<8);
                 break;
-        }       
+        }
     }
     else
+    {
         fprintf(stderr, "Missed a parameter frame! Trust nothing in hubo_board_param!\n");
+        return 0;
+    }
 
+    uint64_t return_val=0;
+    int i=0;
+    for(i=0; i<8; i++)
+        return_val += f->data[i];
+
+    return return_val;
 }
 
 void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
