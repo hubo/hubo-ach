@@ -6,9 +6,9 @@
 
 #name      motNo    refEnc   drive    driven   harm       enc        dir      jmc          active   can      numMot   zeroed
 WST        0        0        10       25       100        4000       1        EJMC3        1        0        1        0
-NKY        0        0        1        1        100        128        1        EJMC2        0        1        3        0
-NK1        1        0        1        1        100        128        1        EJMC2        0        1        3        0
-NK2        2        0        1        1        100        128        1        EJMC2        0        1        3        0
+NKY        0        0        1        1        100        128        1        EJMC2        1        1        3        0
+NK1        1        0        1        1        100        128        1        EJMC2        1        1        3        0
+NK2        2        0        1        1        100        128        1        EJMC2        1        1        3        0
 NKP        2        0        1        1        100        128        1        EJMC2        0        1        3        0
 LSP        0        0        10       25       100        4000       1        JMC10        1        1        2        0
 LSR        1        0        1        1        100        4000       1        JMC10        1        1        2        0

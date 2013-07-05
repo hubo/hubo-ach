@@ -861,6 +861,13 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
     }
     else if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
       if ( (NKY == jnt) | (NK1 == jnt) | (NK2 == jnt) ){
+  
+// Dan 2013-07-05
+// from core.cpp add from line 13206
+
+
+
+
          int16_t jntTmp = (int16_t)s->joint[NKY].ref;
          f->data[0] =  jntTmp      & 0x00FF;
          f->data[1] = (jntTmp>>8)  & 0x00FF;
