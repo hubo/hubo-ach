@@ -121,9 +121,108 @@ int setSensorDefaults( hubo_param_t *h ) {
 
 	return 0;	// return without errors
 }
+/*
+int loadHomingParams( const char *file_name )
+{
+    FILE *ptr_file;
 
+    if( !(ptr_file=fopen(file_name, "r")) )
+    {
+        fprintf(stderr, "Unable to locate %s\n"
+                " -- Provide the full path and check if the file exists!\n", file_name);
+        return -1;
+    }
 
+    hubo_board_joint_param_t tempJP;
+    memset(&tempJP, 0, sizeof(tempJP));
 
+	char buff[1024];
+	// read in each non-commented line of the config file corresponding to each joint
+	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
+
+		// set first occurrence of comment character, '#' to the
+		// null character, '\0'.
+		charPointer = strchr(buff, '#');
+		if (NULL != charPointer) {
+			*charPointer = '\0';
+		}
+
+		// check if a line is longer than the buffer, 'buff', and return -1 if so.
+		if ( strlen(buff) == sizeof(buff)-1 ) {
+			fprintf(stderr, "Hubo-Parser: Line length overflow in %s", file_name);
+			return -1; // parsing failed
+		}
+
+		// read in the buffered line from fgets, matching the following pattern
+		// to get all the parameters for the joint on this line.
+		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhd%s%hhu%hhu%hhu%hhu",
+			tp.name,
+			&tp.motNo,
+			&tp.refEnc,
+			&tp.drive,
+			&tp.driven,
+			&tp.harmonic,
+			&tp.enc,
+			&tp.dir,
+			jmc,
+			&s.active,
+			&tp.can,
+			&tp.numMot,
+			&s.zeroed) ) // check that all values are found
+		{
+
+			// check to make sure jointName is valid
+			size_t jntIndex;
+			for (jntIndex = 0; jntIndex < HUBO_JOINT_COUNT; jntIndex++) {
+				if (0 == strcmp(tp.name, jointNames[jntIndex])) {
+					i = jntIndex;
+					jntNameCount = 1;
+					break;
+				}
+			}
+
+			// if joint name is invalid print error and return -1
+			if (jntNameCount != 1) {
+				fprintf(stderr, "joint name '%s' is incorrect\n", tp.name);
+				return -1; // parsing failed
+			}
+
+			// check to make sure jmc name is valid
+			size_t y;
+			for(y = 0; y < sizeof(jmcNames)/sizeof(jmcNames[0]); y++) {
+				if (0 == strcmp(jmc, jmcNames[y])) {
+					tp.jmc = jmcNumbers[y];
+					jmcNameCount = 1;
+					break;
+				}
+			}
+
+			// if jmc name is invalid, print error and return -1
+			if (jmcNameCount != 1) {
+				fprintf(stderr, "jmc name '%s' is incorrect\n", jmc);
+				return -1; // parsing failed
+			}
+
+			tp.jntNo = i;		// define i to be the joint number
+			tp2.joints[tp.motNo] = i;	// set jmc driver number	
+
+			// copy contents (all member values) of tp into H_param.joint 
+			// substruct which will populate its member variables
+			memcpy(&(H_param->joint[i]), &tp, sizeof(tp));
+			// copy contents of tp.jmc into H_param structs driver substruct
+			memcpy(&(H_param->driver[tp.jmc].joints[tp.motNo]), &tp2.joints[tp.motNo], sizeof(tp2.joints[tp.motNo]));
+			// copy contents of s into H_state (initializing active and zeroed members)
+			memcpy(&(H_state->joint[i]), &s, sizeof(s));
+		}
+	}
+
+	fclose(ptr_file);	// close file stream
+
+	return 0;	// return without errors
+    
+
+}
+*/
 int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);

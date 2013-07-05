@@ -299,9 +299,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
-    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
-    if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
-    hubo_assert( sizeof(H_state) == fs, __LINE__ );
+//    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+//    if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
+//    hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
 
     /* Create CAN Frame */
@@ -343,7 +343,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     /* put back on channels */
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
     ach_put(&chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd));
-    ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
+//    ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
 
 
 /* period */
@@ -2511,7 +2511,6 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     decodeParamFrame(jnt, b, h, f, 9);
 
     b->joint[jnt].homeOffset   = enc2rad(jnt, b->joint[jnt].homeOffsetRaw, h);
-//    b->joint[jnt].searchLimit  = enc2rad(jnt, b->joint[jnt].searchLimitRaw, h);
     b->joint[jnt].maxHomeAccel = enc2rad(jnt, b->joint[jnt].maxHomeAccelRaw/100, h);
     b->joint[jnt].maxHomeLimitVel = enc2rad(jnt, b->joint[jnt].maxHomeLimitVelRaw, h);
     b->joint[jnt].maxHomeOffsetVel = enc2rad(jnt, b->joint[jnt].maxHomeOffsetVelRaw, h);
@@ -3266,7 +3265,7 @@ int main(int argc, char **argv) {
     openAllCAN( vflag );
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
     ach_put(&chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd));
-    ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
+//    ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
     ach_put(&chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
 
     // run hubo main loop
