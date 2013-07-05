@@ -228,7 +228,7 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h,
                         hubo_board_param_t *b, struct can_frame *f, int send );
 void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
                          hubo_state_t *s, struct can_frame *f );
-uint64_t decodeParamFrame(int jnt, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
+char decodeParamFrame(int jnt, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 
@@ -1534,7 +1534,7 @@ void fSetHomeSearchParams(int jnt, hubo_param_t *h, struct can_frame *f, int lim
     f->can_id    = CMD_TXDF;
     
     f->data[0]    = getJMC(h,jnt);
-    f->data[1]    = (uint8_t)(H_SET_HOME_PARAM + h->joint[jnt].motNo); // TODO: Find out if +1 is correct
+    f->data[1]    = (uint8_t)(H_SET_HOME_PARAM + h->joint[jnt].motNo);
     f->data[2]    = (uint8_t)limit;
     f->data[3]    = (uint8_t)dir;
     f->data[4]    = int_to_bytes(offset,1);
@@ -2454,65 +2454,65 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
         return;
     }
 
-    fprintf(stdout, "Successfully flushed %d. We will attempt to read its parameters\n", jnt);
-
     int offset = 0;
     if(h->joint[jnt].motNo >= 3)
         offset = 5;
 
-    uint64_t bytes = 0;
+    char bytes = 0;
+
+    double timeoutScale = 1000;
 
     // TODO: Make a loop here instead of this stupidity
     fGetBoardParamA( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 1);
 
     fGetBoardParamB( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 2);
 
     fGetBoardParamC( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 3);
 
     fGetBoardParamD( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 4);
 
     fGetBoardParamE( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 5);
 
     fGetBoardParamF( jnt, offset, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 6);
 
     // Note: These next three are redundant because they are params that are
     // shared among all the joints on a board
     fGetBoardParamG( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 7);
 
     fGetBoardParamH( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 8);
 
     fGetBoardParamI( jnt, h, f );
     sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, 10*HUBO_CAN_TIMEOUT_DEFAULT);
+    readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 9);
 
     b->joint[jnt].homeOffset   = enc2rad(jnt, b->joint[jnt].homeOffsetRaw, h);
-    b->joint[jnt].searchLimit  = enc2rad(jnt, b->joint[jnt].searchLimitRaw, h);
-    b->joint[jnt].maxHomeAccel = enc2rad(jnt, b->joint[jnt].maxHomeAccelRaw, h);
+//    b->joint[jnt].searchLimit  = enc2rad(jnt, b->joint[jnt].searchLimitRaw, h);
+    b->joint[jnt].maxHomeAccel = enc2rad(jnt, b->joint[jnt].maxHomeAccelRaw/100, h);
     b->joint[jnt].maxHomeLimitVel = enc2rad(jnt, b->joint[jnt].maxHomeLimitVelRaw, h);
     b->joint[jnt].maxHomeOffsetVel = enc2rad(jnt, b->joint[jnt].maxHomeOffsetVelRaw, h);
     b->joint[jnt].lowerLimit   = enc2rad(jnt, b->joint[jnt].lowerLimitRaw, h);
@@ -2522,14 +2522,15 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     b->joint[jnt].jamTime      = 0.1*b->joint[jnt].jamTimeRaw;
     b->joint[jnt].pwmSaturationTime = 0.1*b->joint[jnt].pwmSaturationTimeRaw;
 
-    if(bytes&0xFF != 0)
-        fprintf(stdout, "Failed to read frames for joint %d correctly!\n", jnt);
+    //FIXME: Figure out how the parity checking is actually supposed to work
+//    if(bytes&0xFF != 0)
+//        fprintf(stdout, "Failed to read frames for joint %d correctly!\n", jnt);
 
     if(send==1)
         ach_put(&chan_hubo_board_param, b, sizeof(*b));
 }
 
-uint64_t decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type)
+char decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type)
 {
     int fs = (int)f->can_id;
 
@@ -2543,24 +2544,27 @@ uint64_t decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struc
                 b->joint[num].Ki                = f->data[2] | (f->data[3]<<8);
                 b->joint[num].Kd                = f->data[4] | (f->data[5]<<8);
                 b->joint[num].encoderResolution = f->data[6] | ((f->data[7]&0x3F)<<8);
-                b->joint[num].motorDirection    = (f->data[7]>>6) & 0x01;
-                b->joint[num].autoScale         = (f->data[7]>>7) & 0x01;
+                b->joint[num].autoScale         = (f->data[7]>>6) & 0x01;
+                b->joint[num].motorDirection    = (f->data[7]>>7) & 0x01;
+//                b->joint[num].motorDirection    = (f->data[7]>>6) & 0x01;
+//                b->joint[num].autoScale         = (f->data[7]>>7) & 0x01;
                 break;
             case 2:
                 b->joint[num].deadZone          = f->data[0] | (f->data[1]<<8);
                 b->joint[num].searchDirection   = f->data[2];
                 b->joint[num].searchMode        = f->data[3];
-                b->joint[num].searchLimitRaw    = f->data[4] | (f->data[5]<<8);
+//                b->joint[num].searchLimitRaw    = f->data[4] | (f->data[5]<<8);
+                b->joint[num].searchLimit       = f->data[4] | (f->data[5]<<8);
                 b->joint[num].homeOffsetRaw     = f->data[6] | (f->data[7]<<8);
                 break;
             case 3:
-                b->joint[num].homeOffsetRaw     = b->joint[num].homeOffsetRaw | f->data[0] | (f->data[1]<<8);
+                b->joint[num].homeOffsetRaw     = b->joint[num].homeOffsetRaw | (f->data[0]<<16) | (f->data[1]<<24);
                 b->joint[num].lowerLimitRaw     = f->data[2] | (f->data[3]<<8)
                                             | (f->data[4]<<16) | (f->data[5]<<24);
                 b->joint[num].upperLimitRaw     = f->data[6] | (f->data[7]<<8);
                 break;
             case 4:
-                b->joint[num].upperLimitRaw     = b->joint[num].upperLimitRaw | f->data[0] | (f->data[1]<<8);
+                b->joint[num].upperLimitRaw     = b->joint[num].upperLimitRaw | (f->data[0]<<16) | (f->data[1]<<24);
                 b->joint[num].maxAccelRaw       = f->data[2] | (f->data[3]<<8);
                 b->joint[num].maxVelRaw         = f->data[4] | (f->data[5]<<8);
                 b->joint[num].maxPWM            = f->data[6] | (f->data[7]<<8);
@@ -2580,10 +2584,11 @@ uint64_t decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struc
                 b->joint[num].maxHomeAccelRaw = f->data[6] | (f->data[7]<<8);
                 break;
             case 8:
-                b->joint[num].maxHomeLimitVelRaw = f->data[0] | (f->data[1]<<8);
-                b->joint[num].maxHomeOffsetVelRaw= f->data[2] | (f->data[3]<<8);
-                b->joint[num].jamTimeRaw         = f->data[4] | (f->data[5]<<8);
-                b->joint[num].pwmSaturationTimeRaw=f->data[6] | (f->data[7]<<8);
+                b->joint[num].maxHomeLimitVelRaw   = f->data[0] | (f->data[1]<<8);
+                b->joint[num].maxHomeOffsetVelRaw  = f->data[2] | (f->data[3]<<8);
+                // FIXME: Jam time seems to disagree with Hubo-i. Find out which is correct.
+                b->joint[num].jamTimeRaw           = f->data[4] | (f->data[5]<<8);
+                b->joint[num].pwmSaturationTimeRaw = f->data[6] | (f->data[7]<<8);
                 break;
             case 9:
                 b->joint[num].pwmDutyLimit  = f->data[0];
@@ -2596,14 +2601,17 @@ uint64_t decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struc
     }
     else
     {
-        fprintf(stderr, "Missed a parameter frame! Trust nothing in hubo_board_param!\n");
+        fprintf(stderr, "Missed a parameter frame for %d:%d! Trust nothing in hubo_board_param!\n", num, type);
         return 0;
     }
 
-    uint64_t return_val=0;
+    // FIXME: Figure out how the parity checking is actually supposed to work
+    char return_val=0;
+/*
     int i=0;
     for(i=0; i<8; i++)
         return_val += f->data[i];
+*/
 
     return return_val;
 }

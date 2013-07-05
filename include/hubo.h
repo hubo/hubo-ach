@@ -230,8 +230,9 @@ typedef struct hubo_board_joint_param {
     double homeOffset;
     uint8_t searchDirection;
     uint8_t searchMode;
-    uint16_t searchLimitRaw;
-    double searchLimit;
+    uint16_t searchLimit;
+//    uint16_t searchLimitRaw;
+//    double searchLimit;
 
     uint16_t maxHomeAccelRaw;
     double maxHomeAccel;
