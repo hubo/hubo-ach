@@ -303,6 +303,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 //    if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
 //    hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
+    // set joint parameters for Hubo
+    setJointParams(H_param, &H_state);
+    setSensorDefaults(H_param);
 
     /* Create CAN Frame */
     struct can_frame frame;
@@ -3234,9 +3237,6 @@ int main(int argc, char **argv) {
     memset( &H_param, 0, sizeof(H_param));
     memset( &H_virtual, 0, sizeof(H_virtual));
 
-    // set joint parameters for Hubo
-    setJointParams(&H_param, &H_state);
-    setSensorDefaults(&H_param);
 
     // open hubo reference
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);

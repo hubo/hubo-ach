@@ -124,8 +124,8 @@ int main() {
 	usleep(250000);
 
 	// set default values for Hubo
-	setJointParams(&H_param, &H_state);
-        setSensorDefaults( &H_param );
+    setJointParams(&H_param, &H_state);
+    setSensorDefaults( &H_param );
 
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
@@ -137,6 +137,8 @@ int main() {
     r = ach_open(&chan_params, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
     hubo_board_param_t b;
     ach_get(&chan_params, &b, sizeof(b), &fs, NULL, ACH_O_WAIT);
+
+/*
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
 //    for(int i=0; i<=WST; i++)
     {
@@ -177,7 +179,7 @@ int main() {
         std::cout << "\n" << std::endl;
 
     }
-
+*/
     char *buf;
     rl_attempted_completion_function = my_completion;
     printf("\n");

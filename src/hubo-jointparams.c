@@ -28,6 +28,7 @@
 //set number of parameters per joint in the parameters file
 #define	NUM_OF_JOINT_PARAMETERS 13
 #define NUM_OF_SENSOR_PARAMETERS 7
+#define NUM_OF_HOME_PARAMETERS 7
 
 //set file location
 static char *jointFileLocation = "/etc/" PACKAGE_NAME "/joint.table";
@@ -121,10 +122,14 @@ int setSensorDefaults( hubo_param_t *h ) {
 
 	return 0;	// return without errors
 }
-/*
+
 int loadHomingParams( const char *file_name )
 {
     FILE *ptr_file;
+    
+    ach_channel_t param_chan;
+    ach_result_t r = ach_open(&param_chan, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
+    if( ACH_OK == r )
 
     if( !(ptr_file=fopen(file_name, "r")) )
     {
@@ -153,22 +158,17 @@ int loadHomingParams( const char *file_name )
 			return -1; // parsing failed
 		}
 
+        char tempName[5];
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhd%s%hhu%hhu%hhu%hhu",
-			tp.name,
-			&tp.motNo,
-			&tp.refEnc,
-			&tp.drive,
-			&tp.driven,
-			&tp.harmonic,
-			&tp.enc,
-			&tp.dir,
-			jmc,
-			&s.active,
-			&tp.can,
-			&tp.numMot,
-			&s.zeroed) ) // check that all values are found
+		if (NUM_OF_HOME_PARAMETERS == sscanf(buff, "%s%f%f%f%hhu%hhu%hu%hu",
+			tempName,
+			&tempJP.homeOffset,
+            &tempJP.lowerLimit,
+            &tempJP.upperLimit,
+            &tempJP.searchDirection,
+            &tempJP.searchMode,
+            &tempJP.searchLimit) ) // check that all values are found
 		{
 
 			// check to make sure jointName is valid
@@ -183,36 +183,12 @@ int loadHomingParams( const char *file_name )
 
 			// if joint name is invalid print error and return -1
 			if (jntNameCount != 1) {
-				fprintf(stderr, "joint name '%s' is incorrect\n", tp.name);
+				fprintf(stderr, "Joint name '%s' is incorrect\n", tp.name);
 				return -1; // parsing failed
 			}
-
-			// check to make sure jmc name is valid
-			size_t y;
-			for(y = 0; y < sizeof(jmcNames)/sizeof(jmcNames[0]); y++) {
-				if (0 == strcmp(jmc, jmcNames[y])) {
-					tp.jmc = jmcNumbers[y];
-					jmcNameCount = 1;
-					break;
-				}
-			}
-
-			// if jmc name is invalid, print error and return -1
-			if (jmcNameCount != 1) {
-				fprintf(stderr, "jmc name '%s' is incorrect\n", jmc);
-				return -1; // parsing failed
-			}
-
-			tp.jntNo = i;		// define i to be the joint number
-			tp2.joints[tp.motNo] = i;	// set jmc driver number	
-
-			// copy contents (all member values) of tp into H_param.joint 
-			// substruct which will populate its member variables
-			memcpy(&(H_param->joint[i]), &tp, sizeof(tp));
-			// copy contents of tp.jmc into H_param structs driver substruct
-			memcpy(&(H_param->driver[tp.jmc].joints[tp.motNo]), &tp2.joints[tp.motNo], sizeof(tp2.joints[tp.motNo]));
-			// copy contents of s into H_state (initializing active and zeroed members)
-			memcpy(&(H_state->joint[i]), &s, sizeof(s));
+            
+            
+            
 		}
 	}
 
@@ -222,7 +198,7 @@ int loadHomingParams( const char *file_name )
     
 
 }
-*/
+
 int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
