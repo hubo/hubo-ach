@@ -141,9 +141,15 @@ int main() {
     
     H_cmd.type = D_SET_HOME_PARAMS_RAW;
     H_cmd.joint = RSP;
+//    H_cmd.iValues[0] = 15;
     H_cmd.iValues[0] = 20;
+//    H_cmd.iValues[1] = 1;
     H_cmd.iValues[1] = 0;
-    H_cmd.iValues[2] = 12345;
+//    H_cmd.iValues[2] = 12345;
+    H_cmd.iValues[2] = 10000;
+
+    ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+
 //    H_cmd.iValues[2] = 10000;
 
 /*
