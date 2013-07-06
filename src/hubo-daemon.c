@@ -2465,10 +2465,20 @@ void fGetBoardParamI( int jnt, hubo_param_t *h, struct can_frame *f )
 void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
                          hubo_state_t *s, struct can_frame *f )
 {
+    struct timespec t;
+    clock_gettime( CLOCK_MONOTONIC, &t);
     int i=0;
     for(i=0; i<HUBO_JOINT_COUNT; i++)
+    {
         if(s->joint[i].active == 1)
             hGetBoardParams( i, 0, h, b, f, 0 );
+
+        t.tv_nsec+=NSEC_PER_SEC*0.001;
+        tsnorm(&t);
+
+        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+    }
+
 
     ach_put(&chan_hubo_board_param, b, sizeof(*b));
 }
