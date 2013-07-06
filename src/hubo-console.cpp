@@ -129,7 +129,7 @@ int main() {
 
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_state) == fs );
 
     //FIXME: Remove this test junk
@@ -144,7 +144,7 @@ int main() {
     H_cmd.iValues[0] = 20;
     H_cmd.iValues[1] = 0;
     H_cmd.iValues[2] = 12345;
-//    H_cmd.iValues[2] = 13359;
+//    H_cmd.iValues[2] = 10000;
 
 /*
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
