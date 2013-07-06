@@ -138,6 +138,14 @@ int main() {
     hubo_board_param_t b;
     ach_get(&chan_params, &b, sizeof(b), &fs, NULL, ACH_O_WAIT);
 
+    
+    H_cmd.type = D_SET_HOME_PARAMS_RAW;
+    H_cmd.joint = RSP;
+    H_cmd.iValues[0] = 20;
+    H_cmd.iValues[1] = 0;
+    H_cmd.iValues[2] = 12345;
+//    H_cmd.iValues[2] = 13359;
+
 /*
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
 //    for(int i=0; i<=WST; i++)

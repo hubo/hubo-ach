@@ -126,13 +126,18 @@ int setSensorDefaults( hubo_param_t *h ) {
 int loadHomingParams( const char *file_name )
 {
     FILE *ptr_file;
-    
+
+/*    
     ach_channel_t param_chan;
-    ach_result_t r = ach_open(&param_chan, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
+    ach_status_t r = ach_open(&param_chan, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
+*/
+    ach_channel_t cmd_chan;
+    ach_status_t r = ach_open(&cmd_chan, HUBO_CHAN_BOARD_CMD_NAME, NULL);
+
 
     if( ACH_OK != r )
     {
-        fprintf(stderr, "Failed to open %s!", HUBO_CHAN_BOARD_PARAM_NAME);
+        fprintf(stderr, "Failed to open %s!", HUBO_CHAN_BOARD_CMD_NAME);
         return -1;
     }
 
@@ -148,6 +153,7 @@ int loadHomingParams( const char *file_name )
     memset(&tempJP, 0, sizeof(tempJP));
     memset(&cmd, 0, sizeof(cmd));
 
+    char* charPointer;
 	char buff[1024];
 	// read in each non-commented line of the config file corresponding to each joint
 	while (fgets(buff, sizeof(buff), ptr_file) != NULL) {
@@ -168,7 +174,7 @@ int loadHomingParams( const char *file_name )
         char tempName[5];
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_HOME_PARAMETERS == sscanf(buff, "%s%f%f%f%hhu%hhu%hu",
+		if (NUM_OF_HOME_PARAMETERS == sscanf(buff, "%s%lf%lf%lf%hhu%hu",
 			tempName,
 			&tempJP.homeOffset,
             &tempJP.lowerLimit,
@@ -178,9 +184,11 @@ int loadHomingParams( const char *file_name )
 		{
 
 			// check to make sure jointName is valid
+            size_t i;
+            size_t jntNameCount = 0;
 			size_t jntIndex;
 			for (jntIndex = 0; jntIndex < HUBO_JOINT_COUNT; jntIndex++) {
-				if (0 == strcmp(tp.name, jointNames[jntIndex])) {
+				if (0 == strcmp(tempName, jointNames[jntIndex])) {
 					i = jntIndex;
 					jntNameCount = 1;
 					break;
@@ -189,7 +197,7 @@ int loadHomingParams( const char *file_name )
 
 			// if joint name is invalid print error and return -1
 			if (jntNameCount != 1) {
-				fprintf(stderr, "Joint name '%s' is incorrect\n", tp.name);
+				fprintf(stderr, "Joint name '%s' is incorrect\n", tempName);
 				return -1; // parsing failed
 			}
             

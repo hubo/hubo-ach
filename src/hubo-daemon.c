@@ -193,6 +193,7 @@ void fSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, int sound);
 void hSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone);
 void fSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone);
 void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f );
+void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f );
 void fSetHomeSearchParams(int jnt, hubo_param_t *h, struct can_frame *f, int limit,
                 unsigned int dir, int32_t offset);
 void hSetEncoderResolution(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
@@ -802,7 +803,7 @@ void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
 int getEncRef(int jnt, hubo_state_t *s , hubo_param_t *h) {
     // set encoder from reference
-    return ref2enc( jnt, s->joint[jnt].ref, s, h );
+    return ref2enc( jnt, s->joint[jnt].ref, h );
 }
 
 int ref2enc( int jnt, double ref, hubo_param_t *h )
@@ -1533,6 +1534,29 @@ void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_fram
     offset = (int32_t)ref2enc(c->joint, c->dValues[0], h);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
     
+    sendCan(getSocket(h,c->joint),f);
+}
+
+void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f )
+{
+    int32_t offset = (int32_t)(c->iValues[2]);
+
+    if( c->iValues[1] < 0 )
+    {
+        fprintf(stderr, "Raw search direction for %s should be 0 or 1 -- not negative!\n"
+                        " -- Assuming you want 0 (Clockwise)", jointNames[c->joint]);
+        c->iValues[1] = 0;
+    }
+    if( c->iValues[1] > 1 )
+    {
+        fprintf(stderr, "Raw search direction for %s should be 0 or 1 -- not %d!\n"
+                        " -- Assuming you want 1 (Counter-Clockwise)", jointNames[c->joint], c->iValues[1] );
+        c->iValues[1] = 1;
+    }
+    uint8_t dir = (uint8_t)c->iValues[1];
+
+    fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
+
     sendCan(getSocket(h,c->joint),f);
 }
 
@@ -2711,7 +2735,10 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 // Not tested DML 2013-02-07                    hSetDeadZone( c->joint, h, f, c->iValues[0] );
                     break;
                 case D_SET_HOME_PARAMS:
-// Not tested DML 2013-02-07                    hSetHomeSearchParams( c, h, f );
+                    hSetHomeSearchParams( c, h, f );
+                    break;
+                case D_SET_HOME_PARAMS_RAW:
+                    hSetHomeSearchParamsRaw( c, h, f );
                     break;
                 case D_SET_ENC_RESOLUTION:
 // Not tested DML 2013-02-07                    hSetEncoderResolution( c, h, f );

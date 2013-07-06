@@ -213,13 +213,22 @@ typedef enum {
 					iValues: 	[0] = Deadzone Value [0,255]
 					dValues: N/A	*/	
 	
-	D_SET_HOME_PARAMS	,///> Set the home search parameters
+	D_SET_HOME_PARAMS	,///> Set the home search parameters using radians
 			/*		joint: Target joint number
 					param: 		[0] = Search direction
 								D_CLOCKWISE or D_COUNTERCLOCKWISE
                     iValues:    [0] = Search limit
                                   (maximum number of spins)
 					dValues:    [0] = Offset from index position*/	
+	D_SET_HOME_PARAMS_RAW	,///> Set the home search parameters using encoder index
+			/*		joint: Target joint number
+					param: 		N/A
+                    iValues:    [0] = Search limit
+                                  (maximum number of spins)
+                                [1] = Search Direction
+                                  (0:Clockwise, 1:Counter-Clockwise)
+                                [2] = Offset from index position
+					dValues:    N/A */	
 	D_SET_ENC_RESOLUTION	,///> Set the encoder resolution
 			/*		joint: Target joint number
 					param: 		[0] = Motor direction
