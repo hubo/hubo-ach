@@ -129,7 +129,12 @@ int loadHomingParams( const char *file_name )
     
     ach_channel_t param_chan;
     ach_result_t r = ach_open(&param_chan, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
-    if( ACH_OK == r )
+
+    if( ACH_OK != r )
+    {
+        fprintf(stderr, "Failed to open %s!", HUBO_CHAN_BOARD_PARAM_NAME);
+        return -1;
+    }
 
     if( !(ptr_file=fopen(file_name, "r")) )
     {
@@ -139,7 +144,9 @@ int loadHomingParams( const char *file_name )
     }
 
     hubo_board_joint_param_t tempJP;
+    hubo_board_cmd_t cmd;
     memset(&tempJP, 0, sizeof(tempJP));
+    memset(&cmd, 0, sizeof(cmd));
 
 	char buff[1024];
 	// read in each non-commented line of the config file corresponding to each joint
@@ -161,13 +168,12 @@ int loadHomingParams( const char *file_name )
         char tempName[5];
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_HOME_PARAMETERS == sscanf(buff, "%s%f%f%f%hhu%hhu%hu%hu",
+		if (NUM_OF_HOME_PARAMETERS == sscanf(buff, "%s%f%f%f%hhu%hhu%hu",
 			tempName,
 			&tempJP.homeOffset,
             &tempJP.lowerLimit,
             &tempJP.upperLimit,
             &tempJP.searchDirection,
-            &tempJP.searchMode,
             &tempJP.searchLimit) ) // check that all values are found
 		{
 

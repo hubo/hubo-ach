@@ -217,10 +217,9 @@ typedef enum {
 			/*		joint: Target joint number
 					param: 		[0] = Search direction
 								D_CLOCKWISE or D_COUNTERCLOCKWISE
-					iValues:	[0] = Search limit
-							      (maximum number of spins)
-							[1] = Offset from index position
-					dValues: N/A	*/	
+                    iValues:    [0] = Search limit
+                                  (maximum number of spins)
+					dValues:    [0] = Offset from index position*/	
 	D_SET_ENC_RESOLUTION	,///> Set the encoder resolution
 			/*		joint: Target joint number
 					param: 		[0] = Motor direction
@@ -243,8 +242,8 @@ typedef enum {
 									D_UPDATE or D_IGNORE
 							[1] = Should the lower limit be enabled?
 								D_ENABLE or D_DISABLE
-					iValues:	[0] = Lower position limit value
-					dValues: N/A	*/	
+					iValues:	N/A
+					dValues:    [0] = Lower position limit value	*/	
 	D_SET_UPP_POS_LIM	,///> Set an upper bound for the position limit
 			/*		joint: Target joint number
 					param:		[0] = Should the new limit value be used
@@ -252,8 +251,8 @@ typedef enum {
 									D_UPDATE or D_IGNORE
 							[1] = Should the upper limit be enabled?
 								D_ENABLE or D_DISABLE
-					iValues:	[0] = Upper position limit value
-					dValues: N/A	*/	
+					iValues:	N/A
+					dValues:    [0] = Upper position limit value	*/	
 	D_SET_HOME_VEL_ACC	,///> Set maximum acceleration/velocity while homing
 			/*		joint: Target joint number
 					param:		[0] = Home Search Mode

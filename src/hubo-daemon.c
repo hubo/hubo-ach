@@ -130,6 +130,7 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 void hGotoLimitAndGoOffset(int jnt, hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
     hubo_state_t *s, struct can_frame *f, int send);
 int getEncRef(int jnt, hubo_state_t *s, hubo_param_t *h);
+int ref2enc( int jnt, double ref, hubo_param_t *h );
 void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f);
 int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, hubo_param_t *h);
@@ -801,9 +802,14 @@ void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
 int getEncRef(int jnt, hubo_state_t *s , hubo_param_t *h) {
     // set encoder from reference
+    return ref2enc( jnt, s->joint[jnt].ref, s, h );
+}
+
+int ref2enc( int jnt, double ref, hubo_param_t *h )
+{
     hubo_joint_param_t *p = &h->joint[jnt];
     return (int32_t)((double)p->driven/(double)p->drive*(double)p->harmonic*
-                (double)p->enc*(double)s->joint[jnt].ref/2.0/M_PI);
+                (double)p->enc*(double)ref/2.0/M_PI);
 }
 
 unsigned long signConvention(long _input) {
@@ -1524,10 +1530,9 @@ void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_fram
             dir = 1; break;
     }
 
-    offset = (int32_t)c->iValues[1];
-
+    offset = (int32_t)ref2enc(c->joint, c->dValues[0], h);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
-
+    
     sendCan(getSocket(h,c->joint),f);
 }
 
