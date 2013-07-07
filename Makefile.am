@@ -30,7 +30,6 @@ huboachconf_DATA = tables/huboplus.joint.table tables/drc-hubo.joint.table table
 hubo_jointparamsdir = /usr/lib
 hubo_jointparams_LTLIBRARIES = libhuboparams.la
 libhuboparams_la_SOURCES = src/hubo-jointparams.c
-#libhuboparams_la_LIBADD = -lm -lc
 libhuboparams_la_LDFLAGS = -module -avoid-version -shared
 
 bin_PROGRAMS = hubo-daemon hubo-console hubo-read #hubo-HomeParams

@@ -235,6 +235,7 @@ int loadHomingParams( const char *file_name )
                 cmd.iValues[2] = (int)(tempJP.homeOffset);
 
                 ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                // Let hubo-daemon cycle before sending the next cmd
                 wait_on_state(&state_chan, 5);
 
                 cmd.type = D_SET_LOW_POS_LIM_RAW;
@@ -244,12 +245,14 @@ int loadHomingParams( const char *file_name )
                 cmd.iValues[2] = 1;
                 
                 ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                // Let hubo-daemon cycle before sending the next cmd
                 wait_on_state(&state_chan, 5);
                 
                 cmd.type = D_SET_UPP_POS_LIM_RAW;
                 cmd.iValues[0] = (int32_t)(tempJP.upperLimit);
                 
                 ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                // Let hubo-daemon cycle before sending the next cmd
                 wait_on_state(&state_chan, 5);
             }
             else if( 0 == strcmp(tempType, "rad") )
@@ -274,6 +277,7 @@ int loadHomingParams( const char *file_name )
                 cmd.iValues[0] = tempJP.searchLimit;
 
                 ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                // Let hubo-daemon cycle before sending the next cmd
                 wait_on_state(&state_chan, 5);
                 
                 cmd.type = D_SET_LOW_POS_LIM;
@@ -283,12 +287,14 @@ int loadHomingParams( const char *file_name )
                 cmd.param[1] = D_ENABLE;
                 
                 ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                // Let hubo-daemon cycle before sending the next cmd
                 wait_on_state(&state_chan, 5);
                 
                 cmd.type = D_SET_UPP_POS_LIM;
                 cmd.dValues[0] = tempJP.upperLimit;
                 
                 ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                // Let hubo-daemon cycle before sending the next cmd
                 wait_on_state(&state_chan, 5);
             }
             else
