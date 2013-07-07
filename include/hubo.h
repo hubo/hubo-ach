@@ -224,6 +224,8 @@ typedef struct hubo_jmc_param {
 
 typedef struct hubo_board_joint_param {
     
+    int confidence;
+
     uint16_t deadZone;
 
     int32_t homeOffsetRaw;
@@ -388,7 +390,7 @@ typedef struct hubo_board_cmd {
 					// Note: This might or might not be used depending on the 
 					// type of message. TODO: Figure out if 8 is sufficient (or excessive)
 
-	int16_t iValues[8];			// Integer values for the message. This may or may not be used
+	int32_t iValues[8];			// Integer values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 10 is sufficient
 	
 	double dValues[8];		// Double values for the message. This may or may not be used

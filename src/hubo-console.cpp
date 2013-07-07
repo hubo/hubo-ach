@@ -138,7 +138,7 @@ int main() {
     hubo_board_param_t b;
     ach_get(&chan_params, &b, sizeof(b), &fs, NULL, ACH_O_WAIT);
 
-    
+/*  
     H_cmd.type = D_SET_HOME_PARAMS_RAW;
     H_cmd.joint = RSP;
 //    H_cmd.iValues[0] = 15;
@@ -149,7 +149,13 @@ int main() {
     H_cmd.iValues[2] = 10000;
 
     ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+*/
 
+//    int result = saveHomingParams( "/home/grey/drc-beta1-HomeParamsTest.table", 0 ); 
+//    std::cout << "Result of homing save: " << result << std::endl;
+
+    int result = loadHomingParams( "/home/grey/drc-beta1-HomeParamsTest.table" );
+    std::cout << "Result of homing load: " << result << std::endl;
 //    H_cmd.iValues[2] = 10000;
 
 /*

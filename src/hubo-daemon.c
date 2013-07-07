@@ -1556,6 +1556,8 @@ void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_f
     }
     uint8_t dir = (uint8_t)c->iValues[1];
 
+    fprintf(stdout, "Setting home parameters:\n"
+                    " -- Joint:%s\tOffset:%d\tDir:%d\tLim:%d\n", jointNames[c->joint], offset, dir, c->iValues[0]);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
 
     sendCan(getSocket(h,c->joint),f);
@@ -1691,6 +1693,8 @@ void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
 
 void hSetLowerPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
+    fprintf(stdout, "Setting lower position limit:\n"
+                    " -- Joint:%s\tLimit:%d\tEnabled:%d\tUpdate:%d\n", jointNames[c->joint], c->iValues[0], c->iValues[2], c->iValues[1]);
     fSetLowerPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
     sendCan(getSocket(h,c->joint),f);
 }
@@ -1744,6 +1748,8 @@ void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
 
 void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 {
+    fprintf(stdout, "Setting upper position limit:\n"
+                    " -- Joint:%s\tLimit:%d\tEnabled:%d\tUpdate:%d\n", jointNames[c->joint], c->iValues[0], c->iValues[2], c->iValues[1]);
     fSetUpperPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
     sendCan(getSocket(h,c->joint),f);
 }
@@ -2548,6 +2554,11 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 6);
 
+    if( bytes > 0 )
+        b->joint[jnt].confidence = 0;
+    else if( bytes == 0 )
+        b->joint[jnt].confidence = 1;
+
     // Note: These next three are redundant because they are params that are
     // shared among all the joints on a board
     fGetBoardParamG( jnt, h, f );
@@ -2656,7 +2667,7 @@ char decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struct ca
     else
     {
         fprintf(stderr, "Missed a parameter frame for %d:%d! Trust nothing in hubo_board_param!\n", num, type);
-        return 0;
+        return 1;
     }
 
     // FIXME: Figure out how the parity checking is actually supposed to work
