@@ -18,6 +18,14 @@ void setPosZeros();
 // See ./include/hubo.h 
 void setConsoleFlags();
 
+// Loads the homing paramaters from a file and commands the hubo-daemon
+// to apply them.
+int loadHomingParams( const char *file_name );
+
+// Saves the current homing parameters to a file.
+// type=0 is for raw encoder units and type=1 is for radians
+int saveHomingParams( const char *file_name, int type );
+
 #ifdef __cplusplus
 }
 #endif
