@@ -342,7 +342,11 @@ typedef enum {
 						D_PARAM_ERROR
 					iValues: N/A
 					dValues: N/A	*/	
-
+    D_GET_BOARD_PARAMS_ALL, ///> Get all of the JMC board parameters
+            /*              joint: N/A
+                            param: N/A
+                            iValues: N/A
+                            dValues: N/A */
         D_COMP_MODE_ON_OFF              ///> turn on/off comp mode
 	
 } hubo_d_cmd_t;

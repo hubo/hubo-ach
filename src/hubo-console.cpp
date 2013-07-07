@@ -129,77 +129,12 @@ int main() {
 
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
+    fprintf(stdout, "Waiting to hear from hubo-daemon... "); fflush(stdout);
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_state) == fs );
+    fprintf(stdout, " Ready!\n");
 
-    //FIXME: Remove this test junk
-    ach_channel_t chan_params;
-    r = ach_open(&chan_params, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
-    hubo_board_param_t b;
-    ach_get(&chan_params, &b, sizeof(b), &fs, NULL, ACH_O_WAIT);
 
-/*  
-    H_cmd.type = D_SET_HOME_PARAMS_RAW;
-    H_cmd.joint = RSP;
-//    H_cmd.iValues[0] = 15;
-    H_cmd.iValues[0] = 20;
-//    H_cmd.iValues[1] = 1;
-    H_cmd.iValues[1] = 0;
-//    H_cmd.iValues[2] = 12345;
-    H_cmd.iValues[2] = 10000;
-
-    ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-*/
-
-//    int result = saveHomingParams( "/home/grey/drc-beta1-HomeParamsTest.table", 0 ); 
-//    std::cout << "Result of homing save: " << result << std::endl;
-
-    int result = loadHomingParams( "/home/grey/drc-beta1-HomeParamsTest.table" );
-    std::cout << "Result of homing load: " << result << std::endl;
-//    H_cmd.iValues[2] = 10000;
-
-/*
-    for(int i=0; i<HUBO_JOINT_COUNT; i++)
-//    for(int i=0; i<=WST; i++)
-    {
-        fprintf(stdout, "================================================\n"
-                        "-------------- Joint %s -----------------------\n", jointNames[i]);
-        std::cout << "Home Offset: ----- " << b.joint[i].homeOffsetRaw << std::endl;
-        std::cout << "S Dir: ----------- " << (int)b.joint[i].searchDirection << std::endl;
-        std::cout << "S Mode: ---------- " << (int)b.joint[i].searchMode << std::endl;
-        std::cout << "S Limit: --------- " << b.joint[i].searchLimit << std::endl;
-        std::cout << "Max Home Acc: ---- " << b.joint[i].maxHomeAccelRaw << std::endl;
-        std::cout << "Max Home L Vel: -- " << b.joint[i].maxHomeLimitVelRaw << std::endl;
-        std::cout << "Max Home Off Vel:- " << b.joint[i].maxHomeOffsetVelRaw << std::endl;
-        std::cout << "Lower Lim: ------- " << b.joint[i].lowerLimitRaw << std::endl;
-        std::cout << "Upper Lim: ------- " << b.joint[i].upperLimitRaw << std::endl;
-        std::cout << "Max Acc: --------- " << b.joint[i].maxAccelRaw << std::endl;
-        std::cout << "Max Vel: --------- " << b.joint[i].maxVelRaw << std::endl;
-        std::cout << "Max PWM: --------- " << b.joint[i].maxPWM << std::endl;
-        std::cout << "Max Cur: --------- " << b.joint[i].maxCurrent << std::endl;
-        std::cout << "Dead Zone: ------- " << b.joint[i].deadZone << std::endl;
-        std::cout << "Kp :-------------- " << b.joint[i].Kp << std::endl;
-        std::cout << "Ki: -------------- " << b.joint[i].Ki << std::endl;
-        std::cout << "Kd: -------------- " << b.joint[i].Kd << std::endl;
-        std::cout << "Kpt: ------------- " << b.joint[i].Kpt << std::endl;
-        std::cout << "Kdt: ------------- " << b.joint[i].Kdt << std::endl;
-        std::cout << "Kft: ------------- " << b.joint[i].Kft << std::endl;
-        std::cout << "Enc Res: --------- " << b.joint[i].encoderResolution << std::endl;
-        std::cout << "Motor Dir: ------- " << (int)b.joint[i].motorDirection << std::endl;
-        std::cout << "Auto Scale: ------ " << (int)b.joint[i].autoScale << std::endl;
-        std::cout << "Can Rate: -------- " << b.joint[i].canRate << std::endl;
-        std::cout << "Board Type: ------ " << (int)b.joint[i].boardType << std::endl;
-        std::cout << "Jam Time: -------- " << b.joint[i].jamTimeRaw << std::endl;
-        std::cout << "PWM Sat Time: ---- " << b.joint[i].pwmSaturationTimeRaw << std::endl;
-        std::cout << "PWM Duty Lim: ---- " << (int)b.joint[i].pwmDutyLimit << std::endl;
-        std::cout << "PWM Duty Jam: ---- " << (int)b.joint[i].pwmDutyJam << std::endl;
-        std::cout << "Max Input Diff: -- " << b.joint[i].maxInputDifference << std::endl;
-        std::cout << "Max Error: ------- " << b.joint[i].maxError << std::endl;
-        std::cout << "Max Enc Error: --- " << b.joint[i].maxEncError << std::endl;
-        std::cout << "\n" << std::endl;
-
-    }
-*/
     char *buf;
     rl_attempted_completion_function = my_completion;
     printf("\n");

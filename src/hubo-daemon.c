@@ -229,8 +229,7 @@ void fGetBoardParamH( int jnt, hubo_param_t *h, struct can_frame *f );
 void fGetBoardParamI( int jnt, hubo_param_t *h, struct can_frame *f );
 void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h,
                         hubo_board_param_t *b, struct can_frame *f, int send );
-void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
-                         hubo_state_t *s, struct can_frame *f );
+void hGetAllBoardParams( hubo_param_t *h, hubo_state_t *s, struct can_frame *f );
 char decodeParamFrame(int jnt, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -287,13 +286,11 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     hubo_board_cmd_t H_cmd;
     hubo_state_t H_state;
     hubo_virtual_t H_virtual;
-    hubo_board_param_t H_board;
     memset( &H_ref,   0, sizeof(H_ref));
     memset( &H_ref_filter, 0, sizeof(H_ref_filter) );
     memset( &H_cmd,  0, sizeof(H_cmd));
     memset( &H_state, 0, sizeof(H_state));
     memset( &H_virtual, 0, sizeof(H_virtual));
-    memset( &H_board, 0, sizeof(H_board));
 
     size_t fs;
     int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -317,7 +314,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     frame.can_dlc = strlen( frame.data );
 
 
-    hGetAllBoardParams( H_param, &H_board, &H_state, &frame );
+    hGetAllBoardParams( H_param, &H_state, &frame );
 
     /* initilization process */
 
@@ -2481,25 +2478,26 @@ void fGetBoardParamI( int jnt, hubo_param_t *h, struct can_frame *f )
     f->can_dlc    = 3;
 }
 
-void hGetAllBoardParams( hubo_param_t *h, hubo_board_param_t *b,
-                         hubo_state_t *s, struct can_frame *f )
+void hGetAllBoardParams( hubo_param_t *h, hubo_state_t *s, struct can_frame *f )
 {
+    hubo_board_param_t b;
+    memset( &b, 0, sizeof(b));
     struct timespec t;
     clock_gettime( CLOCK_MONOTONIC, &t);
     int i=0;
     for(i=0; i<HUBO_JOINT_COUNT; i++)
     {
         if(s->joint[i].active == 1)
-            hGetBoardParams( i, 0, h, b, f, 0 );
+            hGetBoardParams( i, 0, h, &b, f, 0 );
 
-        t.tv_nsec+=NSEC_PER_SEC*0.001;
+        t.tv_nsec+=NSEC_PER_SEC*0.01;
         tsnorm(&t);
 
         clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
     }
 
 
-    ach_put(&chan_hubo_board_param, b, sizeof(*b));
+    ach_put(&chan_hubo_board_param, &b, sizeof(b));
 }
 
 void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: Remove hubo_d_param_t
@@ -2845,6 +2843,9 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
                     break;
                 case D_COMP_MODE_ON_OFF:
                     hSetComplementaryMode(c->joint,h,f,c->param[0]);
+                    break;
+                case D_GET_BOARD_PARAMS_ALL:
+                    hGetAllBoardParams( h, s, f );
                     break;
 //                case D_GET_BOARD_PARAMS:
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
