@@ -373,7 +373,7 @@ int saveHomingParams( const char *file_name, int type )
     size_t i=0
     for(i=0; i<HUBO_JOINT_COUNT; i++)
     {
-        
+        if(state.joint[i].active == 1)
         {
             if( type==0 ) // Raw
             {
