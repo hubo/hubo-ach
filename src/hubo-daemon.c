@@ -203,6 +203,7 @@ void fSetMaxAccVel(int jnt, hubo_param_t *h, struct can_frame *f, int maxAcc, in
 void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetLowerPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit);
 void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
+void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetUpperPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit);
 void hSetHomeAccVel(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
 void fSetHomeAccVel(int jnt, hubo_param_t *h, struct can_frame *f, float mAcc, int mVelS,
@@ -1688,6 +1689,12 @@ void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
     sendCan(getSocket(h,c->joint),f);
 }
 
+void hSetLowerPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
+{
+    fSetLowerPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
+    sendCan(getSocket(h,c->joint),f);
+}
+
 void fSetLowerPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit)
 {
     f->can_id    = CMD_TXDF;
@@ -1732,6 +1739,12 @@ void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
     }
 
     fSetUpperPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
+    sendCan(getSocket(h,c->joint),f);
+}
+
+void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
+{
+    fSetUpperPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
     sendCan(getSocket(h,c->joint),f);
 }
 
@@ -2757,10 +2770,16 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 // Not tested DML 2013-02-07                    hSetMaxAccVel( c->joint, h, f, c->iValues[0], c->iValues[1] );
                     break;
                 case D_SET_LOW_POS_LIM:
-// Not tested DML 2013-02-07                    hSetLowerPosLimit( c, h, f );
+                    hSetLowerPosLimit( c, h, f );
+                    break;
+                case D_SET_LOW_POS_LIM_RAW:
+                    hSetLowerPosLimitRaw( c, h, f );
                     break;
                 case D_SET_UPP_POS_LIM:
-// Not tested DML 2013-02-07                    hSetUpperPosLimit( c, h, f );
+                    hSetUpperPosLimit( c, h, f );
+                    break;
+                case D_SET_UPP_POS_LIM_RAW:
+                    hSetUpperPosLimitRaw( c, h, f );
                     break;
                 case D_SET_HOME_VEL_ACC:
 // Not tested DML 2013-02-07                    hSetHomeAccVel( c, h, f);

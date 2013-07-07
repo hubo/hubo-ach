@@ -5,7 +5,7 @@
 
 
 	Author: M.X. Grey ( mxgrey@gatech.edu )
-	Last updated: 11/16/12
+	Last updated: 07/06/13
 
 
 */
@@ -246,22 +246,43 @@ typedef enum {
 					dValues: N/A	*/	
 	D_SET_LOW_POS_LIM	,///> Set a lower bound for the position limit
 			/*		joint: Target joint number
-					param:		[0] = Should the new limit value be used
+					param:		[0] = Should the new limit value be used now
 								or ignored until rebooting?
 									D_UPDATE or D_IGNORE
 							[1] = Should the lower limit be enabled?
 								D_ENABLE or D_DISABLE
 					iValues:	N/A
-					dValues:    [0] = Lower position limit value	*/	
+					dValues:    [0] = Lower position limit value in radians */	
+	D_SET_LOW_POS_LIM_RAW	,///> Set a lower bound for the position limit
+                             ///> Using encoder units
+			/*		joint: Target joint number
+					param:		N/A
+					iValues:	[0] = Lower position limit value in encoder units
+                                [1] = Should the new limit value be used now
+                                or ignored until rebooting?
+                                    0:Ignore, 1:Update
+                                [2] = Should the lower limit be enabled?
+                                    0:Disabled, 1:Enabled
+					dValues:    N/A	*/	
 	D_SET_UPP_POS_LIM	,///> Set an upper bound for the position limit
 			/*		joint: Target joint number
-					param:		[0] = Should the new limit value be used
-								or ignored until rebooting?
-									D_UPDATE or D_IGNORE
-							[1] = Should the upper limit be enabled?
+					param:      [0] = Should the new limit value be used now
+                                or ignored until rebooting?
+                                    D_UPDATE or D_IGNORE
+                                [1] = Should the upper limit be enabled?
 								D_ENABLE or D_DISABLE
 					iValues:	N/A
-					dValues:    [0] = Upper position limit value	*/	
+					dValues:    [0] = Upper position limit value in radians*/	
+	D_SET_UPP_POS_LIM_RAW	,///> Set an upper bound for the position limit
+			/*		joint: Target joint number
+					param:		N/A
+					iValues:	[0] = Upper position limit value in encoder units
+                                [1] = Should the new limit value be used now
+                                or ignored until rebooting?
+                                    0:Ignore, 1:Update
+                                [2] = Should the upper limit be enabled?
+                                    0:Disabled, 1:Enabled
+					dValues:    N/A */	
 	D_SET_HOME_VEL_ACC	,///> Set maximum acceleration/velocity while homing
 			/*		joint: Target joint number
 					param:		[0] = Home Search Mode

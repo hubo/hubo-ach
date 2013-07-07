@@ -134,7 +134,6 @@ int loadHomingParams( const char *file_name )
     ach_channel_t cmd_chan;
     ach_status_t r = ach_open(&cmd_chan, HUBO_CHAN_BOARD_CMD_NAME, NULL);
 
-
     if( ACH_OK != r )
     {
         fprintf(stderr, "Failed to open %s!", HUBO_CHAN_BOARD_CMD_NAME);
@@ -167,42 +166,110 @@ int loadHomingParams( const char *file_name )
 
 		// check if a line is longer than the buffer, 'buff', and return -1 if so.
 		if ( strlen(buff) == sizeof(buff)-1 ) {
-			fprintf(stderr, "Hubo-Parser: Line length overflow in %s", file_name);
+			fprintf(stderr, "Hubo-Parser: Line length overflow in %s\n"
+                            " -- One of the lines in the file is way too long\n", file_name);
 			return -1; // parsing failed
 		}
 
         char tempName[5];
-		// read in the buffered line from fgets, matching the following pattern
+		char tempType[5];
+        // read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
 		if (NUM_OF_HOME_PARAMETERS == sscanf(buff, "%s%lf%lf%lf%hhu%hu",
-			tempName,
-			&tempJP.homeOffset,
+            tempName,
+            &tempJP.homeOffset,
             &tempJP.lowerLimit,
             &tempJP.upperLimit,
             &tempJP.searchDirection,
-            &tempJP.searchLimit) ) // check that all values are found
-		{
+            &tempJP.searchLimit,
+            tempType) ) // check that all values are found
+        {
 
-			// check to make sure jointName is valid
+            // check to make sure jointName is valid
             size_t i;
             size_t jntNameCount = 0;
-			size_t jntIndex;
-			for (jntIndex = 0; jntIndex < HUBO_JOINT_COUNT; jntIndex++) {
-				if (0 == strcmp(tempName, jointNames[jntIndex])) {
-					i = jntIndex;
-					jntNameCount = 1;
-					break;
-				}
+            size_t jntIndex;
+            for (jntIndex = 0; jntIndex < HUBO_JOINT_COUNT; jntIndex++) {
+                if (0 == strcmp(tempName, jointNames[jntIndex])) {
+                    i = jntIndex;
+                    jntNameCount = 1;
+                    break;
+                }
+            }
+            
+            // if joint name is invalid print error and return -1
+            if (jntNameCount != 1) {
+                fprintf(stderr, "Joint name '%s' is incorrect in file '%s'\n"
+                                " -- We are skipping this line!\n", tempName, file_name);
+                continue;
 			}
+            
+            if( 0 == strcmpi(tempType, "raw") )
+            {
+                cmd.type = D_SET_HOME_PARAMS_RAW;
+                cmd.joint = i;
+                cmd.iValues[0] = tempJC.searchLimit;
+                cmd.iValues[1] = tempJC.searchDirection;
+                cmd.iValues[2] = (int32_t)(tempJC.homeOffset);
+                
+                ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                
+                cmd.type = D_SET_LOW_LIM_RAW;
+                cmd.joint = i;
+                cmd.iValues[0] = (int32_t)(tempJC.lowerLimit);
+                cmd.iValues[1] = 1;
+                cmd.iValues[2] = 1;
+                
+                ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                
+                cmd.type = D_SET_UPP_LIM_RAW;
+                cmd.iValues[0] = (int32_t)(tempJC.upperLimit);
+                
+                ach_put(&cmd_chan, &cmd, sizeof(cmd));
+            }
+            else if( 0 == strcmpi(tempType, "rad") )
+            {
+                cmd.type = D_SET_HOME_PARAMS;
+                cmd.joint = i;
 
-			// if joint name is invalid print error and return -1
-			if (jntNameCount != 1) {
-				fprintf(stderr, "Joint name '%s' is incorrect\n", tempName);
-				return -1; // parsing failed
-			}
-            
-            
-            
+                if(tempJC.searchDirection == 0)
+                    cmd.param[0] = D_CLOCKWISE;
+                else if(tempJC.searchDirection == 1)
+                    cmd.param[0] = D_COUNTERCLOCKWISE;
+                else
+                {
+                    fprintf(stderr, "Invalid value for search direction (%d) on joint '%s' in file '%s'\n"
+                                    " -- Must be 0 (Clockwise) or 1 (Counter-Clockwise)\n"
+                                    " -- We are skipping this line!\n",
+                                    tempJC.searchDirection, tempName, file_name);
+                    continue;
+                }
+                
+                cmd.dValues[0] = tempJC.homeOffset;
+                cmd.iValues[0] = tempJC.searchLimit;
+
+                ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                
+                cmd.type = D_SET_LOW_LIM;
+                cmd.joint = i;
+                cmd.dValues[0] = tempJC.lowerLimit;
+                cmd.param[0] = D_UPDATE;
+                cmd.param[1] = D_ENABLE;
+                
+                ach_put(&cmd_chan, &cmd, sizeof(cmd));
+                
+                cmd.type = D_SET_UPP_LIM;
+                cmd.dValues[0] = tempJC.upperLimit;
+                
+                ach_put(&cmd_chan, &cmd, sizeof(cmd));
+            }
+            else
+            {
+                fprintf(stderr, "Unit type '%s' is invalid for joint '%s' in file '%s'\n"
+                                " -- Change this to 'raw' for encoder units or 'rad' for radians!\n",
+                                tempType, tempName, file_name);
+            } // TODO: Add in degrees??
+
 		}
 	}
 
