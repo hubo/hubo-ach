@@ -431,6 +431,13 @@ int printHomingParams( FILE* ptr_file, int type )
     {
         if(state.joint[i].active == 1 && params.joint[i].confidence == 1)
         {
+            if(params.joint[i].confidence != 1)
+            {
+                fprintf(stderr, "hubo-daemon is not confident in the readings for joint %s\n"
+                                " -- We will not include it in the table!\n", jointNames[i]);
+                continue;
+            }
+
             if( type==0 ) // Raw
             {
                 fprintf(ptr_file,
