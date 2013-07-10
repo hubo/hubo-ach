@@ -96,6 +96,7 @@ int main() {
 	printf(" Support: Daniel M. Lofaro dan@danlofaro.com \n");
 	printf(" ******************************************* \n");
 
+	size_t fs;
 	// get initial values for hubo
 	// open ach channel
 	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
@@ -104,6 +105,7 @@ int main() {
 	// open hubo state
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
+
 
        // initialize control channel
        r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
@@ -122,14 +124,16 @@ int main() {
 	usleep(250000);
 
 	// set default values for Hubo
-	setJointParams(&H_param, &H_state);
-        setSensorDefaults( &H_param );
+    setJointParams(&H_param, &H_state);
+    setSensorDefaults( &H_param );
 
-	size_t fs;
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
-	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
+    fprintf(stdout, "Waiting to hear from hubo-daemon... "); fflush(stdout);
+	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_state) == fs );
+    fprintf(stdout, " Ready!\n");
+
 
     char *buf;
     rl_attempted_completion_function = my_completion;
