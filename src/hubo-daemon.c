@@ -231,8 +231,17 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h,
                         hubo_board_param_t *b, struct can_frame *f, int send );
 void hGetAllBoardParams( hubo_param_t *h, hubo_state_t *s, struct can_frame *f );
 char decodeParamFrame(int jnt, hubo_board_param_t *b, hubo_param_t *h, struct can_frame *f, int type);
+
+void hSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
+void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
+void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
+void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
+
+
+/*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
+*/
 
 void clearCanBuff(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void getStatusIterate( hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
@@ -283,6 +292,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     // get initial values for hubo
     hubo_ref_t H_ref;
     hubo_ref_t H_ref_filter;
+    hubo_pwm_gains_t H_gains;
     hubo_board_cmd_t H_cmd;
     hubo_state_t H_state;
     hubo_virtual_t H_virtual;
@@ -291,6 +301,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     memset( &H_cmd,  0, sizeof(H_cmd));
     memset( &H_state, 0, sizeof(H_state));
     memset( &H_virtual, 0, sizeof(H_virtual));
+    memset( &H_gains, 0, sizeof(H_gains) );
 
     size_t fs;
     int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -313,7 +324,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     sprintf( frame.data, "1234578" );
     frame.can_dlc = strlen( frame.data );
 
-
+    // TODO: Add the gain parsing to this
     hGetAllBoardParams( H_param, &H_state, &frame );
 
     /* initilization process */
@@ -530,8 +541,39 @@ static inline void tsnorm(struct timespec *ts){
 
 
 
+void hSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
+{
+    fSetNonComplementaryMode(jnt, h, f);
+    sendCan(getSocket(h,jnt), f);
+}
 
+void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
+{
+    f->can_id       = CMD_TXDF;
 
+    f->data[0]      = getJMC(h,jnt);
+    f->data[1]      = 0x13; // TODO: Change to #define in canID.h
+    f->data[2]      = 0x01;
+
+    f->can_dlc    = 2;
+}
+
+void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
+{
+    fSetNonComplementaryMode(jnt, h, f);
+    sendCan(getSocket(h,jnt), f);
+}
+
+void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
+{
+    f->can_id       = CMD_TXDF;
+
+    f->data[0]      = getJMC(h,jnt);
+    f->data[1]      = 0x13; // TODO: Change to #define in canID.h
+    f->data[2]      = 0x00;
+
+    f->can_dlc    = 2;
+}
 
 
 
@@ -561,6 +603,25 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
                 fprintf(stderr, "Unsupported filter mode for joint #%d\n", i);
                 break;
         }
+
+        // Handle the compliance settings:
+        if( s->joint[i].comply==0 && r->comply[i]==1 )
+        {
+            fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]);
+            struct can_frame frame;
+            memset(&frame, 0, sizeof(frame));
+            hSetNonComplementaryMode( i, h, &frame );
+            s->joint[i].comply = 1;
+        }
+        else if( s->joint[i].comply==1 && r->comply[i]==0 )
+        {
+            fprintf(stdout, "WARNING: Switching joint %s from compliance to position mode is"
+                            " not current supported!!\n"
+                            " -- Complain to Grey to get this fixed\n",
+                    jointNames[i]);
+            
+        }
+        
     }
 
     for(i = 0; i < HUBO_JOINT_COUNT; i++) {
@@ -947,6 +1008,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
 
             if( s->joint[m0].comply == 0 || s->joint[m1].comply == 0 )
             {
+
+                // TODO: Come up with a better warning method
                 if(s->joint[m0].comply == 1 || s->joint[m1].comply == 1)
                     fprintf( stderr, "These two must agree on their compliance mode: %s & %s!\n",
                             jointNames[m0], jointNames[m1] );
@@ -967,11 +1030,18 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
             }
             else if( s->joint[m0].comply == 1 && s->joint[m1].comply == 1 )
             {   // TODO: Make this section much less sloppy
-                int req, pos;
-                req = ref2enc(m0, s->joint[m0].ref, h);
-                pos = ref2enc(m0, s->joint[m0].pos, h);
-                int duty0 = r->Kp[m0]*( req - pos )
-                            - r->Kd[m0]*s->joint[m0].vel;
+                
+                int pwmLimit = 50;  // FIXME: Make this much bigger. Is 5% currently. Should be 1000 (100%)
+
+                // Multiplying by 10 makes the gains equal:
+                // Kp -- duty% per radian
+                // Kd -- duty% reduction per radian/sec
+                // pwmCommand -- duty%
+                int kP_err = 10*r->Kp[m0]*(s->joint[m0].ref - s->joint[m0].pos);
+                int kD_err = 10*r->Kd[m0]*s->joint[m0].vel;
+
+                int duty0 = kP_err - kD_err + r->pwmCommand[m0]*10;
+
                 int dir0;
                 if(duty0 >= 0)
                     dir0 = 0x00; // Counter-Clockwise
@@ -979,13 +1049,22 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
                     dir0 = 0x01; // Clockwise
                 duty0 = abs(duty0);
 
-                if( duty0 > 50 ) // FIXME: Make this much bigger. Is 5% currently. Should be 1000 (100%)
-                    duty0 = 50;
+                if( duty0 > pwmLimit )
+                    duty0 = pwmLimit;
                 
-                req = ref2enc(m1, s->joint[m1].ref, h);
-                pos = ref2enc(m1, s->joint[m1].pos, h);
-                int duty1 = r->Kp[m1]*( req - pos )
-                            - r->Kd[m1]*s->joint[m1].vel;
+
+                // Multiplying by 10 makes the gains equal:
+                // Kp -- duty% per radian
+                // Kd -- duty% reduction per radian/sec
+                // pwmCommand -- duty%
+                kP_err = 10*r->Kp[m1]*(s->joint[m1].ref - s->joint[m1].pos);
+                kD_err = 10*r->Kd[m1]*s->joint[m1].vel;
+
+                int duty1 = kP_err - kD_err + r->pwmCommand[m1]*10;
+                // Multiplying by 10 makes the gains equal:
+                // Kp -- duty% per radian
+                // Kd -- duty% reduction per radian/sec
+
                 int dir1;
                 if(duty1 >= 0)
                     dir1 = 0x00; // Counter-Clockwise
@@ -993,8 +1072,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
                     dir1 = 0x01; // Clockwise
                 duty1 = abs(duty1);
 
-                if( duty1 > 50 ) // FIXME: Make this much bigger. Is 5% currently. Should be 1000 (100%)
-                    duty1 = 50;
+                if( duty1 > pwmLimit )
+                    duty1 = pwmLimit;
                 
                 f->can_id = 0x01;
                 f->data[0] = getJMC(h,m0);
@@ -1009,7 +1088,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
 
                 f->can_dlc = 7;
 
-                fprintf(stderr, "Duty0:%d Dir0:%d | Duty1:%d Dir1:%d", duty0, dir0, duty1, dir1);
+                fprintf(stderr, "Duty1:%d Dir1:%d | kP_err:%d\tkD_err:%d\tvel:%f\n",
+                                duty1, dir1, kP_err, kD_err, s->joint[m1].vel);
             }
         }
      
@@ -1213,6 +1293,8 @@ void fSetOpenLoopPwmDutyCycle(int jnt, hubo_state_t *s, hubo_param_t *h, struct 
 
 }
 
+
+/*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode){
 
     if (the_mode == D_ENABLE)
@@ -1233,7 +1315,7 @@ void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int th
     fSetComplementaryMode(jnt, h, f, the_mode);
     sendCan(getSocket(h,jnt), f);
 }
-
+*/
 // 4
 void fGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f) {
     // get the value of the current in 10mA units A = V/100
@@ -2007,6 +2089,7 @@ void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
     fInitializeBoard(jnt, h, f);
     sendCan(getSocket(h,jnt), f);
     //readCan(hubo_socket[h->joint[jnt].can], f, 4);    // 8 bytes to read and 4 sec timeout
+    // TODO: Why is the readCan here??
     readCan(getSocket(h,jnt), f, HUBO_CAN_TIMEOUT_DEFAULT*100);    // 8 bytes to read and 4 sec timeout
 }
 
@@ -2057,16 +2140,20 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
     }
 
 //    if( check==0 | jnt == RF1 | jnt == LF1 )
+
     if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
       fSetEncRef(jnt, s, r, h, f);
-      sendCan(getSocket(h,jnt), f);
+//      sendCan(getSocket(h,jnt), f);
     }
     else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type & (jnt != RF2) & (jnt != RF3) & (jnt != RF4) & (jnt !=RF5) &
                                                      (jnt != LF2) & (jnt != LF3) & (jnt != LF4) & (jnt !=LF5)) 
     {
       fSetEncRef(jnt, s, r, h, f);
-      sendCan(getSocket(h,jnt), f);
+//      sendCan(getSocket(h,jnt), f);
     }
+
+    memset(f, 0, sizeof(*f));
+
 }
 
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
@@ -2123,6 +2210,9 @@ void hFeedbackControllerOnOff(int jnt, hubo_ref_t *r, hubo_state_t *s, hubo_para
 if(isHands(jnt) == 0) {
     if(onOff == D_ENABLE) { // ctrl on FET
 
+        // FIXME:   It makes absolutely no sense for hubo-daemon
+        //          to be writing to the ref channel. We need a
+        //          better protocol here
 
         r->ref[jnt] = s->joint[jnt].pos; 
         s->joint[jnt].ref = s->joint[jnt].pos;
@@ -2897,9 +2987,11 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
                 case D_SENSOR_STARTUP:
                     hInitAllSensors( h, f );
                     break;
+/*              // This should be decided by the ref command, not by an initialization command
                 case D_COMP_MODE_ON_OFF:
                     hSetComplementaryMode(c->joint,h,f,c->param[0]);
                     break;
+*/
                 case D_GET_BOARD_PARAMS_ALL:
                     hGetAllBoardParams( h, s, f );
                     break;
@@ -3208,7 +3300,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 enc = (enc << 8) + f->data[0 + i*4];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
                 double newPos = enc2rad(jnt, enc, h);
-                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
             }
         }
@@ -3222,7 +3314,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 enc16 = (enc << 8) + f->data[0 + i*4];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
                 double newPos = enc2rad(jnt, enc16, h);
-                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
             }
         }
@@ -3235,7 +3327,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
 //i				enc = 0x8000 & enc16;
                 double newPos = enc2rad(jnt, enc16, h);
-                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
              }
         }
@@ -3359,7 +3451,7 @@ int main(int argc, char **argv) {
         i++;
     }
     // Daemonize
-    hubo_daemonize();
+//    hubo_daemonize();
     
 
     // Initialize Hubo Structs

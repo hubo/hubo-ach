@@ -115,6 +115,7 @@ extern "C" {
 #define		HUBO_CHAN_REF_NAME         "hubo-ref"                    ///> hubo ach channel
 #define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
+#define     HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
 #define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"                  ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
@@ -124,6 +125,7 @@ extern "C" {
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 #define         HUBO_LOOP_PERIOD         0.005  ///> period for main loopin sec (0.005 = 200hz)
+                // FIXME: ^ We should not call this a period when it's really a timestep
 // finger control mode current
 #define         HUBO_FINGER_CURRENT_CTRL_MODE 0x01
 #define         HUBO_STARTUP_SEND_REF_DELAY 0.8  ///> setup delay in secons
@@ -372,9 +374,13 @@ typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
 	int8_t comply[HUBO_JOINT_COUNT];
+}__attribute__((packed)) hubo_ref_t;
+
+typedef struct hubo_pwm_gains {
+    int8_t pwmCommand[HUBO_JOINT_COUNT];
 	double Kp[HUBO_JOINT_COUNT];
 	double Kd[HUBO_JOINT_COUNT];
-}__attribute__((packed)) hubo_ref_t;
+}__attribute__((packed)) hubo_pwm_gains_t;
 
 typedef struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive
