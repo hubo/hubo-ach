@@ -316,6 +316,7 @@ typedef struct hubo_ft {
 
 typedef struct hubo_joint_state {
         double ref;         ///< Last reference value sent
+	uint8_t comply;		///< Are we in compliance mode?
 	double pos;     	///< actual position (rad)
 	double cur;     	///< actual current (amps)
 	double vel;     	///< actual velocity (rad/sec)
@@ -370,6 +371,9 @@ typedef struct hubo_state {
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
+	int8_t comply[HUBO_JOINT_COUNT];
+	double Kp[HUBO_JOINT_COUNT];
+	double Kd[HUBO_JOINT_COUNT];
 }__attribute__((packed)) hubo_ref_t;
 
 typedef struct jmcDriver{

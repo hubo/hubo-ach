@@ -103,7 +103,7 @@ static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
 void setEncRef(int jnt, hubo_ref_t *r, hubo_param_t *h);
 void setEncRefAll( hubo_ref_t *r, hubo_param_t *h);
-void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
+void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void fResetEncoderToZero(int jnt, hubo_param_t *h, struct can_frame *f);
 void fGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f);
 void hSetBeep(int jnt, hubo_param_t *h, struct can_frame *f, double beepTime);
@@ -118,7 +118,7 @@ void fEnableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f);
 void fDisableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f);
 void fGotoLimitAndGoOffset(int jnt, hubo_param_t *h, struct can_frame *f);
 void hInitilizeBoard(int jnt, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
-void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
+void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
 void huboLoop(hubo_param_t *H_param, int vflag);
@@ -606,7 +606,7 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
                // if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
                //     (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
                // else {
-                    hSetEncRef(i, s, h, f);
+                    hSetEncRef(i, s, r, h, f);
                     c[jmc] = 1;
                // }
             }
@@ -614,7 +614,7 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
                 if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
                     (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
                 else {
-                    hSetEncRef(i, s, h, f);
+                    hSetEncRef(i, s, r, h, f);
                     c[jmc] = 1;
                 }
         }
@@ -816,7 +816,7 @@ unsigned long signConvention(long _input) {
     else return (unsigned long)_input;
 }
 
-void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
+void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f)
 {
     memset(f, 0, sizeof(*f));
     // set ref
@@ -935,28 +935,84 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
          f->can_dlc = 5;
          
       }
-      else if((h->joint[jnt].numMot <= 2) ){
-        int m0 = h->driver[jmc].joints[0];
-        int m1;
-        
-        unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
-        f->data[0] =     int_to_bytes(pos0,1);
-        f->data[1] =     int_to_bytes(pos0,2);
-        f->data[2] =     int_to_bytes(pos0,3);
+        else if((h->joint[jnt].numMot <= 2) )
+        {
+            int m0 = h->driver[jmc].joints[0];
+            int m1;
 
-        if(h->joint[jnt].numMot == 1)
-            m1 = m0; // If there is not a second joint, use the ref of the first
-        else
-            m1 = h->driver[jmc].joints[1];
+            if(h->joint[jnt].numMot == 1)
+                m1 = m0; // If there is not a second joint, use the ref of the first
+            else
+                m1 = h->driver[jmc].joints[1];
 
-        unsigned long pos1 = signConvention((int)getEncRef(m1, s, h));
+            if( s->joint[m0].comply == 0 || s->joint[m1].comply == 0 )
+            {
+                if(s->joint[m0].comply == 1 || s->joint[m1].comply == 1)
+                    fprintf( stderr, "These two must agree on their compliance mode: %s & %s!\n",
+                            jointNames[m0], jointNames[m1] );
 
-        f->data[3] =     int_to_bytes(pos1,1);
-        f->data[4] =     int_to_bytes(pos1,2);
-        f->data[5] =     int_to_bytes(pos1,3);
+                unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
+                f->data[0] =     int_to_bytes(pos0,1);
+                f->data[1] =     int_to_bytes(pos0,2);
+                f->data[2] =     int_to_bytes(pos0,3);
 
-        f->can_dlc = 6; //= strlen( data );    // Set DLC
-      }
+
+                unsigned long pos1 = signConvention((int)getEncRef(m1, s, h));
+
+                f->data[3] =     int_to_bytes(pos1,1);
+                f->data[4] =     int_to_bytes(pos1,2);
+                f->data[5] =     int_to_bytes(pos1,3);
+
+                f->can_dlc = 6; //= strlen( data );    // Set DLC
+            }
+            else if( s->joint[m0].comply == 1 && s->joint[m1].comply == 1 )
+            {   // TODO: Make this section much less sloppy
+                int req, pos;
+                req = ref2enc(m0, s->joint[m0].ref, h);
+                pos = ref2enc(m0, s->joint[m0].pos, h);
+                int duty0 = r->Kp[m0]*( req - pos )
+                            - r->Kd[m0]*s->joint[m0].vel;
+                int dir0;
+                if(duty0 >= 0)
+                    dir0 = 0x00; // Counter-Clockwise
+                else
+                    dir0 = 0x01; // Clockwise
+                duty0 = abs(duty0);
+
+                if( duty0 > 50 ) // FIXME: Make this much bigger. Is 5% currently. Should be 1000 (100%)
+                    duty0 = 50;
+                
+                req = ref2enc(m1, s->joint[m1].ref, h);
+                pos = ref2enc(m1, s->joint[m1].pos, h);
+                int duty1 = r->Kp[m1]*( req - pos )
+                            - r->Kd[m1]*s->joint[m1].vel;
+                int dir1;
+                if(duty1 >= 0)
+                    dir1 = 0x00; // Counter-Clockwise
+                else
+                    dir1 = 0x01; // Clockwise
+                duty1 = abs(duty1);
+
+                if( duty1 > 50 ) // FIXME: Make this much bigger. Is 5% currently. Should be 1000 (100%)
+                    duty1 = 50;
+                
+                f->can_id = 0x01;
+                f->data[0] = getJMC(h,m0);
+                f->data[1] = 0x0D; // TODO: Put this in the header
+                f->data[2] = 0x03;
+
+                f->data[3] = (( duty0 & 0x0F00 )>>4) | dir0;
+                f->data[4] =  duty0 & 0x00FF;
+
+                f->data[5] = (( duty1 & 0x0F00 )>>4) | dir1;
+                f->data[6] =  duty1 & 0x00FF;
+
+                f->can_dlc = 7;
+
+                fprintf(stderr, "Duty0:%d Dir0:%d | Duty1:%d Dir1:%d", duty0, dir0, duty1, dir1);
+            }
+        }
+     
     }
 }
 
@@ -1973,7 +2029,7 @@ void hInitializeBoardAll( hubo_param_t *h, hubo_state_t *s, struct can_frame *f 
     }
 }
 
-void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
+void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f) {
 
     int check = h->joint[jnt].numMot;
     uint16_t jmc = h->joint[jnt].jmc;
@@ -2002,13 +2058,13 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f) 
 
 //    if( check==0 | jnt == RF1 | jnt == LF1 )
     if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
-      fSetEncRef(jnt, s, h, f);
+      fSetEncRef(jnt, s, r, h, f);
       sendCan(getSocket(h,jnt), f);
     }
     else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type & (jnt != RF2) & (jnt != RF3) & (jnt != RF4) & (jnt !=RF5) &
                                                      (jnt != LF2) & (jnt != LF3) & (jnt != LF4) & (jnt !=LF5)) 
     {
-      fSetEncRef(jnt, s, h, f);
+      fSetEncRef(jnt, s, r, h, f);
       sendCan(getSocket(h,jnt), f);
     }
 }
@@ -3151,7 +3207,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 enc = (enc << 8) + f->data[1 + i*4];
                 enc = (enc << 8) + f->data[0 + i*4];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
-                s->joint[jnt].pos =  enc2rad(jnt,enc, h);
+                double newPos = enc2rad(jnt, enc, h);
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].pos = newPos;
             }
         }
 
@@ -3163,7 +3221,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 enc16 = (enc << 8) + f->data[1 + i*4];
                 enc16 = (enc << 8) + f->data[0 + i*4];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
-                s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+                double newPos = enc2rad(jnt, enc16, h);
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].pos = newPos;
             }
         }
             
@@ -3174,7 +3234,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 enc16 = (enc16 << 8) + f->data[0 + i*2];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
 //i				enc = 0x8000 & enc16;
-                s->joint[jnt].pos = enc2rad(jnt, enc16, h);
+                double newPos = enc2rad(jnt, enc16, h);
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].pos = newPos;
              }
         }
 
@@ -3184,7 +3246,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 enc16 = (enc16 << 8) + f->data[1 + i*2];
                 enc16 = (enc16 << 8) + f->data[0 + i*2];
                 int jnt = h->driver[jmc].joints[i+3];          // motor on the same drive
-                s->joint[jnt].pos =  enc2rad(jnt,enc16, h);
+                double newPos = enc2rad(jnt, enc16, h);
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
+                s->joint[jnt].pos = newPos;
             }
         }
 
