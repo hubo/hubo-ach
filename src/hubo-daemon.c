@@ -2164,7 +2164,7 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
           else
           {
             s->joint[j].zeroed=0;
-            fprintf(stdout, "Joint number %d was not homed correctly!\n\t", j );
+            fprintf(stdout, "Joint %s was not homed correctly!\n\t", jointNames[j] );
           }
         }
         if( s->joint[j].zeroed==1 )
