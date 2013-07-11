@@ -135,8 +135,6 @@ int main() {
     fprintf(stdout, " Ready!\n");
 
 
-    // FIXME: Take out this hack
-    H_ref.Kp[RSR] = 5; 
 
     char *buf;
     rl_attempted_completion_function = my_completion;
@@ -168,7 +166,10 @@ int main() {
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &f) != 0){  //It's a float.
                 H_ref.ref[jnt] = (double)f;
+
+                // FIXME: Remove this hack!!
                 H_ref.comply[jnt] = 1;
+                H_ref.mode[jnt] = HUBO_REF_MODE_REF_FILTER;
                 int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
                 char* tmp = getArg(buf,1);
                 printf(">> %s = %f rad \n",tmp,f);

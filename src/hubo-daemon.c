@@ -103,7 +103,8 @@ static inline void tsnorm(struct timespec *ts);
 void getMotorPosFrame(int motor, struct can_frame *frame);
 void setEncRef(int jnt, hubo_ref_t *r, hubo_param_t *h);
 void setEncRefAll( hubo_ref_t *r, hubo_param_t *h);
-void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
+void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
+                    hubo_pwm_gains_t *g, struct can_frame *f);
 void fResetEncoderToZero(int jnt, hubo_param_t *h, struct can_frame *f);
 void fGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f);
 void hSetBeep(int jnt, hubo_param_t *h, struct can_frame *f, double beepTime);
@@ -118,8 +119,9 @@ void fEnableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f);
 void fDisableFeedbackController(int jnt, hubo_param_t *h, struct can_frame *f);
 void fGotoLimitAndGoOffset(int jnt, hubo_param_t *h, struct can_frame *f);
 void hInitilizeBoard(int jnt, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
-void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
-void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, struct can_frame *f);
+void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
+                    hubo_pwm_gains_t *g, struct can_frame *f);
+void hSetEncRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_pwm_gains_t *g, struct can_frame *f);
 void hIniAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
 void huboLoop(hubo_param_t *H_param, int vflag);
 void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t onOff);
@@ -148,7 +150,8 @@ void fGetIMU(int board, struct can_frame *f);
 void hGetIMU(int board, struct can_frame *f);
 void getIMUAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f);
-void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
+void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s,
+                hubo_pwm_gains_t *g, struct can_frame *f);
 void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
     hubo_state_t *s, struct can_frame *f);
 void hInitializeBoardAll(hubo_param_t *h, hubo_state_t *s, struct can_frame *f);
@@ -270,6 +273,7 @@ int debug;
 ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
+ach_channel_t chan_hubo_gains;      // PWM Control gains
 ach_channel_t chan_hubo_board_param; // hubo-board-param
 ach_channel_t chan_hubo_to_sim;    // hubo-ach-to-sim
 ach_channel_t chan_hubo_from_sim;    // hubo-ach-from-sim
@@ -310,6 +314,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
+
 //    r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_LAST );
 //    if(ACH_OK != r) {fprintf(stderr, "State r = %s\n",ach_result_to_string(r));}
 //    hubo_assert( sizeof(H_state) == fs, __LINE__ );
@@ -324,13 +329,25 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     sprintf( frame.data, "1234578" );
     frame.can_dlc = strlen( frame.data );
 
-    // TODO: Add the gain parsing to this
+    // FIXME: Add the gain parsing to this
     hGetAllBoardParams( H_param, &H_state, &frame );
+    H_gains.Kp[RSP] = -5;
+    H_gains.Kp[RSR] = -10;
+    H_gains.Kp[REB] = -5;
+    H_gains.Kp[RSY] = -5;
+    
+    int derp = 0;
+    for(derp = 0; derp < HUBO_JOINT_COUNT; derp++)
+        H_gains.maxPWM[derp] = 40;
+
+    ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
+
+    
 
     /* initilization process */
 
-    /* get encoder values */      
-    getEncAllSlow(&H_state, H_param, &frame); 
+    /* get encoder values */
+    getEncAllSlow(&H_state, H_param, &frame);
 
     /* set encoder values to ref and state */
     for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
@@ -420,11 +437,18 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             }
         else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
 
+        r = ach_get( &chan_hubo_gains, &H_gains, sizeof(H_gains), &fs, NULL, ACH_O_LAST );
+        if( !( ACH_OK==r || ACH_STALE_FRAMES==r || ACH_MISSED_FRAME==r ) )
+            fprintf( stderr, "Unexpected ach result in the gains channel: %s\n",
+                    ach_result_to_string(r) );
+        // FIXME: Add in safety checks here
+        
+
 
         /* Set all Ref */
         if(hubo_noRefTimeAll < T ) {
             refFilterMode(&H_ref, HUBO_REF_FILTER_LENGTH, H_param, &H_state, &H_ref_filter);
-            setRefAll(&H_ref, H_param, &H_state, &frame);
+            setRefAll(&H_ref, H_param, &H_state, &H_gains, &frame);
             H_state.refWait = 0;
         }
         else{
@@ -640,7 +664,8 @@ uint32_t getEncRef(int jnt, struct hubo *h)
 }
 */
 
-void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
+void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s,
+                hubo_pwm_gains_t *g, struct can_frame *f) {
 	///> Requests all encoder and records to hubo_state
 	int c[HUBO_JMC_COUNT];
 	memset( &c, 0, sizeof(c));
@@ -667,7 +692,7 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
                // if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
                //     (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
                // else {
-                    hSetEncRef(i, s, r, h, f);
+                    hSetEncRef(i, s, r, h, g, f);
                     c[jmc] = 1;
                // }
             }
@@ -675,7 +700,7 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
                 if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
                     (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
                 else {
-                    hSetEncRef(i, s, r, h, f);
+                    hSetEncRef(i, s, r, h, g, f);
                     c[jmc] = 1;
                 }
         }
@@ -684,7 +709,7 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s, struct can_frame
   }
 }
 
-void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) 
+void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
     char c[HUBO_JMC_COUNT];
     memset( &c, 0, sizeof(c));
@@ -877,7 +902,8 @@ unsigned long signConvention(long _input) {
     else return (unsigned long)_input;
 }
 
-void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f)
+void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
+                    hubo_pwm_gains_t *g, struct can_frame *f)
 {
     memset(f, 0, sizeof(*f));
     // set ref
@@ -1030,17 +1056,20 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
             }
             else if( s->joint[m0].comply == 1 && s->joint[m1].comply == 1 )
             {   // TODO: Make this section much less sloppy
-                
-                int pwmLimit = 50;  // FIXME: Make this much bigger. Is 5% currently. Should be 1000 (100%)
+                if(abs(g->maxPWM[m0]) > 100)
+                    g->maxPWM[m0] = 100;
+                int pwmLimit = abs(g->maxPWM[m0]);
 
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
                 // pwmCommand -- duty%
-                int kP_err = 10*r->Kp[m0]*(s->joint[m0].ref - s->joint[m0].pos);
-                int kD_err = 10*r->Kd[m0]*s->joint[m0].vel;
 
-                int duty0 = kP_err - kD_err + r->pwmCommand[m0]*10;
+                g->pwmCommand[m0] = 0;
+                int kP_err = 10*g->Kp[m0]*(s->joint[m0].ref - s->joint[m0].pos);
+                int kD_err = 10*g->Kd[m0]*s->joint[m0].vel;
+
+                int duty0 = kP_err - kD_err + g->pwmCommand[m0]*10;
 
                 int dir0;
                 if(duty0 >= 0)
@@ -1057,10 +1086,17 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
                 // pwmCommand -- duty%
-                kP_err = 10*r->Kp[m1]*(s->joint[m1].ref - s->joint[m1].pos);
-                kD_err = 10*r->Kd[m1]*s->joint[m1].vel;
 
-                int duty1 = kP_err - kD_err + r->pwmCommand[m1]*10;
+
+                if(abs(g->maxPWM[m1]) > 100)
+                    g->maxPWM[m1] = 100;
+                pwmLimit = abs(g->maxPWM[m1]);
+
+                g->pwmCommand[m1] = 0;
+                kP_err = 10*g->Kp[m1]*(s->joint[m1].ref - s->joint[m1].pos);
+                kD_err = 10*g->Kd[m1]*s->joint[m1].vel;
+
+                int duty1 = kP_err - kD_err + g->pwmCommand[m1]*10;
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
@@ -1088,8 +1124,9 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
 
                 f->can_dlc = 7;
 
-                fprintf(stderr, "Duty1:%d Dir1:%d | kP_err:%d\tkD_err:%d\tvel:%f\n",
-                                duty1, dir1, kP_err, kD_err, s->joint[m1].vel);
+                fprintf(stderr, "Duty1:%d Dir1:%d | kP_err:%d\tkD_err:%d\tvel:%f\t Kp:%f Ref:%f Pos:%f\n",
+                                duty1, dir1, kP_err, kD_err, s->joint[m1].vel, g->Kp[m1],
+                                s->joint[m1].ref, s->joint[m1].pos);
             }
         }
      
@@ -2112,7 +2149,8 @@ void hInitializeBoardAll( hubo_param_t *h, hubo_state_t *s, struct can_frame *f 
     }
 }
 
-void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct can_frame *f) {
+void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
+                    hubo_pwm_gains_t *g, struct can_frame *f) {
 
     int check = h->joint[jnt].numMot;
     uint16_t jmc = h->joint[jnt].jmc;
@@ -2142,14 +2180,14 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h, struct
 //    if( check==0 | jnt == RF1 | jnt == LF1 )
 
     if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
-      fSetEncRef(jnt, s, r, h, f);
-//      sendCan(getSocket(h,jnt), f);
+      fSetEncRef(jnt, s, r, h, g, f);
+      sendCan(getSocket(h,jnt), f);
     }
     else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type & (jnt != RF2) & (jnt != RF3) & (jnt != RF4) & (jnt !=RF5) &
                                                      (jnt != LF2) & (jnt != LF3) & (jnt != LF4) & (jnt !=LF5)) 
     {
-      fSetEncRef(jnt, s, r, h, f);
-//      sendCan(getSocket(h,jnt), f);
+      fSetEncRef(jnt, s, r, h, g, f);
+      sendCan(getSocket(h,jnt), f);
     }
 
     memset(f, 0, sizeof(*f));
@@ -3471,6 +3509,9 @@ int main(int argc, char **argv) {
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
 
+    r = ach_open(&chan_hubo_gains, HUBO_CHAN_PWM_GAINS_NAME, NULL);
+    hubo_assert( ACH_OK == r, __LINE__ );
+
     // open hubo state
     r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
@@ -3481,7 +3522,7 @@ int main(int argc, char **argv) {
 
     // initialize parameters channel
     r = ach_open(&chan_hubo_board_param, HUBO_CHAN_BOARD_PARAM_NAME, NULL);
-    hubo_assert( ACH_OK == r, __LINE__ ); 
+    hubo_assert( ACH_OK == r, __LINE__ );
 
     // open to sim chan
     r = ach_open(&chan_hubo_to_sim, HUBO_CHAN_VIRTUAL_TO_SIM_NAME, NULL);
