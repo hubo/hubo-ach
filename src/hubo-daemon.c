@@ -329,16 +329,14 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     sprintf( frame.data, "1234578" );
     frame.can_dlc = strlen( frame.data );
 
+    int g=0;
+    for(g=0; g<HUBO_JOINT_COUNT; g++)
+    {
+        H_gains.Kp[g] = 5;
+        H_gains.maxPWM[g] = 40;
+    }
     // FIXME: Add the gain parsing to this
     hGetAllBoardParams( H_param, &H_state, &frame );
-    H_gains.Kp[RSP] = -5;
-    H_gains.Kp[RSR] = -10;
-    H_gains.Kp[REB] = -5;
-    H_gains.Kp[RSY] = -5;
-    
-    int derp = 0;
-    for(derp = 0; derp < HUBO_JOINT_COUNT; derp++)
-        H_gains.maxPWM[derp] = 40;
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
 
@@ -1069,7 +1067,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 int kP_err = 10*g->Kp[m0]*(s->joint[m0].ref - s->joint[m0].pos);
                 int kD_err = 10*g->Kd[m0]*s->joint[m0].vel;
 
-                int duty0 = kP_err - kD_err + g->pwmCommand[m0]*10;
+                int duty0 = -(kP_err - kD_err + g->pwmCommand[m0]*10);
 
                 int dir0;
                 if(duty0 >= 0)
@@ -1096,7 +1094,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 kP_err = 10*g->Kp[m1]*(s->joint[m1].ref - s->joint[m1].pos);
                 kD_err = 10*g->Kd[m1]*s->joint[m1].vel;
 
-                int duty1 = kP_err - kD_err + g->pwmCommand[m1]*10;
+                int duty1 = -(kP_err - kD_err + g->pwmCommand[m1]*10);
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
@@ -1124,9 +1122,12 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 f->can_dlc = 7;
 
-                fprintf(stderr, "Duty1:%d Dir1:%d | kP_err:%d\tkD_err:%d\tvel:%f\t Kp:%f Ref:%f Pos:%f\n",
-                                duty1, dir1, kP_err, kD_err, s->joint[m1].vel, g->Kp[m1],
-                                s->joint[m1].ref, s->joint[m1].pos);
+                fprintf(stderr, "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f | "
+                                "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f\n",
+                                jointNames[m0], duty0, dir0, s->joint[m0].ref,
+                                    s->joint[m0].pos, s->joint[m1].vel,
+                                jointNames[m1], duty1, dir1, s->joint[m1].ref,
+                                    s->joint[m1].pos, s->joint[m1].vel);
             }
         }
      
