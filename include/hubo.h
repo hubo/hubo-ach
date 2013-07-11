@@ -376,11 +376,16 @@ typedef struct hubo_ref {
 	int8_t comply[HUBO_JOINT_COUNT];
 }__attribute__((packed)) hubo_ref_t;
 
+
+typedef struct hubo_joint_pwm_gains {
+    double pwmCommand;
+	double Kp;
+	double Kd;
+    int8_t maxPWM;
+}__attribute__((packed)) hubo_joint_pwm_gains_t;
+
 typedef struct hubo_pwm_gains {
-    double pwmCommand[HUBO_JOINT_COUNT];
-	double Kp[HUBO_JOINT_COUNT];
-	double Kd[HUBO_JOINT_COUNT];\
-    int8_t maxPWM[HUBO_JOINT_COUNT];
+    hubo_joint_pwm_gains_t joint[HUBO_JOINT_COUNT];
 }__attribute__((packed)) hubo_pwm_gains_t;
 
 typedef struct jmcDriver{

@@ -25,7 +25,7 @@
 #include "config.h"
 
 //set number of parameters per joint in the parameters file
-#define	NUM_OF_JOINT_PARAMETERS 13
+#define	NUM_OF_JOINT_PARAMETERS 16
 #define NUM_OF_SENSOR_PARAMETERS 7
 #define NUM_OF_HOME_PARAMETERS 7
 
@@ -483,7 +483,7 @@ int printHomingParams( FILE* ptr_file, int type )
     return 0;
 }
 
-int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
+int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state, hubo_pwm_gains_t *H_gains) {
 //	char *envVar = getenv("HUBO_JOINT_TABLE");
 //	printf("%s\n", envVar);
 //	if(strcmp(envVar, jointFileLocation) != 0) exit(EXIT_FAILURE);
@@ -501,11 +501,13 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 	hubo_joint_param_t tp;	//hubo_jubo_param struct for file parsing
 	hubo_jmc_param_t tp2;	//jmcDriver struct member for file parsing
 	struct hubo_joint_state s;	//hubo_joint_state struct for file parsing
+    hubo_joint_pwm_gains_t tg; // for parsing in each joint gain
 
 	// initialize all structs with zeros
 	memset(&tp,      0, sizeof(tp));
 	memset(&tp2,     0, sizeof(tp2));
 	memset(&s,       0, sizeof(s));
+    memset(&tg,      0, sizeof(tg));
 	size_t i;
 	size_t j;
 
@@ -551,7 +553,7 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhd%s%hhu%hhu%hhu%hhu",
+		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhd%s%hhu%hhu%hhu%lf%lf%hhu%hhu",
 			tp.name,
 			&tp.motNo,
 			&tp.refEnc,
@@ -564,7 +566,11 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 			&s.active,
 			&tp.can,
 			&tp.numMot,
-			&s.zeroed) ) // check that all values are found
+            &tg.Kp,
+            &tg.Kd,
+            &tg.maxPWM,
+			&s.zeroed) ) // FIXME: Remove this worthless field
+            // check that all values are found
 		{
 
 			// check to make sure jointName is valid
@@ -609,6 +615,8 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state) {
 			memcpy(&(H_param->driver[tp.jmc].joints[tp.motNo]), &tp2.joints[tp.motNo], sizeof(tp2.joints[tp.motNo]));
 			// copy contents of s into H_state (initializing active and zeroed members)
 			memcpy(&(H_state->joint[i]), &s, sizeof(s));
+
+            memcpy(&(H_gains->joint[i]), &tg, sizeof(tg));
 		}
 	}
 

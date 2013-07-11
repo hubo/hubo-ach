@@ -320,7 +320,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 //    hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
     // set joint parameters for Hubo
-    setJointParams(H_param, &H_state);
+    setJointParams(H_param, &H_state, &H_gains);
     setSensorDefaults(H_param);
 
     /* Create CAN Frame */
@@ -329,13 +329,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     sprintf( frame.data, "1234578" );
     frame.can_dlc = strlen( frame.data );
 
-    int g=0;
-    for(g=0; g<HUBO_JOINT_COUNT; g++)
-    {
-        H_gains.Kp[g] = 5;
-        H_gains.maxPWM[g] = 40;
-    }
-    // FIXME: Add the gain parsing to this
     hGetAllBoardParams( H_param, &H_state, &frame );
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
@@ -636,12 +629,13 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
             s->joint[i].comply = 1;
         }
         else if( s->joint[i].comply==1 && r->comply[i]==0 )
-        {
+        { // TODO: Handle this transition
+/*
             fprintf(stdout, "WARNING: Switching joint %s from compliance to position mode is"
                             " not current supported!!\n"
                             " -- Complain to Grey to get this fixed\n",
                     jointNames[i]);
-            
+*/
         }
         
     }
@@ -1054,19 +1048,19 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
             }
             else if( s->joint[m0].comply == 1 && s->joint[m1].comply == 1 )
             {   // TODO: Make this section much less sloppy
-                if(abs(g->maxPWM[m0]) > 100)
-                    g->maxPWM[m0] = 100;
-                int pwmLimit = abs(g->maxPWM[m0]);
+                if(abs(g->joint[m0].maxPWM) > 100)
+                    g->joint[m0].maxPWM = 100;
+                int pwmLimit = abs(g->joint[m0].maxPWM);
 
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
                 // pwmCommand -- duty%
 
-                int kP_err = 10*g->Kp[m0]*(s->joint[m0].ref - s->joint[m0].pos);
-                int kD_err = 10*g->Kd[m0]*s->joint[m0].vel;
+                int kP_err = 10*g->joint[m0].Kp*(s->joint[m0].ref - s->joint[m0].pos);
+                int kD_err = 10*g->joint[m0].Kd*s->joint[m0].vel;
 
-                int duty0 = -(kP_err - kD_err + g->pwmCommand[m0]*10);
+                int duty0 = -(kP_err - kD_err + g->joint[m0].pwmCommand*10);
 
                 int dir0;
                 if(duty0 >= 0)
@@ -1075,8 +1069,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                     dir0 = 0x01; // Clockwise
                 duty0 = abs(duty0);
 
-                if( duty0 > pwmLimit )
-                    duty0 = pwmLimit;
+                if( duty0 > abs(pwmLimit) )
+                    duty0 = abs(pwmLimit);
                 
 
                 // Multiplying by 10 makes the gains equal:
@@ -1085,14 +1079,14 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 // pwmCommand -- duty%
 
 
-                if(abs(g->maxPWM[m1]) > 100)
-                    g->maxPWM[m1] = 100;
-                pwmLimit = abs(g->maxPWM[m1]);
+                if(abs(g->joint[m1].maxPWM) > 100)
+                    g->joint[m1].maxPWM = 100;
+                pwmLimit = abs(g->joint[m1].maxPWM);
 
-                kP_err = 10*g->Kp[m1]*(s->joint[m1].ref - s->joint[m1].pos);
-                kD_err = 10*g->Kd[m1]*s->joint[m1].vel;
+                kP_err = 10*g->joint[m1].Kp*(s->joint[m1].ref - s->joint[m1].pos);
+                kD_err = 10*g->joint[m1].Kd*s->joint[m1].vel;
 
-                int duty1 = -(kP_err - kD_err + g->pwmCommand[m1]*10);
+                int duty1 = -(kP_err - kD_err + g->joint[m1].pwmCommand*10);
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
@@ -1104,8 +1098,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                     dir1 = 0x01; // Clockwise
                 duty1 = abs(duty1);
 
-                if( duty1 > pwmLimit )
-                    duty1 = pwmLimit;
+                if( duty1 > abs(pwmLimit) )
+                    duty1 = abs(pwmLimit);
                 
                 f->can_id = 0x01;
                 f->data[0] = getJMC(h,m0);
@@ -1120,12 +1114,14 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 f->can_dlc = 7;
 
+/*
                 fprintf(stderr, "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f grav:%f | "
                                 "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f grav:%f\n",
                                 jointNames[m0], duty0, dir0, s->joint[m0].ref,
                                     s->joint[m0].pos, s->joint[m1].vel, g->pwmCommand[m0],
                                 jointNames[m1], duty1, dir1, s->joint[m1].ref,
                                     s->joint[m1].pos, s->joint[m1].vel, g->pwmCommand[m1]);
+*/
             }
         }
      

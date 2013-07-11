@@ -127,7 +127,7 @@ int main() {
 	usleep(250000);
 
 	// set default values for Hubo
-    setJointParams(&H_param, &H_state);
+    setJointParams(&H_param, &H_state, &H_gains);
     setSensorDefaults( &H_param );
 
 
@@ -222,7 +222,7 @@ int main() {
             float kp = 0.0;
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &kp) != 0){
-                H_gains.Kp[jnt] = kp;
+                H_gains.joint[jnt].Kp = kp;
                 
                 ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
             }
@@ -235,7 +235,7 @@ int main() {
             float kd = 0.0;
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &kd) != 0){
-                H_gains.Kd[jnt] = kd;
+                H_gains.joint[jnt].Kd = kd;
                 
                 ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
             }
@@ -248,7 +248,7 @@ int main() {
             float grav = 0.0;
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &grav) != 0){
-                H_gains.pwmCommand[jnt] = grav;
+                H_gains.joint[jnt].pwmCommand = grav;
                 
                 ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
             }
@@ -261,7 +261,7 @@ int main() {
             float maxPWM = 0.0;
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &maxPWM) != 0){
-                H_gains.maxPWM[jnt] = maxPWM;
+                H_gains.joint[jnt].maxPWM = maxPWM;
                 
                 ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
             }
