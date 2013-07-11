@@ -377,7 +377,7 @@ typedef struct hubo_ref {
 }__attribute__((packed)) hubo_ref_t;
 
 typedef struct hubo_pwm_gains {
-    int8_t pwmCommand[HUBO_JOINT_COUNT];
+    double pwmCommand[HUBO_JOINT_COUNT];
 	double Kp[HUBO_JOINT_COUNT];
 	double Kd[HUBO_JOINT_COUNT];\
     int8_t maxPWM[HUBO_JOINT_COUNT];

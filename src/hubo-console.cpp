@@ -87,7 +87,7 @@ int name2sensor(char* name, hubo_param_t *h);
 double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
-                "resetAll","status","statusAll","comp","kp","kd","maxPWM"}; //,
+                "resetAll","status","statusAll","comp","kp","kd","maxPWM","grav"}; //,
 
 
 int main() {
@@ -236,6 +236,19 @@ int main() {
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &kd) != 0){
                 H_gains.Kd[jnt] = kd;
+                
+                ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
+            }
+            else {
+                printf(">> Bad input \n");
+            }
+        }
+        else if(strcmp(buf0, "grav")==0) {
+            int jnt = hubo_set(buf, &H_param);
+            float grav = 0.0;
+            char* str = getArg(buf,2);
+            if(sscanf(str, "%f", &grav) != 0){
+                H_gains.pwmCommand[jnt] = grav;
                 
                 ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
             }

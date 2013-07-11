@@ -1063,7 +1063,6 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 // Kd -- duty% reduction per radian/sec
                 // pwmCommand -- duty%
 
-                g->pwmCommand[m0] = 0;
                 int kP_err = 10*g->Kp[m0]*(s->joint[m0].ref - s->joint[m0].pos);
                 int kD_err = 10*g->Kd[m0]*s->joint[m0].vel;
 
@@ -1090,7 +1089,6 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                     g->maxPWM[m1] = 100;
                 pwmLimit = abs(g->maxPWM[m1]);
 
-                g->pwmCommand[m1] = 0;
                 kP_err = 10*g->Kp[m1]*(s->joint[m1].ref - s->joint[m1].pos);
                 kD_err = 10*g->Kd[m1]*s->joint[m1].vel;
 
@@ -1122,12 +1120,12 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 f->can_dlc = 7;
 
-                fprintf(stderr, "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f | "
-                                "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f\n",
+                fprintf(stderr, "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f grav:%f | "
+                                "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f grav:%f\n",
                                 jointNames[m0], duty0, dir0, s->joint[m0].ref,
-                                    s->joint[m0].pos, s->joint[m1].vel,
+                                    s->joint[m0].pos, s->joint[m1].vel, g->pwmCommand[m0],
                                 jointNames[m1], duty1, dir1, s->joint[m1].ref,
-                                    s->joint[m1].pos, s->joint[m1].vel);
+                                    s->joint[m1].pos, s->joint[m1].vel, g->pwmCommand[m1]);
             }
         }
      
