@@ -435,6 +435,12 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         // FIXME: Add in safety checks here
         
 
+        /* Get all Encoder data */
+        getEncAllSlow(&H_state, H_param, &frame); 
+        // Note: I moved the encoder reading to be ahead of the filter and send ref.
+        // That way the filter is working off of the latest encoder data.
+        // Hopefully there aren't unforeseen timing issues with this.
+        
 
         /* Set all Ref */
         if(hubo_noRefTimeAll < T ) {
@@ -462,10 +468,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /* read hubo console */
         huboMessage(&H_ref, &H_ref_filter, H_param, &H_state, &H_cmd, &frame);
 
-
-        /* Get all Encoder data */
-        getEncAllSlow(&H_state, H_param, &frame); 
-        
         /* Get FT Sensor data */
         getFTAllSlow(&H_state, H_param, &frame);
 
@@ -619,8 +621,10 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
                 break;
         }
 
+        s->joint[i].ref = f->ref[i];
+
         // Handle the compliance settings:
-        if( s->joint[i].comply==0 && r->comply[i]==1 )
+        if( s->joint[i].comply==0 && r->comply[i]==1 && h->joint[i].numMot <= 2 )
         {
             fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]);
             struct can_frame frame;
@@ -628,21 +632,37 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
             hSetNonComplementaryMode( i, h, &frame );
             s->joint[i].comply = 1;
         }
-        else if( s->joint[i].comply==1 && r->comply[i]==0 )
+        else if( s->joint[i].comply==1 && r->comply[i]==0 && h->joint[i].numMot <= 2 )
         { // TODO: Handle this transition
-/*
-            fprintf(stdout, "WARNING: Switching joint %s from compliance to position mode is"
-                            " not current supported!!\n"
-                            " -- Complain to Grey to get this fixed\n",
-                    jointNames[i]);
-*/
+            int allRigid = 0;
+            int k = 0;
+            for( k=0; k<h->joint[i].numMot; k++)
+                if(r->comply[h->driver[h->joint[i].jmc].joint[k]] == 0)
+                    allRigid++;
+
+            if( allRigid == h->joint[i].numMot )
+            {
+                for( k=0; k<h->joint[i].numMot; k++)
+                {
+                    int jnt = h->driver[h->joint[i].jmc].joint[k];
+                    s->joint[jnt].comply = 2;
+                    s->joint[jnt].ref = s->joint[jnt].pos;
+                }
+                
+            }
+            
+            // TODO: Switch rigid control on AFTER sending the latest ref
+
+            // TODO: Step forward by some nice amount up to the requested location
+            
+            // TODO: Return to normal operation (s->...comply == 0) after converging to some threshold
+
         }
+        
+
         
     }
 
-    for(i = 0; i < HUBO_JOINT_COUNT; i++) {
-      s->joint[i].ref = f->ref[i];
-    }
 }
 
 
@@ -665,40 +685,43 @@ void setRefAll(hubo_ref_t *r, hubo_param_t *h, hubo_state_t *s,
 	int i = 0;
 	int canChan = 0;
 
-	for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
-            for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-                jmc = h->joint[i].jmc;
-                if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true)){	// check to see if already asked that motor controller
-            if( slowLoopi < slowLoopSplit ) {
-                slowLoop = 1;
-                slowLoopi = 0;
-            }
-            else {
-                slowLoop = 0;
-                slowLoopi = slowLoopi+1;
-            }
-            /* ------------------------- */
-            /* --- Choose Hubo Type ---- */
-            /* ------------------------- */
-            if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
-               // if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
-               //     (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
-               // else {
-                    hSetEncRef(i, s, r, h, g, f);
-                    c[jmc] = 1;
-               // }
-            }
-            else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type) {
-                if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
-                    (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
-                else {
-                    hSetEncRef(i, s, r, h, g, f);
-                    c[jmc] = 1;
-                }
+  for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
+    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+        jmc = h->joint[i].jmc;
+        if((0 == c[jmc]) & (canChan == h->joint[i].can) & (s->joint[i].active == true))
+    {
+                    // check to see if already asked that motor controller
+
+        if( slowLoopi < slowLoopSplit ) {
+            slowLoop = 1;
+            slowLoopi = 0;
         }
-      }
-    }
-  }
+        else {
+            slowLoop = 0;
+            slowLoopi = slowLoopi+1;
+        }
+        /* ------------------------- */
+        /* --- Choose Hubo Type ---- */
+        /* ------------------------- */
+        if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
+           // if( (i == RF1) | (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+           //     (i == LF1) | (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+           // else {
+                hSetEncRef(i, s, r, h, g, f);
+                c[jmc] = 1;
+           // }
+        }
+        else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type) {
+            if( (i == RF2) | (i == RF3) | (i == RF4) | (i == RF5) |
+                (i == LF2) | (i == LF3) | (i == LF4) | (i == LF5) ) { }
+            else {
+                hSetEncRef(i, s, r, h, g, f);
+                c[jmc] = 1;
+            }
+        }
+      } // If we want to send a command
+    } // for every joint
+  } // for each CAN channel
 }
 
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
@@ -1024,13 +1047,9 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
             else
                 m1 = h->driver[jmc].joints[1];
 
-            if( s->joint[m0].comply == 0 || s->joint[m1].comply == 0 )
+            if(    ( s->joint[m0].comply == 0 || s->joint[m0].comply == 2 )
+                && ( s->joint[m1].comply == 0 || s->joint[m1].comply == 2 ) )
             {
-
-                // TODO: Come up with a better warning method
-                if(s->joint[m0].comply == 1 || s->joint[m1].comply == 1)
-                    fprintf( stderr, "These two must agree on their compliance mode: %s & %s!\n",
-                            jointNames[m0], jointNames[m1] );
 
                 unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
                 f->data[0] =     int_to_bytes(pos0,1);
@@ -1046,8 +1065,9 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 f->can_dlc = 6; //= strlen( data );    // Set DLC
             }
-            else if( s->joint[m0].comply == 1 && s->joint[m1].comply == 1 )
+            else if( s->joint[m0].comply == 1 || s->joint[m1].comply == 1 )
             {   // TODO: Make this section much less sloppy
+
                 if(abs(g->joint[m0].maxPWM) > 100)
                     g->joint[m0].maxPWM = 100;
                 int pwmLimit = abs(g->joint[m0].maxPWM);
@@ -1056,7 +1076,6 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
                 // pwmCommand -- duty%
-
                 int kP_err = 10*g->joint[m0].Kp*(s->joint[m0].ref - s->joint[m0].pos);
                 int kD_err = 10*g->joint[m0].Kd*s->joint[m0].vel;
 
@@ -1123,6 +1142,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                                     s->joint[m1].pos, s->joint[m1].vel, g->pwmCommand[m1]);
 */
             }
+            
         }
      
     }

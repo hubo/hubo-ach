@@ -187,7 +187,7 @@ typedef enum {
 	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
 	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
 	HUBO_REF_MODE_COMPLIANT     = 2, ///< Compliant mode, sets ref to current encoder position. 
-	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
+	HUBO_REF_MODE_ENC_FILTER    = 3, ///< Reference filter
 }__attribute__((packed)) hubo_mode_type_t;
 
 #define RIGHT 0
