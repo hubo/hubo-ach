@@ -617,7 +617,7 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
           break;
 
             default:
-                fprintf(stderr, "Unsupported filter mode for joint #%d\n", i);
+                fprintf(stderr, "Unsupported filter mode for joint %s\n", jointNames[i]);
                 break;
         }
 
@@ -645,21 +645,28 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
                 for( k=0; k<h->joint[i].numMot; k++)
                 {
                     int jnt = h->driver[h->joint[i].jmc].joint[k];
-                    s->joint[jnt].comply = 2;
+                    s->joint[jnt].comply = 3;
                     s->joint[jnt].ref = s->joint[jnt].pos;
                 }
-                
             }
+        }
+        else if( s->joint[i].comply==2  &&
+                 fabs(s->joint[i].ref - r->ref[i]) > HUBO_COMP_RIGID_TRANS_THRESHOLD )
+        {
+            double F = L*HUBO_COMP_RIGID_TRANS_MULTIPLIER; 
+            s->joint[i].ref = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F);
+        }
+        else if( s->joint[i].comply==2  &&
+                 fabs(s->joint[i].ref - r->ref[i]) < HUBO_COMP_RIGID_TRANS_THRESHOLD )
+        {
+            s->joint[i].comply=0;
+        }
+
             
             // TODO: Switch rigid control on AFTER sending the latest ref
 
-            // TODO: Step forward by some nice amount up to the requested location
             
             // TODO: Return to normal operation (s->...comply == 0) after converging to some threshold
-
-        }
-        
-
         
     }
 
@@ -1047,8 +1054,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
             else
                 m1 = h->driver[jmc].joints[1];
 
-            if(    ( s->joint[m0].comply == 0 || s->joint[m0].comply == 2 )
-                && ( s->joint[m1].comply == 0 || s->joint[m1].comply == 2 ) )
+            if( s->joint[m0].comply != 1 && s->joint[m1].comply != 1 )
             {
 
                 unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
@@ -1143,6 +1149,16 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 */
             }
             
+            if( s->joint[m0].comply == 3 && s->joint[m1].comply == 3 )
+            {
+                struct can_frame;
+                memset(&can_frame, 0, sizeof(can_frame));
+                fEnableFeedbackController(m0, h, &can_frame);
+                sendCan(getSocket(h,m0), &can_frame);
+
+                s->joint[m0].comply = 2;
+                s->joint[m1].comply = 2;
+            }
         }
      
     }
@@ -1151,7 +1167,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 unsigned long DrcSignConvention(long h_input)
 {
 	if (h_input < 0) return (unsigned long)( ((-h_input)&0x007FFFFF) | (1<<23) );
-	else return (unsigned long)h_input;
+	 else return (unsigned long)h_input;
 			
 }
 
