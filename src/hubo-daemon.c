@@ -624,7 +624,7 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
         s->joint[i].ref = f->ref[i];
 
         // Handle the compliance settings:
-        if( s->joint[i].comply==0 && r->comply[i]==1 && h->joint[i].numMot <= 2 )
+        if( s->joint[i].comply!=1 && r->comply[i]==1 && h->joint[i].numMot <= 2 )
         {
             fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]);
             struct can_frame frame;
@@ -637,14 +637,14 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
             int allRigid = 0;
             int k = 0;
             for( k=0; k<h->joint[i].numMot; k++)
-                if(r->comply[h->driver[h->joint[i].jmc].joint[k]] == 0)
+                if(r->comply[h->driver[h->joint[i].jmc].joints[k]] == 0)
                     allRigid++;
 
             if( allRigid == h->joint[i].numMot )
             {
                 for( k=0; k<h->joint[i].numMot; k++)
                 {
-                    int jnt = h->driver[h->joint[i].jmc].joint[k];
+                    int jnt = h->driver[h->joint[i].jmc].joints[k];
                     s->joint[jnt].comply = 3;
                     s->joint[jnt].ref = s->joint[jnt].pos;
                 }
@@ -657,17 +657,12 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
             s->joint[i].ref = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F);
         }
         else if( s->joint[i].comply==2  &&
-                 fabs(s->joint[i].ref - r->ref[i]) < HUBO_COMP_RIGID_TRANS_THRESHOLD )
+                 fabs(s->joint[i].ref - r->ref[i]) <= HUBO_COMP_RIGID_TRANS_THRESHOLD )
         {
-            s->joint[i].comply=0;
+            fprintf(stdout, "Joint %s has returned to rigid mode\n", jointNames[i]);
+            s->joint[i].comply = 0;
         }
-
             
-            // TODO: Switch rigid control on AFTER sending the latest ref
-
-            
-            // TODO: Return to normal operation (s->...comply == 0) after converging to some threshold
-        
     }
 
 }
@@ -1151,10 +1146,10 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
             
             if( s->joint[m0].comply == 3 && s->joint[m1].comply == 3 )
             {
-                struct can_frame;
-                memset(&can_frame, 0, sizeof(can_frame));
-                fEnableFeedbackController(m0, h, &can_frame);
-                sendCan(getSocket(h,m0), &can_frame);
+                struct can_frame frame;
+                memset(&frame, 0, sizeof(frame));
+                fEnableFeedbackController(m0, h, &frame);
+                sendCan(getSocket(h,m0), &frame);
 
                 s->joint[m0].comply = 2;
                 s->joint[m1].comply = 2;

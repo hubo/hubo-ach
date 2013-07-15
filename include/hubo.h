@@ -132,7 +132,7 @@ extern "C" {
 
 #define         HUBO_COMP_RIGID_TRANS_MULTIPLIER 5  ///> multiplication factor for the filter
                                                      ///> which transitions from compliant to rigid
-#define         HUBO_COMP_RIGID_TRANS_TRESHOLD 0.01  ///> threshold for finishing the transition
+#define         HUBO_COMP_RIGID_TRANS_THRESHOLD 0.01  ///> threshold for finishing the transition
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
