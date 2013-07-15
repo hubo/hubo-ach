@@ -5,7 +5,7 @@
 # The values of jmc names are defined in canId.h
 
 #name      motNo    refEnc   drive    driven   harm       enc        dir      jmc          active   can      numMot     kp      kd      maxPWM      zeroed
-WST        0        0        10       25       100        4000       1        EJMC3        1        0        1          0       0       0           0
+WST        0        0        10       25       100        4000       1        EJMC3        0        0        1          0       0       0           0
 NKY        0        0        1        1        100        128        1        EJMC2        0        1        3          0       0       0           0
 NK1        1        0        1        1        100        128        1        EJMC2        0        1        3          0       0       0           0
 NK2        2        0        1        1        100        128        1        EJMC2        0        1        3          0       0       0           0
@@ -15,14 +15,14 @@ LSR        1        0        1        1        100        4000       1        JM
 LSY        0        0        1        1        100        4000       1        JMC11        1        1        2          70      0       70          0
 LEB        1        0        10       20       100        4000       1        JMC11        1        1        2          40      0       40          0
 LWY        0        0        1        1        100        4000       1        EJMC1        1        1        2          50      0       50          0
-LWP        1        0        1        2        100        4000       1        EJMC1        1        1        2          40      0       40          0
-LWR        0        0        1        2        100        128        1        EJMC5        1        1        3          0       0       0           0
+LWP        1        0        1        2        100        4000       1        EJMC1        0        1        2          40      0       40          0
+LWR        0        0        1        2        100        128        1        EJMC5        0        1        3          0       0       0           0
 RSP        0        0        10       25       100        4000       1        JMC8         1        1        2          80      0       80          0
 RSR        1        0        1        1        100        4000       1        JMC8         1        1        2          80      0       80          0
 RSY        0        0        1        1        100        4000       1        JMC9         1        1        2          70      0       70          0
 REB        1        0        10       20       100        4000       1        JMC9         1        1        2          50      0       50          0
 RWY        0        0        1        1        100        4000       1        EJMC0        1        1        2          50      0       50          0
-RWP        1        0        1        2        100        4000       1        EJMC0        1        1        2          40      0       40          0
+RWP        1        0        1        2        100        4000       1        EJMC0        0        1        2          40      0       40          0
 RWR        0        0        1        2        100        128        1        EJMC4        0        1        3          0       0       0           0
 LHY        0        0        10       25       100        4000       1        JMC4         0        0        2          0       0       0           0
 LHR        1        0        324      1024     160        4000       1        JMC4         0        0        2          0       0       0           0

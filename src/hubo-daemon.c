@@ -621,7 +621,6 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
                 break;
         }
 
-        s->joint[i].ref = f->ref[i];
 
         // Handle the compliance settings:
         if( s->joint[i].comply!=1 && r->comply[i]==1 && h->joint[i].numMot <= 2 )
@@ -642,27 +641,38 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
 
             if( allRigid == h->joint[i].numMot )
             {
+                fprintf(stderr, "Trans start refs: ");
                 for( k=0; k<h->joint[i].numMot; k++)
                 {
                     int jnt = h->driver[h->joint[i].jmc].joints[k];
                     s->joint[jnt].comply = 3;
-                    s->joint[jnt].ref = s->joint[jnt].pos;
+                    //s->joint[jnt].ref = s->joint[jnt].pos;
+                    f->ref[jnt] = s->joint[jnt].pos;
+                    fprintf(stderr, "%f, ", f->ref[jnt]);
                 }
+                fprintf(stderr, "\n");
             }
         }
         else if( s->joint[i].comply==2  &&
                  fabs(s->joint[i].ref - r->ref[i]) > HUBO_COMP_RIGID_TRANS_THRESHOLD )
         {
+            int m0 = h->driver[h->joint[i].jmc].joints[0];
+            int m1 = h->driver[h->joint[i].jmc].joints[1];
             double F = L*HUBO_COMP_RIGID_TRANS_MULTIPLIER; 
-            s->joint[i].ref = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F);
+            f->ref[i] = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F);
+            fprintf(stderr, "%s:%f\t|\t%s:%f\n", jointNames[m0], s->joint[m0].ref,
+                        jointNames[m1], s->joint[m1].ref);
+                            
         }
         else if( s->joint[i].comply==2  &&
                  fabs(s->joint[i].ref - r->ref[i]) <= HUBO_COMP_RIGID_TRANS_THRESHOLD )
         {
-            fprintf(stdout, "Joint %s has returned to rigid mode\n", jointNames[i]);
+            fprintf(stdout, "Joint %s has returned to rigid mode (%f)\n", jointNames[i],
+                        fabs(s->joint[i].ref - r->ref[i]) );
             s->joint[i].comply = 0;
         }
             
+        s->joint[i].ref = f->ref[i];
     }
 
 }
