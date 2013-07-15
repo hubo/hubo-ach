@@ -48,7 +48,7 @@ void printHelp()
                     "       arguments:\n"
                     "           -s or --save  : Saves the current home settings into [target file]\n"
                     "           -l or --load  : Loads the home settings from [target file] onto the boards\n"
-                    "           -p pr --print : Prints a table of joint settings out to the terminal\n"
+                    "           -p or --print : Prints a table of joint settings out to the terminal\n"
                     "\n"
                     "       target file: You are recommend to provide the full path of a file\n"
                     "\n"
