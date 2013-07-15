@@ -455,6 +455,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         }
 
         /* Only on startup */
+        // TODO: Investigate a more meaningful way to initialize
         if( startFlag == 1) {
             getBoardStatusAllSlow( &H_state, H_param, &frame);
             for( i = 0; i < HUBO_JOINT_COUNT; i++ ){
@@ -625,11 +626,16 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
         // Handle the compliance settings:
         if( s->joint[i].comply!=1 && r->comply[i]==1 && h->joint[i].numMot <= 2 )
         {
-            fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]);
-            struct can_frame frame;
-            memset(&frame, 0, sizeof(frame));
-            hSetNonComplementaryMode( i, h, &frame );
-            s->joint[i].comply = 1;
+            int m0 = h->driver[h->joint[i].jmc].joints[0];
+            int m1 = h->driver[h->joint[i].jmc].joints[1];
+            if( s->joint[m0].zeroed == 1 && s->joint[m1].zeroed == 1 )
+            {
+                fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]);
+                struct can_frame frame;
+                memset(&frame, 0, sizeof(frame));
+                hSetNonComplementaryMode( i, h, &frame );
+                s->joint[i].comply = 1;
+            }
         }
         else if( s->joint[i].comply==1 && r->comply[i]==0 && h->joint[i].numMot <= 2 )
         { // TODO: Handle this transition
@@ -641,16 +647,13 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
 
             if( allRigid == h->joint[i].numMot )
             {
-                fprintf(stderr, "Trans start refs: ");
                 for( k=0; k<h->joint[i].numMot; k++)
                 {
                     int jnt = h->driver[h->joint[i].jmc].joints[k];
                     s->joint[jnt].comply = 3;
                     //s->joint[jnt].ref = s->joint[jnt].pos;
                     f->ref[jnt] = s->joint[jnt].pos;
-                    fprintf(stderr, "%f, ", f->ref[jnt]);
                 }
-                fprintf(stderr, "\n");
             }
         }
         else if( s->joint[i].comply==2  &&
@@ -660,15 +663,11 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
             int m1 = h->driver[h->joint[i].jmc].joints[1];
             double F = L*HUBO_COMP_RIGID_TRANS_MULTIPLIER; 
             f->ref[i] = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F);
-            fprintf(stderr, "%s:%f\t|\t%s:%f\n", jointNames[m0], s->joint[m0].ref,
-                        jointNames[m1], s->joint[m1].ref);
-                            
         }
         else if( s->joint[i].comply==2  &&
                  fabs(s->joint[i].ref - r->ref[i]) <= HUBO_COMP_RIGID_TRANS_THRESHOLD )
         {
-            fprintf(stdout, "Joint %s has returned to rigid mode (%f)\n", jointNames[i],
-                        fabs(s->joint[i].ref - r->ref[i]) );
+            fprintf(stdout, "Joint %s has returned to rigid mode\n", jointNames[i]);
             s->joint[i].comply = 0;
         }
             
@@ -2198,7 +2197,9 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
         int j = h->driver[jmc].joints[i];
         if( s->joint[j].zeroed==2)
         {
-          if( s->status[j].homeFlag==H_HOME_SUCCESS) // && s->status[j].bigError==0 )
+//          if( s->status[j].homeFlag==H_HOME_SUCCESS) // && s->status[j].bigError==0 )
+          if( s->status[j].homeFlag==H_HOME_SUCCESS &&
+                fabs(s->joint[j].pos) <= HUBO_COMP_RIGID_TRANS_THRESHOLD )
           {
             s->joint[j].zeroed=1;
           }
@@ -3525,7 +3526,7 @@ int main(int argc, char **argv) {
         i++;
     }
     // Daemonize
-//    hubo_daemonize();
+    hubo_daemonize();
     
 
     // Initialize Hubo Structs
