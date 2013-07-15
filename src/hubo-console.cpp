@@ -64,7 +64,7 @@ using namespace std;
 ach_channel_t chan_hubo_ref;      // hubo-ach
 ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
-
+ach_channel_t chan_hubo_gains;
 
 
 static char** my_completion(const char*, int ,int);
@@ -87,7 +87,7 @@ int name2sensor(char* name, hubo_param_t *h);
 double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
-                "resetAll","status","statusAll","compMode"}; //,
+                "resetAll","status","statusAll","comp","kp","kd","maxPWM","grav"}; //,
 
 
 int main() {
@@ -106,33 +106,43 @@ int main() {
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
 
+   // initialize control channel
+    r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
+    assert( ACH_OK == r );
 
-       // initialize control channel
-       r = ach_open(&chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL);
-       assert( ACH_OK == r );
+    r = ach_open(&chan_hubo_gains, HUBO_CHAN_PWM_GAINS_NAME, NULL);
 
         // get initial values for hubo
         struct hubo_ref H_ref;
         hubo_board_cmd_t H_cmd;
         struct hubo_state H_state;
         hubo_param_t H_param;
+        hubo_pwm_gains_t H_gains;
         memset( &H_ref,   0, sizeof(H_ref));
-        memset( &H_cmd,  0, sizeof(H_cmd));
+        memset( &H_cmd,   0, sizeof(H_cmd));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
+        memset( &H_gains, 0, sizeof(H_gains) );
 	
 	usleep(250000);
 
 	// set default values for Hubo
-    setJointParams(&H_param, &H_state);
+    setJointParams(&H_param, &H_state, &H_gains);
     setSensorDefaults( &H_param );
 
-	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
-	assert( sizeof(H_ref) == fs );
+
     fprintf(stdout, "Waiting to hear from hubo-daemon... "); fflush(stdout);
 	r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_state) == fs );
     fprintf(stdout, " Ready!\n");
+
+
+	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_ref) == fs );
+
+
+    r = ach_get( &chan_hubo_gains, &H_gains, sizeof(H_gains), &fs, NULL, ACH_O_LAST );
+    assert( sizeof(H_gains) == fs );
 
 
     char *buf;
@@ -165,6 +175,9 @@ int main() {
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &f) != 0){  //It's a float.
                 H_ref.ref[jnt] = (double)f;
+                H_ref.comply[jnt] = 0;
+
+                H_ref.mode[jnt] = HUBO_REF_MODE_REF_FILTER;
                 int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
                 char* tmp = getArg(buf,1);
                 printf(">> %s = %f rad \n",tmp,f);
@@ -186,6 +199,77 @@ int main() {
             tsleep = 5;
             
         }
+        else if (strcmp(buf0, "comp")==0) {
+    
+            int jnt = hubo_set(buf, &H_param);
+            float f = 0.0;
+            char* str = getArg(buf,2);
+            if(sscanf(str, "%f", &f) != 0){  //It's a float.
+                H_ref.ref[jnt] = (double)f;
+                H_ref.comply[jnt] = 1;
+
+                H_ref.mode[jnt] = HUBO_REF_MODE_REF;
+                int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+                char* tmp = getArg(buf,1);
+                printf(">> %s = %f rad \n",tmp,f);
+            }
+            else {
+                printf(">> Bad input \n");
+            }
+        }
+        else if(strcmp(buf0, "kp")==0) {
+            int jnt = hubo_set(buf, &H_param);
+            float kp = 0.0;
+            char* str = getArg(buf,2);
+            if(sscanf(str, "%f", &kp) != 0){
+                H_gains.joint[jnt].Kp = kp;
+                
+                ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
+            }
+            else {
+                printf(">> Bad input \n");
+            }
+        }
+        else if(strcmp(buf0, "kd")==0) {
+            int jnt = hubo_set(buf, &H_param);
+            float kd = 0.0;
+            char* str = getArg(buf,2);
+            if(sscanf(str, "%f", &kd) != 0){
+                H_gains.joint[jnt].Kd = kd;
+                
+                ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
+            }
+            else {
+                printf(">> Bad input \n");
+            }
+        }
+        else if(strcmp(buf0, "grav")==0) {
+            int jnt = hubo_set(buf, &H_param);
+            float grav = 0.0;
+            char* str = getArg(buf,2);
+            if(sscanf(str, "%f", &grav) != 0){
+                H_gains.joint[jnt].pwmCommand = grav;
+                
+                ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
+            }
+            else {
+                printf(">> Bad input \n");
+            }
+        }
+        else if(strcmp(buf0, "maxPWM")==0) {
+            int jnt = hubo_set(buf, &H_param);
+            float maxPWM = 0.0;
+            char* str = getArg(buf,2);
+            if(sscanf(str, "%f", &maxPWM) != 0){
+                H_gains.joint[jnt].maxPWM = maxPWM;
+                
+                ach_put( &chan_hubo_gains, &H_gains, sizeof(H_gains) );
+            }
+            else {
+                printf(">> Bad input \n");
+            }
+        }
+/*
 	else if (strcmp(buf0,"compMode")==0) {
 		int hOnOff = atof(getArg(buf,2));
 		if(hOnOff == 0 | hOnOff == 1) {
@@ -203,7 +287,7 @@ int main() {
 				printf("%s - Turning On Complementary Mode\n",getArg(buf,1));}
 		}
 	}
-
+*/
 	else if (strcmp(buf0,"ctrl")==0) {
 		int hOnOff = atof(getArg(buf,2));
 		if(hOnOff == 0 | hOnOff == 1) {

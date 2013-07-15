@@ -115,6 +115,7 @@ extern "C" {
 #define		HUBO_CHAN_REF_NAME         "hubo-ref"                    ///> hubo ach channel
 #define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
+#define     HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
 #define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"                  ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
@@ -124,10 +125,14 @@ extern "C" {
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 #define         HUBO_LOOP_PERIOD         0.005  ///> period for main loopin sec (0.005 = 200hz)
-// finger control mode current
 #define         HUBO_FINGER_CURRENT_CTRL_MODE 0x01
-#define         HUBO_STARTUP_SEND_REF_DELAY 0.8  ///> setup delay in secons
-#define         HUBO_FINGER_SAT_VALUE 10         ///> value in 0.01A units
+#define         HUBO_STARTUP_SEND_REF_DELAY 0.8   ///> setup delay in secons
+#define         HUBO_FINGER_SAT_VALUE 10          ///> value in 0.01A units
+
+
+#define         HUBO_COMP_RIGID_TRANS_MULTIPLIER 10  ///> multiplication factor for the filter
+                                                     ///> which transitions from compliant to rigid
+#define         HUBO_COMP_RIGID_TRANS_THRESHOLD 0.0075  ///> threshold for finishing the transition
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
@@ -185,7 +190,7 @@ typedef enum {
 	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
 	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
 	HUBO_REF_MODE_COMPLIANT     = 2, ///< Compliant mode, sets ref to current encoder position. 
-	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
+	HUBO_REF_MODE_ENC_FILTER    = 3, ///< Reference filter
 }__attribute__((packed)) hubo_mode_type_t;
 
 #define RIGHT 0
@@ -317,6 +322,10 @@ typedef struct hubo_ft {
 typedef struct hubo_joint_state {
         double ref;         ///< Last reference value sent
 	uint8_t comply;		///< Are we in compliance mode?
+                        ///< 0: Rigid mode
+                        ///< 1: Compliant mode
+                        ///< 2: Transitioning back to rigid
+                        ///< 3: Turning motor control back on (should never be seen by the user) 
 	double pos;     	///< actual position (rad)
 	double cur;     	///< actual current (amps)
 	double vel;     	///< actual velocity (rad/sec)
@@ -372,9 +381,19 @@ typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
 	int8_t comply[HUBO_JOINT_COUNT];
-	double Kp[HUBO_JOINT_COUNT];
-	double Kd[HUBO_JOINT_COUNT];
 }__attribute__((packed)) hubo_ref_t;
+
+
+typedef struct hubo_joint_pwm_gains {
+    double pwmCommand;
+	double Kp;
+	double Kd;
+    int8_t maxPWM;
+}__attribute__((packed)) hubo_joint_pwm_gains_t;
+
+typedef struct hubo_pwm_gains {
+    hubo_joint_pwm_gains_t joint[HUBO_JOINT_COUNT];
+}__attribute__((packed)) hubo_pwm_gains_t;
 
 typedef struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive

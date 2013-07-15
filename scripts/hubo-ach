@@ -20,6 +20,7 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-board-cmd'
+HUBO_GAINS_CHAN='hubo-pwm-gains'
 HUBO_BOARD_PARAM='hubo-board-param'
 HUBO_VIRTUAL='hubo-virtual-to-sim'
 HUBO_VIRTUAL='hubo-virtual-from-sim'
@@ -40,6 +41,7 @@ MakeAch()
 	ach -1 -C hubo-ref -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
+    ach -1 -C hubo-pwm-gains -m 10 -n 3000
     ach -1 -C hubo-board-param -m 10 -n 3000
 	ach -1 -C hubo-virtual-to-sim -m 10 -n 3000
 	ach -1 -C hubo-virtual-from-sim -m 10 -n 3000
@@ -188,6 +190,7 @@ StopHubo()
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
 		sudo ach -U hubo-board-cmd
+        sudo ach -U hubo-pwm-gains
         sudo ach -U hubo-board-param
         
 
