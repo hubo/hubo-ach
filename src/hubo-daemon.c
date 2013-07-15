@@ -993,13 +993,13 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
     }
     else if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
       if ( (NKY == jnt) | (NK1 == jnt) | (NK2 == jnt) ){
-         int16_t jntTmp = (int16_t)s->joint[NKY].ref;
+         int16_t jntTmp = (int16_t)( (s->joint[NKY].ref+M_PI)/(2*M_PI)*4095 );
          f->data[0] =  jntTmp      & 0x00FF;
          f->data[1] = (jntTmp>>8)  & 0x00FF;
-         jntTmp = (int16_t)s->joint[NK1].ref;
+         jntTmp = (int16_t)( (s->joint[NK1].ref+M_PI)/(2*M_PI)*4095 );
          f->data[2] =  jntTmp      & 0x00FF;
          f->data[3] = (jntTmp>>8)  & 0x00FF;
-         jntTmp = (int16_t)s->joint[NK2].ref;
+         jntTmp = (int16_t)( (s->joint[NK2].ref+M_PI)/(2*M_PI)*4095 );
          f->data[4] =  jntTmp      & 0x00FF;
          f->data[5] = (jntTmp>>8)  & 0x00FF;
          f->can_dlc = 6;
@@ -2885,7 +2885,8 @@ char decodeParamFrame(int num, hubo_board_param_t *b, hubo_param_t *h, struct ca
     }
     else
     {
-        fprintf(stderr, "Missed a parameter frame for %d:%d! Trust nothing in hubo_board_param!\n", num, type);
+        fprintf(stderr, "Missed a parameter frame for %s:%d! Trust nothing in hubo_board_param!\n",
+                        jointNames[num], type);
         return 1;
     }
 
