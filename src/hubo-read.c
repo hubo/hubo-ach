@@ -129,14 +129,16 @@ void huboLoop() {
 	struct hubo_ref H_ref;
 	struct hubo_state H_state;
 	hubo_param_t H_param;
+        hubo_pwm_gains_t H_gains;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
 	memset( &H_param, 0, sizeof(H_param));
+        memset( &H_gains, 0, sizeof(H_gains) );
 
 
 
 	// set default values for Hubo
-	setJointParams(&H_param, &H_state);
+	setJointParams(&H_param, &H_state, &H_gains);
 
 	size_t fs;
 	//int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );

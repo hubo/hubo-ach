@@ -125,6 +125,7 @@ extern "C" {
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 #define         HUBO_LOOP_PERIOD         0.005  ///> period for main loopin sec (0.005 = 200hz)
+//#define         HUBO_LOOP_PERIOD         0.010  ///> period for main loopin sec (0.010 = 100hz)
 #define         HUBO_FINGER_CURRENT_CTRL_MODE 0x01
 #define         HUBO_STARTUP_SEND_REF_DELAY 0.8   ///> setup delay in secons
 #define         HUBO_FINGER_SAT_VALUE 10          ///> value in 0.01A units

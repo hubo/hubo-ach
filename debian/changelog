@@ -1,3 +1,10 @@
+hubo-ach (0.1.20130716) stable; urgency=low
+
+  * Added compliance mode
+  * added joint home default positions
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 16 Jun 2013 18:00:00 -0400
+
 hubo-ach (0.1.20130702-2) stable; urgency=low
 
   * Added Sensor Joint Tables

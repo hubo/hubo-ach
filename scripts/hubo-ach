@@ -252,6 +252,9 @@ StartHubo()
         sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
         echo 'Loaded Hubo Plus Joint Table'
    esac
+
+   sudo sync
+   sudo sleep 1
  
    RunDaemon
    if [[ $FLAG_NOCONSOLE -eq 0 ]]
