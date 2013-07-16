@@ -144,3 +144,28 @@ cd peak-linux-driver-7.7
 make
 =======
 
+
+
+
+
+hubo-homeparams
+===============
+For instructions on how to save and load parameters, type 
+$ hubo-homeparams
+without passing in any arguments, and it will print out this set of instructions:
+
+usage: hubo-homeparams [argument] [target file] [optional]
+
+   arguments:
+       -s or --save  : Saves the current home settings into [target file]
+       -l or --load  : Loads the home settings from [target file] onto the boards
+       -p or --print : Prints a table of joint settings out to the terminal
+
+   target file: You are recommend to provide the full path of a file
+
+   optional: Tells the -s/--save argument what format to store position data in
+       raw : Position data will be stored in encoder units
+       rad : Position data will be stored in radians
+The important thing is that giving a flag of "-s" will save the current settings into whatever file you specify, and a flag of "-l" will load whatever file you specify.
+
+I strongly recommend only using full paths for any target files, because I have not tested what happens when you give relative paths. I would guess that it will just fail to find the file.

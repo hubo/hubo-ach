@@ -48,6 +48,36 @@ MakeAch()
         sudo chmod 777 /dev/shm/achshm-hubo-*
 }
 
+Load()
+{
+
+hubo-ach daemon drc
+echo 'Loading Hubo joint table'
+case $2 in 
+	'beta1')
+		echo 'Beta-1'
+		sudo hubo-homeparams -l /etc/hubo-ach/drc-hubo-beta-1-default.home
+	;;
+	'beta2')
+		echo 'Beta-2'
+		sudo hubo-homeparams -l /etc/hubo-ach/drc-hubo-beta-2-default.home
+	;;
+	'rainbow2')
+		echo 'Rainbow-beta-2'
+		sudo hubo-homeparams -l /etc/hubo-ach/drc-hubo-beta-2-rainbow-default.home
+	;;
+	*)
+		echo 'No change - no file loaded'
+	;;
+	esac
+
+hubo-ach killall
+
+}
+
+
+
+
 Clean()
 {
 	sudo cp /etc/hubo-ach/hubo-ach-safe-clean.sh /tmp/hubo-ach-safe-clean.sh
@@ -693,6 +723,11 @@ ShowUsage()
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
         echo 'console       : Starts the hubo conole'
+	echo 'load          : Loads pre defigned home paramaters for the hubos'
+	echo '              : Options:'
+   	echo '              :       beta1         : Loads default home pos for DRC-Hubo-Beta-1'
+   	echo '              :       beta2         : Loads default home pos for DRC-Hubo-Beta-2'
+   	echo '              :       rainbow2      : Loads default RAINBOW home pos for DRC-Hubo-Beta-2'
         echo 'read          : Starts the hubo read application to read state data'
         echo 'make          : makes all the hubo channels'
 	echo 'kill          : Emergency kill the daemon process'
@@ -740,6 +775,11 @@ case "$1" in
 # Start all channels and processes
 	'make' )
 		MakeAch $@
+	;;
+
+# Loads new home paramaters
+	'load' )
+		Load $@
 	;;
 
 # Start hubo-read
