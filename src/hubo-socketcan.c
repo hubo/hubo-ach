@@ -114,7 +114,24 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	return bytes_sent;
 }
 
+int flushCan(hubo_can_t skt, int timeOut, double giveUp)
+{
+    struct can_frame f;
+    int bytes_read;
+    double start, time;
+    struct timespec ts;
+    clock_gettime( CLOCK_MONOTONIC, &ts );
+    start = (double)(ts.tv_sec) + (double)(ts.tv_nsec)/1.0E9;
 
+    do
+    {
+        bytes_read = readCan(skt, &f, timeOut);
+        clock_gettime( CLOCK_MONOTONIC, &ts );
+        time = (double)(ts.tv_sec) + (double)(ts.tv_nsec)/1.0E9;
+    } while(bytes_read > 0 && (time-start)<giveUp);
+
+    return bytes_read;
+}
 
 static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
 	int n_left;
