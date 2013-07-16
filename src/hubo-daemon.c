@@ -604,8 +604,8 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
         case HUBO_REF_MODE_REF: // sets reference directly
           f->ref[i] = r->ref[i];
           break;
-        case HUBO_REF_MODE_COMPLIANT: // complient mode
-          f->ref[i] = s->joint[i].pos;
+        case HUBO_REF_MODE_COMPLIANT:  // complient mode
+          f->ref[i] = s->joint[i].pos; 
           break;
         case HUBO_REF_MODE_REF_FILTER: // slow ref to ref no encoder
           f->ref[i] = (f->ref[i] * ((double)L-1.0) + r->ref[i]) / ((double)L);
@@ -624,57 +624,57 @@ void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_
 
 
         // Handle the compliance settings:
-        if( s->joint[i].comply!=1 && r->comply[i]==1 && h->joint[i].numMot <= 2 )
-        {
-            int m0 = h->driver[h->joint[i].jmc].joints[0];
-            int m1 = h->driver[h->joint[i].jmc].joints[1];
-            if( s->joint[m0].zeroed == 1 && s->joint[m1].zeroed == 1 )
-            {
-                fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]);
-                struct can_frame frame;
-                memset(&frame, 0, sizeof(frame));
-                hSetNonComplementaryMode( i, h, &frame );
-                s->joint[i].comply = 1;
-            }
-        }
-        else if( s->joint[i].comply==1 && r->comply[i]==0 && h->joint[i].numMot <= 2 )
-        { // TODO: Handle this transition
-            int allRigid = 0;
-            int k = 0;
-            for( k=0; k<h->joint[i].numMot; k++)
-                if(r->comply[h->driver[h->joint[i].jmc].joints[k]] == 0)
-                    allRigid++;
+        if( s->joint[i].comply!=1 && r->comply[i]==1 && h->joint[i].numMot <= 2 ) 
+        { 
+            int m0 = h->driver[h->joint[i].jmc].joints[0]; 
+            int m1 = h->driver[h->joint[i].jmc].joints[1]; 
+            if( s->joint[m0].zeroed == 1 && s->joint[m1].zeroed == 1 ) 
+            { 
+                fprintf(stdout, "Switching joint %s to compliance mode\n", jointNames[i]); 
+                struct can_frame frame; 
+                memset(&frame, 0, sizeof(frame)); 
+                hSetNonComplementaryMode( i, h, &frame ); 
+                s->joint[i].comply = 1; 
+            } 
+        } 
+        else if( s->joint[i].comply==1 && r->comply[i]==0 && h->joint[i].numMot <= 2 ) 
+        { // TODO: Handle this transition 
+            int allRigid = 0; 
+            int k = 0; 
+            for( k=0; k<h->joint[i].numMot; k++) 
+                if(r->comply[h->driver[h->joint[i].jmc].joints[k]] == 0) 
+                    allRigid++; 
 
-            if( allRigid == h->joint[i].numMot )
-            {
-                for( k=0; k<h->joint[i].numMot; k++)
-                {
-                    int jnt = h->driver[h->joint[i].jmc].joints[k];
-                    s->joint[jnt].comply = 3;
-                    //s->joint[jnt].ref = s->joint[jnt].pos;
-                    f->ref[jnt] = s->joint[jnt].pos;
-                }
-            }
-        }
-        else if( s->joint[i].comply==2  &&
-                 fabs(s->joint[i].ref - r->ref[i]) > HUBO_COMP_RIGID_TRANS_THRESHOLD )
-        {
-            int m0 = h->driver[h->joint[i].jmc].joints[0];
-            int m1 = h->driver[h->joint[i].jmc].joints[1];
-            double F = L*HUBO_COMP_RIGID_TRANS_MULTIPLIER; 
-            f->ref[i] = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F);
-        }
-        else if( s->joint[i].comply==2  &&
+            if( allRigid == h->joint[i].numMot ) 
+            { 
+                for( k=0; k<h->joint[i].numMot; k++) 
+                { 
+                    int jnt = h->driver[h->joint[i].jmc].joints[k]; 
+                    s->joint[jnt].comply = 3; 
+                    //s->joint[jnt].ref = s->joint[jnt].pos; 
+                    f->ref[jnt] = s->joint[jnt].pos; 
+                } 
+            } 
+        } 
+        else if( s->joint[i].comply==2  && 
+                 fabs(s->joint[i].ref - r->ref[i]) > HUBO_COMP_RIGID_TRANS_THRESHOLD ) 
+        { 
+            int m0 = h->driver[h->joint[i].jmc].joints[0]; 
+            int m1 = h->driver[h->joint[i].jmc].joints[1]; 
+            double F = L*HUBO_COMP_RIGID_TRANS_MULTIPLIER;  
+            f->ref[i] = (s->joint[i].ref * ((double)F-1.0) + r->ref[i]) / ((double)F); 
+        } 
+        else if( s->joint[i].comply==2  && 
                  fabs(s->joint[i].ref - r->ref[i]) <= HUBO_COMP_RIGID_TRANS_THRESHOLD )
-        {
-            fprintf(stdout, "Joint %s has returned to rigid mode\n", jointNames[i]);
-            s->joint[i].comply = 0;
-        }
+        { 
+            fprintf(stdout, "Joint %s has returned to rigid mode\n", jointNames[i]); 
+            s->joint[i].comply = 0; 
+        } 
             
-        s->joint[i].ref = f->ref[i];
-    }
-
-}
+        s->joint[i].ref = f->ref[i]; 
+    } 
+ 
+} 
 
 
 
@@ -1058,29 +1058,29 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
             else
                 m1 = h->driver[jmc].joints[1];
 
-            if( s->joint[m0].comply != 1 && s->joint[m1].comply != 1 )
-            {
+            if( s->joint[m0].comply != 1 && s->joint[m1].comply != 1 ) 
+            { 
 
-                unsigned long pos0 = signConvention((int)getEncRef(m0, s, h));
-                f->data[0] =     int_to_bytes(pos0,1);
-                f->data[1] =     int_to_bytes(pos0,2);
-                f->data[2] =     int_to_bytes(pos0,3);
+                unsigned long pos0 = signConvention((int)getEncRef(m0, s, h)); 
+                f->data[0] =     int_to_bytes(pos0,1); 
+                f->data[1] =     int_to_bytes(pos0,2); 
+                f->data[2] =     int_to_bytes(pos0,3); 
 
 
-                unsigned long pos1 = signConvention((int)getEncRef(m1, s, h));
+                unsigned long pos1 = signConvention((int)getEncRef(m1, s, h)); 
 
-                f->data[3] =     int_to_bytes(pos1,1);
-                f->data[4] =     int_to_bytes(pos1,2);
-                f->data[5] =     int_to_bytes(pos1,3);
+                f->data[3] =     int_to_bytes(pos1,1); 
+                f->data[4] =     int_to_bytes(pos1,2); 
+                f->data[5] =     int_to_bytes(pos1,3); 
 
-                f->can_dlc = 6; //= strlen( data );    // Set DLC
-            }
-            else if( s->joint[m0].comply == 1 || s->joint[m1].comply == 1 )
-            {   // TODO: Make this section much less sloppy
+                f->can_dlc = 6; //= strlen( data );    // Set DLC 
+            } 
+            else if( s->joint[m0].comply == 1 || s->joint[m1].comply == 1 ) 
+            {   // TODO: Make this section much less sloppy 
 
-                if(abs(g->joint[m0].maxPWM) > 100)
-                    g->joint[m0].maxPWM = 100;
-                int pwmLimit = abs(g->joint[m0].maxPWM);
+                if(abs(g->joint[m0].maxPWM) > 100) 
+                    g->joint[m0].maxPWM = 100; 
+                int pwmLimit = abs(g->joint[m0].maxPWM); 
 
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
@@ -1153,20 +1153,20 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 */
             }
             
-            if( s->joint[m0].comply == 3 && s->joint[m1].comply == 3 )
-            {
-                struct can_frame frame;
-                memset(&frame, 0, sizeof(frame));
-                fEnableFeedbackController(m0, h, &frame);
-                sendCan(getSocket(h,m0), &frame);
+            if( s->joint[m0].comply == 3 && s->joint[m1].comply == 3 ) 
+            { 
+                struct can_frame frame; 
+                memset(&frame, 0, sizeof(frame)); 
+                fEnableFeedbackController(m0, h, &frame); 
+                sendCan(getSocket(h,m0), &frame); 
 
-                s->joint[m0].comply = 2;
-                s->joint[m1].comply = 2;
-            }
-        }
-     
-    }
-}
+                s->joint[m0].comply = 2; 
+                s->joint[m1].comply = 2; 
+            } 
+        } 
+      
+    } 
+} 
 
 unsigned long DrcSignConvention(long h_input)
 {
