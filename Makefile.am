@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach
+EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach drc-hubo-beta-1-default.home drc-hubo-beta-2-default.home drc-hubo-beta-2-rainbow-default.home
 
 #huboscriptdir = $(sysconfdir)/bin
 huboscriptdir = /usr/bin
