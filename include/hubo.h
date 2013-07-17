@@ -115,7 +115,7 @@ extern "C" {
 #define		HUBO_CHAN_REF_NAME         "hubo-ref"                    ///> hubo ach channel
 #define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
-#define     HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
+#define         HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
 #define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"                  ///> hubo param ach channel
 #define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
@@ -174,6 +174,13 @@ typedef enum {
     SENSOR_INDEX_COUNT
 }__attribute__((packed)) hubo_sensor_index_t;
 
+typedef enum{
+    HUBO_COMPLIANT_MODE_RIGID            = 0,  ///> 0: Rigid mode
+    HUBO_COMPLIANT_MODE_COMPLIANT        = 1,  ///< 1: Compliant mode
+    HUBO_COMPLIANT_MODE_COMPLIANT2RIGID  = 2,  ///< 2: Transitioning back to rigid
+    HUBO_COMPLIANT_MODE_TURNING_MOTOR_ON = 3,  ///< 3: Turning motor control back on (should never be seen by the user) 
+  COMPLIANT_INDEX_COUNT
+}__attribute__((packed)) hubo_compliant_mode_index_t;
 
 #define HUBO_IMU_COUNT 3
 typedef enum {
@@ -204,9 +211,9 @@ typedef struct hubo_sensor_param {
 	uint16_t boardNo;	///< Sensor Board Nuber
 	uint8_t active;		///< Active sensor
 	char name[5];		///< Name of sensor
-    int8_t xsign;
-    int8_t ysign;
-    int8_t zsign;
+        int8_t xsign;
+        int8_t ysign;
+        int8_t zsign;
 }__attribute__((packed)) hubo_sensor_param_t;
 
 typedef struct hubo_joint_param {
