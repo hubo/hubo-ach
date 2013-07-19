@@ -2,7 +2,7 @@
 
 # Daniel M. Lofaro (dan@danlofaro.com)
 # M.X. Grey ( mxgrey@gatech.edu )
-# Last updated: 2013-03-22
+# Last updated: 2013-07-19
 
 export LD_LIBRARY_PATH=/usr/lib:
 
@@ -26,14 +26,31 @@ HUBO_VIRTUAL='hubo-virtual-to-sim'
 HUBO_VIRTUAL='hubo-virtual-from-sim'
 
 DAEMON_DIR='/etc/hubo-ach'
+HUBO_LOG_DIR="$DAEMON_DIR/log"
+
+
+var=$(date)
+HUBO_NAME_TMP_DATE=$(date)
+TMP=$(echo -n "${var//[[:space:]]/}")
+HUBO_LOG_NAME=$TMP
+HUBO_LOG_FULL_NAME="$HUBO_LOG_DIR/$HUBO_LOG_NAME.log"
 DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
 FLAG_NOCONSOLE=0
 FLAG_DRC_MODE=0
+FLAG_NO_LOG_MODE=0
+
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
+
+trim()
+{
+  local var=$@
+  echo -n "${var//[[:space:]]/}"
+}
+
 
 MakeAch()
 {
@@ -145,6 +162,7 @@ Kill()
 	sudo kill -9 $(pidof hubo-daemon)
 	sudo kill -9 $(pidof hubo-read)
 	sudo kill -9 $(pidof hubo-console)
+        sudo kill -9 $(pidof hubo-log)
 }
 
 Remote()
@@ -216,12 +234,12 @@ StopHubo()
 
 	*)
 		sudo killall -e hubo-daemon
-
+                sudo kill -9 $(pidof hubo-log)
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
 		sudo ach -U hubo-board-cmd
-        sudo ach -U hubo-pwm-gains
-        sudo ach -U hubo-board-param
+                sudo ach -U hubo-pwm-gains
+                sudo ach -U hubo-board-param
         
 
 		sudo ifconfig can0 down
@@ -231,6 +249,13 @@ StopHubo()
 
 	;;
 	esac
+}
+
+StartLog()
+{
+  sudo mkdir $HUBO_LOG_DIR
+  echo $HUBO_LOG_FULL_NAME
+  sudo hubo-log -f $HUBO_LOG_FULL_NAME
 }
 
 StartHubo()
@@ -314,6 +339,7 @@ RunDaemon()
 #		ach -1 -C hubo-state -m 10 -n 3000
 #		ach -1 -C hubo-init-cmd -m 10 -n 3000
 
+                        StartLog 
 			DAEMON_ARGS=''
 			for IN_ARG in $@
 			do

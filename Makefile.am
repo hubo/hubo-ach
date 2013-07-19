@@ -32,7 +32,7 @@ hubo_jointparams_LTLIBRARIES = libhuboparams.la
 libhuboparams_la_SOURCES = src/hubo-jointparams.c
 libhuboparams_la_LDFLAGS = -module -avoid-version -shared
 
-bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-homeparams
+bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-homeparams hubo-log
 
 hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-socketcan.c
 hubo_daemon_LDADD = libhuboparams.la -lm -lrt -lc
@@ -45,6 +45,9 @@ hubo_read_LDADD = libhuboparams.la -lm -lc -lrt -lach
 
 hubo_homeparams_SOURCES = src/hubo-homeparams.cpp
 hubo_homeparams_LDADD = libhuboparams.la -lm -lc -lrt -lach
+
+hubo_log_SOURCES = src/hubo-log.c
+hubo_log_LDADD = libhuboparams.la -lm -lc -lrt -lach
 
 python_PYTHON = python/hubo_ach.py
 

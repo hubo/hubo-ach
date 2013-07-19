@@ -2740,6 +2740,7 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
 
     char bytes = 0;
 
+// Dan put in headder and change to 0 for virtual
     double timeoutScale = 1000;
 
     // TODO: Make a loop here instead of this stupidity
