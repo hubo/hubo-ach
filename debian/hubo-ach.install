@@ -3,6 +3,7 @@ usr/bin/hubo-console
 usr/bin/hubo-read
 usr/bin/hubo-ach
 usr/bin/hubo-homeparams
+usr/bin/hubo-log
 etc/hubo-ach/joint.table
 etc/hubo-ach/huboplus.joint.table
 etc/hubo-ach/drc-hubo.joint.table

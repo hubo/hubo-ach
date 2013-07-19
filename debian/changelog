@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130719) stable; urgency=low
+
+  * Added auto state logging
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Fri, 19 Jun 2013 18:06:00 -0400
+
 hubo-ach (0.1.20130716) stable; urgency=low
 
   * Added compliance mode
