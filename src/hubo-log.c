@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
 //    }
 
 
-  if(ACH_OK = r) {
+  if(ACH_OK == r) {
     write(fd, &H_state, sizeof(H_state));
     if(i < endi){
       i = i+1;
