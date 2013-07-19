@@ -254,9 +254,13 @@ StopHubo()
 
 StartLog()
 {
-  sudo mkdir $HUBO_LOG_DIR > /dev/null
+  sudo mkdir $HUBO_LOG_DIR > /dev/null > /dev/null
+  sudo chmod 777 $HUBO_LOG_DIR
+  echo ' '
   echo "Log File: $HUBO_LOG_FULL_NAME"
-  sudo (ls -t|head -n $HUBO_LOG_MAX;ls)|sort|uniq -u|xargs rm
+  echo ' '
+  cd $HUBO_LOG_DIR
+  (ls -t|head -n $HUBO_LOG_MAX;ls)|sort|uniq -u|xargs rm
   sudo hubo-log -f $HUBO_LOG_FULL_NAME
 }
 
