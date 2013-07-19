@@ -25,9 +25,10 @@ HUBO_BOARD_PARAM='hubo-board-param'
 HUBO_VIRTUAL='hubo-virtual-to-sim'
 HUBO_VIRTUAL='hubo-virtual-from-sim'
 
+
 DAEMON_DIR='/etc/hubo-ach'
 HUBO_LOG_DIR="$DAEMON_DIR/log"
-
+HUBO_LOG_MAX=10
 
 var=$(date)
 HUBO_NAME_TMP_DATE=$(date)
@@ -253,8 +254,9 @@ StopHubo()
 
 StartLog()
 {
-  sudo mkdir $HUBO_LOG_DIR
-  echo $HUBO_LOG_FULL_NAME
+  sudo mkdir $HUBO_LOG_DIR > /dev/null
+  echo "Log File: $HUBO_LOG_FULL_NAME"
+  sudo (ls -t|head -n $HUBO_LOG_MAX;ls)|sort|uniq -u|xargs rm
   sudo hubo-log -f $HUBO_LOG_FULL_NAME
 }
 
