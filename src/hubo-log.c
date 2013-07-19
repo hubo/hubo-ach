@@ -157,11 +157,12 @@ int main(int argc, char **argv) {
 */
     /* Get the current feed-forward (state) */
     r = ach_get( &chan_hubo_state, &H_state, sizeof(H_state), &fs, NULL, ACH_O_WAIT );
-    if(ACH_OK != r) {
-        assert( sizeof(H_state) == fs );
-    }
+//    if(ACH_OK != r) {
+//        assert( sizeof(H_state) == fs );
+//    }
 
 
+  if(ACH_OK = r) {
     write(fd, &H_state, sizeof(H_state));
     if(i < endi){
       i = i+1;
@@ -175,6 +176,7 @@ int main(int argc, char **argv) {
       }
       i = 0;
     }
+  }
 
 //    printf("wrote \n\r");
 
