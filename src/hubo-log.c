@@ -45,24 +45,35 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 #include <inttypes.h>
 #include "ach.h"
+#include <sys/mman.h>
 
 #include <sys/statvfs.h>
 
-#define HUBO_ACH_LOG_GB_BREAK 1.0 // space left in GB to stop the logger
+#define HUBO_ACH_LOG_GB_BREAK 2.0 // space left in GB to stop the logger
 #define HUBO_ACH_LOG_CHECK_TIME 60 // check the space ever X seconds
 
+#define MAX_SAFE_STACK (1024*102*64) /* The maximum stack size which is
+				   guaranteed safe to access without
+				   faulting */
 
 /* Ach Channel IDs */
 ach_channel_t chan_hubo_ref;      // Feed-Forward (Reference)
 ach_channel_t chan_hubo_state;    // Feed-Back (State)
 ach_channel_t chan_hubo_to_sim;   // To Sim (Trigger)
 
+/* functions */
+void stack_prefault(void);
+
+void stack_prefault(void) {
+	unsigned char dummy[MAX_SAFE_STACK];
+	memset( dummy, 0, MAX_SAFE_STACK );
+}
 
 double getSpaceLeft(char* filename) {
 // Returns free space of drive where *filename is on in GB
   struct statvfs buf;
   if (!statvfs(filename, &buf)) {
-  unsigned long blksize, blocks, freeblks, disk_size, used, free;
+  unsigned long long blksize, blocks, freeblks, disk_size, used, free;
  
   blksize = buf.f_bsize;
   blocks = buf.f_blocks;
@@ -75,7 +86,9 @@ double getSpaceLeft(char* filename) {
 //  printf("Disk usage : %lu \t Free space %lu\n", used, free/1024/1024/1024);} else {
 //  printf("Couldn't get file system statistics\n");
 
-  return (double)(free/1024/1024)/1024.0;
+  free = free/1024/1024;
+//  printf("Free space %lu\n\r", free); 
+  return (double)free/1024.0;
   }
 
 
@@ -106,7 +119,14 @@ int main(int argc, char **argv) {
 
    daemon(0,0);
 
+	/* Lock memory */
+	if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1) {
+		perror("mlockall failed");
+		exit(-2);
+	}
 
+	/* Pre-fault our stack */
+	stack_prefault();
 
 
 
@@ -136,13 +156,14 @@ int main(int argc, char **argv) {
     size_t fs;
 
     FILE *file;
-    file = fopen(fname,"w");
-    int fd = open(fname, O_WRONLY);
+    //file = fopen(fname,"w");
+    //int fd = open(fname, O_WRONLY);
+    int fd = open( fname, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR );
     ach_flush(&chan_hubo_to_sim);
     ach_flush(&chan_hubo_state);
 
     double free = getSpaceLeft(fname);
-    printf("Free space %f\n\r", free); 
+//    printf("Free space %f\n\r", free); 
 
     int checkTime = HUBO_ACH_LOG_CHECK_TIME;  // check free space every x seconds
     int endi = (int)((double)checkTime*(1/(double)HUBO_LOOP_PERIOD));
@@ -168,7 +189,9 @@ int main(int argc, char **argv) {
       i = i+1;
     }
     else{
+      fsync(fd);
       free = getSpaceLeft(fname);
+//      printf("Free space %f\n\r", free); 
       if( free < HUBO_ACH_LOG_GB_BREAK){
         printf("Low Disk Space: Logger Stopping\n\r"); 
         close(fd);

@@ -255,7 +255,7 @@ StopHubo()
 StartLog()
 {
   sudo mkdir $HUBO_LOG_DIR &>/dev/null 
-  sudo chmod 777 $HUBO_LOG_DIR
+  sudo chmod -R 777 $HUBO_LOG_DIR
   echo ' '
   echo "Log File: $HUBO_LOG_FULL_NAME"
   echo ' '
@@ -263,6 +263,14 @@ StartLog()
   (ls -t|head -n $HUBO_LOG_MAX;ls)|sort|uniq -u|xargs rm &>/dev/null
   sudo hubo-log -f $HUBO_LOG_FULL_NAME
 }
+
+ClearLog()
+{
+  sudo rm -R $HUBO_LOG_DIR
+  sudo mkdir $HUBO_LOG_DIR &>/dev/null 
+  echo 'Logs Cleared'
+}
+
 
 StartHubo()
 {
@@ -799,6 +807,7 @@ ShowUsage()
         echo 'update        : cleans, removes, then updates hubo-ach'
 	echo 'config        : Do a first-time setup'
         echo 'nolog         : disables logging'
+        echo 'clearlog      : deletes old log files'
 	echo
 	echo 'Type help after any of the above commands for'
 	echo '   a more detailed description'
@@ -875,6 +884,11 @@ case "$1" in
 	'stop' )
 		StopHubo $2
 	;;
+# Clears all logs and deletes them
+	'clearlog' )
+		ClearLog
+	;;
+
 
 # Kill all hubo processies
 	'killprocess' )
