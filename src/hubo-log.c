@@ -52,7 +52,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HUBO_ACH_LOG_GB_BREAK 2.0 // space left in GB to stop the logger
 #define HUBO_ACH_LOG_CHECK_TIME 60 // check the space ever X seconds
 
-#define MAX_SAFE_STACK (1024*102*64) /* The maximum stack size which is
+#define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
 				   faulting */
 
