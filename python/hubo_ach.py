@@ -105,7 +105,7 @@ LF5 = 41 # Left Finger
 # Modes
 HUBO_REF_MODE_REF_FILTER    = 0 # Reference to reference filter
 HUBO_REF_MODE_REF           = 1 # Direct reference control
-HUBO_REF_MODE_COMPLIANT     = 2 # Compliant mode, sets ref to current encoder position. 
+HUBO_REF_MODE_COMPLIANT     = 2 # Compliant mode, sets ref to current encoder position.
 HUBO_REF_MODE_ENC_FILTER    = 3 # Reference filter
 
 RIGTH = 0
@@ -124,9 +124,9 @@ class HUBO_SENSOR_PARAM(Structure):
                 ("boardNo" , c_uint16),
                 ("active"  , c_ubyte),
                 ("name"    , c_ubyte*5),
-                ("xsign"   , c_byte),
-                ("ysign"   , c_byte),
-                ("zsign"   , c_byte)]
+                ("xsign"   , c_int16),
+                ("ysign"   , c_int16),
+                ("zsign"   , c_int16)]
 
 class HUBO_JOINT_PARAM(Structure):
     _pack_ = 1
@@ -138,7 +138,7 @@ class HUBO_JOINT_PARAM(Structure):
                 ("harmonic" , c_uint16),
                 ("enc"      , c_uint16),
                 ("jmc"      , c_uint16),
-                ("dir"      , c_byte),
+                ("dir"      , c_int16),
                 ("can"      , c_ubyte),
                 ("numMot"   , c_ubyte),
                 ("name"     , c_ubyte*4)]
@@ -224,5 +224,5 @@ class HUBO_REF(Structure):
     _pack_ = 1
     _fields_ = [("ref",    c_double*HUBO_JOINT_COUNT),
                 ("mode",   c_int16*HUBO_JOINT_COUNT),
-                ("comply", c_byte*HUBO_JOINT_COUNT)]
+                ("comply", c_ubyte*HUBO_JOINT_COUNT)]
 
