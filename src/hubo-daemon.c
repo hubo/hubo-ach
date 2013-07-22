@@ -189,7 +189,7 @@ void fOpenLoopPWM_3CH(int jnt, hubo_param_t *h, struct can_frame *f,
 void fOpenLoopPWM_5CH(int jnt, hubo_param_t *h, struct can_frame *f,
             int dir0, int dt0, int dir1, int dt1, int dir2, int dt2,
             int dir3, int dt3, int dir4, int dt4);
-void hSetControlMode(int jnt, hubo_param_t *h, hubo_state_t *s, struct can_frame *f, hubo_d_param_t mode);
+void hSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t mode);
 void fSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, int mode);
 void hSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t sound);
 void fSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, int sound);
@@ -336,7 +336,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     
 
     /* initilization process */
-
+    
     /* get encoder values */
     getEncAllSlow(&H_state, H_param, &frame);
 
@@ -1593,7 +1593,7 @@ void fOpenLoopPWM_5CH(int jnt, hubo_param_t *h, struct can_frame *f,
     f->can_dlc    = 8;
 }
 
-void hSetControlMode(int jnt, hubo_param_t *h, hubo_state_t *s, struct can_frame *f, hubo_d_param_t mode)
+void hSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t mode)
 {
     switch (mode)
     {
@@ -1606,6 +1606,10 @@ void hSetControlMode(int jnt, hubo_param_t *h, hubo_state_t *s, struct can_frame
             fSetControlMode(jnt, h, f, 1); // 1 > Current control
             sendCan(getSocket(h,jnt),f);
 //            s->driver[h->joint[jnt].jmc].ctrlMode = D_CURRENT;
+            break;
+        case D_HYBRID:
+            fSetControlMode(jnt, h, f, 2);
+            sendCan(getSocket(h,jnt),f);
             break;
         default:
             fprintf(stderr,"Invalid Control Mode: %d\n\t"
@@ -2141,6 +2145,13 @@ void hGotoLimitAndGoOffset(int jnt, hubo_ref_t *r, hubo_ref_t *r_filt, hubo_para
     if(send==1)
         ach_put( &chan_hubo_ref, r, sizeof(*r) );
 
+
+    if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type
+        && ( RWR==jnt || LWR==jnt || RF1==jnt || RF2==jnt || LF1==jnt ) )
+    {
+        hSetControlMode(jnt, h, f, D_HYBRID);
+        hSetControlMode(jnt, h, f, D_HYBRID);
+    }
 }
 
 void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h, hubo_state_t *s, struct can_frame *f) {
@@ -2197,6 +2208,13 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
         int j = h->driver[jmc].joints[i];
         if( s->joint[j].zeroed==2)
         {
+            if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type
+                && ( RWR==jnt || LWR==jnt || RF1==jnt || RF2==jnt || LF1==jnt ) )
+            {
+                hSetControlMode(jnt, h, f, D_HYBRID);
+                hSetControlMode(jnt, h, f, D_HYBRID);
+            }
+
 //          if( s->status[j].homeFlag==H_HOME_SUCCESS) // && s->status[j].bigError==0 )
           if( s->status[j].homeFlag==H_HOME_SUCCESS &&
                 fabs(s->joint[j].pos) <= HUBO_COMP_RIGID_TRANS_THRESHOLD )

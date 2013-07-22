@@ -363,6 +363,7 @@ typedef enum {
 
 	D_CURRENT		,	///> Parameter for indicating (electrical) current
 	D_POSITION		,	///> Parameter for indicating position
+    D_HYBRID        ,   ///> Parameter for hybrid P/C finger boards (RWR/RF1/RF2 & LWR/LF1)
 
 	D_PARAM_MOTOR		,	///> Motor-related parameters : Used along with D_GET_BOARD_PARAMS (Return A)
 	D_PARAM_HOME		,	///> Home-related parameters  : Used along with D_GET_BOARD_PARAMS (Return B&C)
