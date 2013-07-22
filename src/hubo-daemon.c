@@ -1610,6 +1610,7 @@ void hSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param
         case D_HYBRID:
             fSetControlMode(jnt, h, f, 2);
             sendCan(getSocket(h,jnt),f);
+            break;
         default:
             fprintf(stderr,"Invalid Control Mode: %d\n\t"
                     "Must use: D_POSITION (%d) or D_CURRENT (%d)\n",
