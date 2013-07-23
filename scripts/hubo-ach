@@ -41,7 +41,7 @@ LOCK_DIR='/var/lock/hubo'
 FLAG_NOCONSOLE=0
 FLAG_DRC_MODE=0
 FLAG_NO_LOG_MODE=0
-
+FLAG_DRC_HUBO=0
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -275,25 +275,26 @@ ClearLog()
 StartHubo()
 {
 
-   case "$2" in
-   'drc')
-        sudo rm /etc/hubo-ach/joint.table
-        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
-        sudo rm /etc/hubo-ach/sensor.table
-        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
-        FLAG_DRC_MODE=1
-        echo 'Loaded DRC-Hubo Joint Table'
-    ;;
-    *)   
-        sudo rm /etc/hubo-ach/joint.table
-        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
-        sudo rm /etc/hubo-ach/sensor.table
-        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
-        echo 'Loaded Hubo Plus Joint Table'
-   esac
-
-   sudo sync
-   sudo sleep 1
+    SetHuboType $1
+#   case "$2" in
+#   'drc')
+#        sudo rm /etc/hubo-ach/joint.table
+#        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+#        sudo rm /etc/hubo-ach/sensor.table
+#        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
+#        FLAG_DRC_MODE=1
+#        echo 'Loaded DRC-Hubo Joint Table'
+#    ;;
+#    *)   
+#        sudo rm /etc/hubo-ach/joint.table
+#        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
+#        sudo rm /etc/hubo-ach/sensor.table
+#        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
+#        echo 'Loaded Hubo Plus Joint Table'
+#   esac
+#
+#   sudo sync
+#   sudo sleep 1
  
    RunDaemon
    if [[ $FLAG_NOCONSOLE -eq 0 ]]
@@ -305,8 +306,35 @@ StartHubo()
    fi
 }
 
+
+SetHuboType()
+{
+   case "$1" in
+   'drc')
+        sudo rm /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
+        FLAG_DRC_MODE=1
+        echo 'Loaded DRC-Hubo Joint Table'
+    ;;
+    *)
+        sudo rm /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
+        echo 'Loaded Hubo Plus Joint Table'
+   esac
+
+   sudo sync
+   sudo sleep 1
+
+}
+
+
 RunDaemon()
 {
+
 	case "$2" in
 	'help')
 		echo
@@ -823,6 +851,10 @@ do
     case "$var" in
       'nolog' )
           FLAG_NO_LOG_MODE=1
+      ;;
+      'drc' )
+          FLAG_DRC_HUBO=1
+          SetHuboType $var
       ;;
     esac
 

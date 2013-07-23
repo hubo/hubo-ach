@@ -1,3 +1,10 @@
+hubo-ach (0.1.20130723-2) stable; urgency=low
+
+  * Fixed bug in hubo-ach script for joint table changing
+  * Added IMU and FT name in hubo-read
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 23 Jun 2013 14:35:00 -0400
+
 hubo-ach (0.1.20130723) stable; urgency=low
 
   * Fixed hubo_ach.py bug
