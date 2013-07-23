@@ -96,6 +96,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define hubo_home_noRef_delay 3.0	// delay before trajectories can be sent while homeing in sec
 
+double HUBO_BOARD_PARAM_CHECK_TIMEOUT = 1000;  // param check timeout in ms
 
 /* functions */
 void stack_prefault(void);
@@ -261,9 +262,10 @@ unsigned short DrcFingerSignConvention(short h_input,unsigned char h_type);
 unsigned long DrcSignConvention(long h_input);
 
 
-
+/* Flags */
 int verbose;
 int debug;
+uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
 
 
 // ach message type
@@ -329,7 +331,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     sprintf( frame.data, "1234578" );
     frame.can_dlc = strlen( frame.data );
 
-    hGetAllBoardParams( H_param, &H_state, &frame );
+
+    if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
 
@@ -2759,7 +2762,7 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     char bytes = 0;
 
 // Dan put in headder and change to 0 for virtual
-    double timeoutScale = 1000;
+    double timeoutScale = HUBO_BOARD_PARAM_CHECK_TIMEOUT;
 
     // TODO: Make a loop here instead of this stupidity
     fGetBoardParamA( jnt, offset, h, f );
@@ -3535,9 +3538,14 @@ int main(int argc, char **argv) {
         }
         if(strcmp(argv[i], "-v") == 0){
             vflag = HUBO_VIRTUAL_MODE_VIRTUAL;
+//            vflag = HUBO_VIRTUAL_MODE_OPENHUBO;
+            HUBO_BOARD_PARAM_CHECK_TIMEOUT = 1; // change board timeout to 1ms for initial can check
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
         }
         if(strcmp(argv[i], "-o") == 0){
             vflag = HUBO_VIRTUAL_MODE_OPENHUBO;
+            HUBO_BOARD_PARAM_CHECK_TIMEOUT = 1; // change board timeout to 1ms for initial can check
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
         }
         if(strcmp(argv[i], "-drc") == 0){
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
