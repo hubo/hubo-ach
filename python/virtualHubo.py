@@ -205,6 +205,8 @@ if __name__=='__main__':
         simtimeFlag = 'unspecified'
 
     (env,options)=openhubo.setup('qtcoin',True)
+    options.robotfile = '/home/geovana/projects/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
+    print 'dan: ',options.robotfile
     env.SetDebugLevel(4)
     time.sleep(.25)
 
