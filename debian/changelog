@@ -1,3 +1,10 @@
+hubo-ach (0.1.20130723) stable; urgency=low
+
+  * Fixed hubo_ach.py bug
+  * Fixed OpenHubo bug
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 23 Jun 2013 13:31:00 -0400
+
 hubo-ach (0.1.20130722) stable; urgency=low
 
   * Auto Logging with limiting filesize
