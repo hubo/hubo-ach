@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130724) stable; urgency=low
+
+  * Minor fix in hubo-ach script dealing with joint table switching
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Wed, 24 Jun 2013 14:17:00 -0400
+
 hubo-ach (0.1.20130723-2) stable; urgency=low
 
   * Fixed bug in hubo-ach script for joint table changing

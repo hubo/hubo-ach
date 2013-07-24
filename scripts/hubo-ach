@@ -275,7 +275,7 @@ ClearLog()
 StartHubo()
 {
 
-    SetHuboType $1
+    SetHuboType $2
 #   case "$2" in
 #   'drc')
 #        sudo rm /etc/hubo-ach/joint.table
