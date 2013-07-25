@@ -358,7 +358,7 @@ RunDaemon()
 	*)
 
 
-		if [ $(pidof hubo-daemon) > 0		]
+		if [ $(pidof hubo-daemon) -gt 0		]
                 then
 	            exit 0 
                 else
