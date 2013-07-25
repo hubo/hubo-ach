@@ -42,6 +42,7 @@ FLAG_NOCONSOLE=0
 FLAG_DRC_MODE=0
 FLAG_NO_LOG_MODE=0
 FLAG_DRC_HUBO=0
+FLAG_OPENHUBO='openhubo'
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -488,11 +489,11 @@ OpenHubo()
                         case "$5" in 
 			'remote')
 				Remote $6
-				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime
+				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
 			;;
 			*)
 				SetSim
-				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime
+				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
 			;;
 			esac
 		;;
@@ -500,11 +501,11 @@ OpenHubo()
                         case "$4" in 
 			'remote')
 				Remote $5
-				python -i /etc/hubo-ach/virtualHubo.py nophysics
+				python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
 			;;
 			*)
 				RunDaemon
-				python -i /etc/hubo-ach/virtualHubo.py nophysics
+				python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
 			;;
 			esac
 		;;
@@ -789,6 +790,37 @@ RestartHelp()
 
 }
 
+Install()
+{
+case "$2" in
+        'sim-drc')
+                sudo mkdir /etc/hubo-ach/sim/
+                sudo chmod -R 777 /etc/hubo-ach/sim/
+                cd /etc/hubo-ach/sim/
+		git clone https://github.com/hubo/drchubo.git 
+                echo 'DRC Hubo URDF installed - must have OpenHubo Installed'
+                echo 'If not installed type $ hubo-ach install sim-openhubo'
+                echo ' '
+        ;;
+	'sim-openhubo')
+                sudo mkdir /etc/hubo-ach/sim/
+                sudo chmod -R 777 /etc/hubo-ach/sim/
+                cd /etc/hubo-ach/sim/
+		git clone https://github.com/hubo/openHubo.git 
+		cd openHubo/util
+		./clean-all.sh
+		cd ..
+		./setup
+		echo 'OpenHubo Installed'
+	;;
+        *)
+                echo 'Install Options: '
+		echo '	sim-drc		- DRC-Hubo URDF model (OpenHubo Install Required)'
+		echo '  sim-openhubo    - OpenHubo URDF and base system'
+        ;;
+        esac
+}
+
 ShowUsage()
 {
 	echo
@@ -831,6 +863,10 @@ ShowUsage()
 	echo '              :                             remote xxx.xxx.xxx.xxx  : same as remote command'
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'killremote    : kills the remote connection'
+	echo 'install       : Installs different packages including simulators'
+	echo '		    : Options:'
+	echo '              :     (no-arg)       : shows package list'
+	echo '              :     PackageName    : Installs package with PackageName'
 	echo 'clean         : cleans and removes installed hubo-ach (source and apt-get)'
         echo 'update        : cleans, removes, then updates hubo-ach'
 	echo 'config        : Do a first-time setup'
@@ -854,6 +890,7 @@ do
       ;;
       'drc' )
           FLAG_DRC_HUBO=1
+          FLAG_OPENHUBO='drc'
           SetHuboType $var
       ;;
     esac
@@ -906,6 +943,10 @@ case "$1" in
 		KillRemote
 	;;
 
+# Installs various things
+   	'install' )
+		Install $@
+	;;
 
 # Start all channels and processes
 	'run' )

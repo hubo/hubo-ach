@@ -194,6 +194,7 @@ if __name__=='__main__':
     parser = OptionParser()
 
     (options, args) = parser.parse_args()
+    (env,options)=openhubo.setup('qtcoin',True)
 
     try:
         flag = args[0]
@@ -204,8 +205,12 @@ if __name__=='__main__':
     except:
         simtimeFlag = 'unspecified'
 
-    (env,options)=openhubo.setup('qtcoin',True)
-    options.robotfile = '/home/geovana/projects/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
+    for arg in args:
+        if args[arg] == 'drc':
+          options.robotfile = '/home/geovana/projects/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
+
+
+
     print 'dan: ',options.robotfile
     env.SetDebugLevel(4)
     time.sleep(.25)
