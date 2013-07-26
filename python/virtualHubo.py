@@ -36,6 +36,7 @@ import openhubo
 skip = 100
 skipi = 0
 skiptemp = 0.0
+hubo_timestep = 0.0005
 
 class StatusLogger:
     """Simple and efficient status updater for the main loop"""
@@ -54,7 +55,8 @@ class StatusLogger:
         ideal_time = ha.HUBO_LOOP_PERIOD*self.count
         t=time.time()
         actual_time = t-self.t_last
-        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}%'.format(ideal_time,actual_time,ideal_time/actual_time*100))
+        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}% T= {:.6f}'.format(ideal_time,actual_time,ideal_time/actual_time*100,openhubo.TIMESTEP))  #	
+        #virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}%'.format(ideal_time,actual_time,ideal_time/actual_time*100))
         self.t_last=t
         self.count=0
 
@@ -73,7 +75,7 @@ class Timer(object):
         if (skipi < skip):
             skipi = skipi + 1
         else:
-            skiptemp = skiptemp/100.0
+            skiptemp = skiptemp/skip
             if self.name:
                 print '[%s]' % self.name,
            # print 'Elapsed: %s' % (time.time() - self.tstart)
@@ -90,6 +92,7 @@ def sim2state(robot,state):
     state.joint[ha.REB].pos = pose[ind('REP')]
     state.joint[ha.RWY].pos = pose[ind('RWY')]
     state.joint[ha.RWP].pos = pose[ind('RWP')]
+    state.joint[ha.RWR].pos = pose[ind('RWR')]
 
     state.joint[ha.LSP].pos = pose[ind('LSP')]
     state.joint[ha.LSR].pos = pose[ind('LSR')]
@@ -97,6 +100,7 @@ def sim2state(robot,state):
     state.joint[ha.LEB].pos = pose[ind('LEP')]
     state.joint[ha.LWY].pos = pose[ind('LWY')]
     state.joint[ha.LWP].pos = pose[ind('LWP')]
+    state.joint[ha.LWR].pos = pose[ind('LWR')]
 
     state.joint[ha.WST].pos = pose[ind('HPY')]
 
@@ -125,6 +129,7 @@ def pos2robot(robot, state):
     pose[ind('REP')] = state.joint[ha.REB].pos
     pose[ind('RWY')] = state.joint[ha.RWY].pos
     pose[ind('RWP')] = state.joint[ha.RWP].pos
+    pose[ind('RWR')] = state.joint[ha.RWR].pos
 
     pose[ind('LSP')] = state.joint[ha.LSP].pos
     pose[ind('LSR')] = state.joint[ha.LSR].pos
@@ -132,6 +137,7 @@ def pos2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].pos
     pose[ind('LWY')] = state.joint[ha.LWY].pos
     pose[ind('LWP')] = state.joint[ha.LWP].pos
+    pose[ind('LWR')] = state.joint[ha.LWR].pos
 
     pose[ind('HPY')] = state.joint[ha.WST].pos
 
@@ -160,6 +166,7 @@ def ref2robot(robot, state):
     pose[ind('REP')] = state.joint[ha.REB].ref
     pose[ind('RWY')] = state.joint[ha.RWY].ref
     pose[ind('RWP')] = state.joint[ha.RWP].ref
+    pose[ind('RWR')] = state.joint[ha.RWR].ref
 
     pose[ind('LSP')] = state.joint[ha.LSP].ref
     pose[ind('LSR')] = state.joint[ha.LSR].ref
@@ -167,6 +174,7 @@ def ref2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].ref
     pose[ind('LWY')] = state.joint[ha.LWY].ref
     pose[ind('LWP')] = state.joint[ha.LWP].ref
+    pose[ind('LWR')] = state.joint[ha.LWR].ref
 
     pose[ind('HPY')] = state.joint[ha.WST].ref
 
@@ -190,12 +198,12 @@ def virtualHuboLog(string,level=4):
     raveLog('[virtualHubo.py] '+string,level)
 
 if __name__=='__main__':
-
+    global hubo_timestep
     parser = OptionParser()
 
     (options, args) = parser.parse_args()
     (env,options)=openhubo.setup('qtcoin',True)
-
+    print 'all args = ', args
     try:
         flag = args[0]
     except:
@@ -206,8 +214,10 @@ if __name__=='__main__':
         simtimeFlag = 'unspecified'
 
     for arg in args:
-        if args[arg] == 'drc':
-          options.robotfile = '/home/geovana/projects/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
+      print 'arg = ', arg
+      if arg == 'drc':
+        options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
+        hubo_timestep = 0.001
 
 
 
@@ -227,7 +237,7 @@ if __name__=='__main__':
     if flag == 'nophysics':
         options.physics=False
         options.stop=False
-        openhubo.TIMESTEP=0.005
+        openhubo.TIMESTEP=ha.HUBO_LOOP_PERIOD
         print 'No Dynamics mode'
     else:
         options.physics=True
@@ -261,6 +271,7 @@ if __name__=='__main__':
     fs.put(sim)
     statuslogger=StatusLogger(100,time.time())
     while True:
+        openhubo.TIMESTEP = hubo_timestep
         statuslogger.tick()
 
         if options.simtime:

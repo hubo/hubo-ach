@@ -42,7 +42,9 @@ FLAG_NOCONSOLE=0
 FLAG_DRC_MODE=0
 FLAG_NO_LOG_MODE=0
 FLAG_DRC_HUBO=0
-FLAG_OPENHUBO='openhubo'
+FLAG_DRC_HUBO_SIM='drc'
+FLAG_OPENHUBO_SIM='openhubo'
+FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -480,7 +482,9 @@ OpenHubo()
 	case "$3" in
 	'physics')
 		SetSim
-		python -i /etc/hubo-ach/virtualHubo.py physics
+                HUBO_SIM_ARGS='physics '$FLAG_OPENHUBO
+	        python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+		#python -i /etc/hubo-ach/virtualHubo.py physics
 	;;
 	
 	'nophysics')
@@ -489,11 +493,15 @@ OpenHubo()
                         case "$5" in 
 			'remote')
 				Remote $6
-				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
+                                HUBO_SIM_ARGS='nophysics simtime '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
 			;;
 			*)
 				SetSim
-				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
+                                HUBO_SIM_ARGS='nophysics simtime '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
 			;;
 			esac
 		;;
@@ -501,11 +509,15 @@ OpenHubo()
                         case "$4" in 
 			'remote')
 				Remote $5
-				python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
+                                HUBO_SIM_ARGS='nophysics '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
 			;;
 			*)
 				RunDaemon
-				python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
+                                HUBO_SIM_ARGS='nophysics '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
 			;;
 			esac
 		;;
@@ -797,6 +809,7 @@ case "$2" in
                 sudo mkdir /etc/hubo-ach/sim/
                 sudo chmod -R 777 /etc/hubo-ach/sim/
                 cd /etc/hubo-ach/sim/
+                sudo rm -r drchubo
 		git clone https://github.com/hubo/drchubo.git 
                 echo 'DRC Hubo URDF installed - must have OpenHubo Installed'
                 echo 'If not installed type $ hubo-ach install sim-openhubo'
@@ -806,12 +819,19 @@ case "$2" in
                 sudo mkdir /etc/hubo-ach/sim/
                 sudo chmod -R 777 /etc/hubo-ach/sim/
                 cd /etc/hubo-ach/sim/
+                sudo rm -r openHubbo
 		git clone https://github.com/hubo/openHubo.git 
 		cd openHubo/util
 		./clean-all.sh
 		cd ..
 		./setup
 		echo 'OpenHubo Installed'
+	;;
+	'sim-all')
+		echo 'install all sim items'
+		hubo-ach install sim-openhubo
+		hubo-ach install sim-drc
+		echo 'installed all sim items'
 	;;
         *)
                 echo 'Install Options: '
@@ -867,6 +887,9 @@ ShowUsage()
 	echo '		    : Options:'
 	echo '              :     (no-arg)       : shows package list'
 	echo '              :     PackageName    : Installs package with PackageName'
+	echo '              :       sim-openhubo : openhubo base system'
+        echo '              :       sim-drc      : drc hubo model (requires openhubo)'
+        echo '              :       sim-all      : install all above packages'
 	echo 'clean         : cleans and removes installed hubo-ach (source and apt-get)'
         echo 'update        : cleans, removes, then updates hubo-ach'
 	echo 'config        : Do a first-time setup'
@@ -890,7 +913,7 @@ do
       ;;
       'drc' )
           FLAG_DRC_HUBO=1
-          FLAG_OPENHUBO='drc'
+          FLAG_OPENHUBO=$FLAG_DRC_HUBO_SIM
           SetHuboType $var
       ;;
     esac
