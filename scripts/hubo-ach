@@ -405,7 +405,7 @@ RunDaemon()
                           DAEMON_ARGS+=" -drc"
                         fi
        	             	sudo hubo-daemon $DAEMON_ARGS 
-                fi
+#                fi
 	;;
 	esac
 }
