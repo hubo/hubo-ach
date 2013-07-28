@@ -361,10 +361,10 @@ RunDaemon()
 	*)
 
 
-		if [ $(pidof hubo-daemon) -gt 0		]
-                then
-	            exit 0 
-                else
+#		if [ $(pidof hubo-daemon) -gt 0		]
+#                then
+#	            exit 0 
+#                else
 
 			sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 			sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
