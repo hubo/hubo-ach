@@ -83,7 +83,7 @@ int setSensorDefaults( hubo_param_t *h ) {
 
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_SENSOR_PARAMETERS == sscanf(buff, "%s%hu%hhu%hu%hhd%hhd%hhd",
+		if (NUM_OF_SENSOR_PARAMETERS == sscanf(buff, "%s%hu%hhu%hu%hd%hd%hd",
 			tp.name,
 			&tp.can,
 			&tp.active,
@@ -553,7 +553,7 @@ int setJointParams(hubo_param_t *H_param, struct hubo_state *H_state, hubo_pwm_g
 
 		// read in the buffered line from fgets, matching the following pattern
 		// to get all the parameters for the joint on this line.
-		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hhd%s%hhu%hhu%hhu%lf%lf%hhu%hhu",
+		if (NUM_OF_JOINT_PARAMETERS == sscanf(buff, "%s%hu%u%hu%hu%hu%hu%hd%s%hhu%hhu%hhu%lf%lf%hhu%hhu",
 			tp.name,
 			&tp.motNo,
 			&tp.refEnc,

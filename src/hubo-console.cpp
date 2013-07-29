@@ -329,7 +329,7 @@ int main() {
             H_cmd.type = D_GET_STATUS;
             H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
             r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
-            printf("%s - Getting Status \n", &H_param.joint[H_cmd.joint].name);
+            printf("%s - Getting Status \n", H_param.joint[H_cmd.joint].name);
             usleep(50*1000);
             hubo_update(&H_ref, &H_state);
             hubo_joint_status_t e = H_state.status[H_cmd.joint];
@@ -355,7 +355,7 @@ int main() {
           for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
             hubo_joint_status_t e = H_state.status[i];
             printf("%s - %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n"
-            , &H_param.joint[i].name
+            , H_param.joint[i].name
             , H_ref.mode[i]
             , H_state.joint[i].zeroed
             , e.homeFlag
@@ -375,7 +375,7 @@ int main() {
         else if (strcmp(buf0,"resetAll")==0) {
             for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
                 hubo_enc_reset(&H_param, &H_cmd, i);
-                printf("%s - Resetting Encoder \n", &H_param.joint[i].name);
+                printf("%s - Resetting Encoder \n", H_param.joint[i].name);
                 usleep(10*1000);
             }
 	}
