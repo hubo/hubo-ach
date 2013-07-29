@@ -55,8 +55,7 @@ class StatusLogger:
         ideal_time = ha.HUBO_LOOP_PERIOD*self.count
         t=time.time()
         actual_time = t-self.t_last
-        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}% T= {:.6f}'.format(ideal_time,actual_time,ideal_time/actual_time*100,openhubo.TIMESTEP))  #	
-        #virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}%'.format(ideal_time,actual_time,ideal_time/actual_time*100))
+        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}% T= {:.6f}'.format(ideal_time,actual_time,ideal_time/actual_time*100,openhubo.TIMESTEP))
         self.t_last=t
         self.count=0
 
@@ -247,9 +246,9 @@ if __name__=='__main__':
     options.simtime = (simtimeFlag == 'simtime') or options.physics
 
     # Detect Load robot and scene based on openhubo version
-    if oh_version=='0.8.0':
+    if oh_version>='0.8.0':
         [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options)
-    elif oh_version=='0.7.0':
+    elif oh_version>='0.7.0':
         [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
     else:
         [robot,ctrl,ind,ghost,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
