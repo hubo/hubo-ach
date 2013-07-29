@@ -2,6 +2,8 @@ usr/bin/hubo-daemon
 usr/bin/hubo-console
 usr/bin/hubo-read
 usr/bin/hubo-ach
+usr/bin/hubo-homeparams
+usr/bin/hubo-log
 etc/hubo-ach/joint.table
 etc/hubo-ach/huboplus.joint.table
 etc/hubo-ach/drc-hubo.joint.table
@@ -10,6 +12,9 @@ etc/hubo-ach/huboplus.sensor.table
 etc/hubo-ach/drc-hubo.sensor.table
 etc/hubo-ach/virtualHubo.py
 etc/hubo-ach/hubo-ach-safe-clean.sh
+etc/hubo-ach/drc-hubo-beta-1-default.home
+etc/hubo-ach/drc-hubo-beta-2-default.home
+etc/hubo-ach/drc-hubo-beta-2-rainbow-default.home
 usr/lib/libhuboparams.so
 usr/lib/python2.7/dist-packages/hubo_ach.pyc
 usr/lib/python2.7/dist-packages/hubo_ach.pyo

@@ -112,11 +112,12 @@ extern "C" {
 #define         BNO_SENSOR_BASE         0x2F
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
-#define		HUBO_CHAN_REF_NAME       "hubo-ref"                    ///> hubo ach channel
-#define		HUBO_CHAN_BOARD_CMD_NAME "hubo-board-cmd"              ///> hubo console channel for ach
-#define		HUBO_CHAN_STATE_NAME     "hubo-state"                  ///> hubo state ach channel
-#define		HUBO_CHAN_PARAM_NAME     "hubo-param"                  ///> hubo param ach channel
-#define 	HUBO_CHAN_REF_FILTER_NAME "hubo-ref-filter"            ///> hubo reference with filter ach channel
+#define		HUBO_CHAN_REF_NAME         "hubo-ref"                    ///> hubo ach channel
+#define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
+#define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
+#define         HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
+#define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"                  ///> hubo param ach channel
+#define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"            ///> hubo reference with filter ach channel
 #define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
 #define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
@@ -124,10 +125,15 @@ extern "C" {
 #define		HUBO_CAN_TIMEOUT_DEFAULT 0.00018		///> Default time for CAN to time out
 #define         HUBO_REF_FILTER_LENGTH   40
 #define         HUBO_LOOP_PERIOD         0.005  ///> period for main loopin sec (0.005 = 200hz)
-// finger control mode current
+//#define         HUBO_LOOP_PERIOD         0.010  ///> period for main loopin sec (0.010 = 100hz)
 #define         HUBO_FINGER_CURRENT_CTRL_MODE 0x01
-#define         HUBO_STARTUP_SEND_REF_DELAY 0.8  ///> setup delay in secons
-#define         HUBO_FINGER_SAT_VALUE 10         ///> value in 0.01A units
+#define         HUBO_STARTUP_SEND_REF_DELAY 0.8   ///> setup delay in secons
+#define         HUBO_FINGER_SAT_VALUE 10          ///> value in 0.01A units
+
+
+#define         HUBO_COMP_RIGID_TRANS_MULTIPLIER 10  ///> multiplication factor for the filter
+                                                     ///> which transitions from compliant to rigid
+#define         HUBO_COMP_RIGID_TRANS_THRESHOLD 0.0075  ///> threshold for finishing the transition
 
 #define MAX_SAFE_STACK (1024*1024) /* The maximum stack size which is
 				   guaranteed safe to access without
@@ -168,6 +174,13 @@ typedef enum {
     SENSOR_INDEX_COUNT
 }__attribute__((packed)) hubo_sensor_index_t;
 
+typedef enum{
+    HUBO_COMPLIANT_MODE_RIGID            = 0,  ///> 0: Rigid mode
+    HUBO_COMPLIANT_MODE_COMPLIANT        = 1,  ///< 1: Compliant mode
+    HUBO_COMPLIANT_MODE_COMPLIANT2RIGID  = 2,  ///< 2: Transitioning back to rigid
+    HUBO_COMPLIANT_MODE_TURNING_MOTOR_ON = 3,  ///< 3: Turning motor control back on (should never be seen by the user) 
+  COMPLIANT_INDEX_COUNT
+}__attribute__((packed)) hubo_compliant_mode_index_t;
 
 #define HUBO_IMU_COUNT 3
 typedef enum {
@@ -185,7 +198,7 @@ typedef enum {
 	HUBO_REF_MODE_REF_FILTER    = 0, ///< Reference to reference filter
 	HUBO_REF_MODE_REF           = 1, ///< Direct reference control
 	HUBO_REF_MODE_COMPLIANT     = 2, ///< Compliant mode, sets ref to current encoder position. 
-	HUBO_REF_MODE_ENC_FILTER    = 3  ///< Reference filter 
+	HUBO_REF_MODE_ENC_FILTER    = 3, ///< Reference filter
 }__attribute__((packed)) hubo_mode_type_t;
 
 #define RIGHT 0
@@ -198,9 +211,9 @@ typedef struct hubo_sensor_param {
 	uint16_t boardNo;	///< Sensor Board Nuber
 	uint8_t active;		///< Active sensor
 	char name[5];		///< Name of sensor
-    int8_t xsign;
-    int8_t ysign;
-    int8_t zsign;
+        int16_t xsign;
+        int16_t ysign;
+        int16_t zsign;
 }__attribute__((packed)) hubo_sensor_param_t;
 
 typedef struct hubo_joint_param {
@@ -212,7 +225,7 @@ typedef struct hubo_joint_param {
 	uint16_t harmonic;	///< gear ratio of harmonic drive
 	uint16_t enc;		///< encoder size
 	uint16_t jmc;		///< motor controller number
-	int8_t dir;		    ///< direction
+	int16_t dir;		    ///< direction
 	uint8_t can;		///< can channel
 	uint8_t numMot;		///< number of motors
 	char name[4];		///< name
@@ -222,8 +235,74 @@ typedef struct hubo_jmc_param {
 	uint8_t joints[5]; // other motors on the same drive
 }__attribute__((packed)) hubo_jmc_param_t;
 
+typedef struct hubo_board_joint_param {
+    
+    int confidence;
+
+    uint16_t deadZone;
+
+    int32_t homeOffsetRaw;
+    double homeOffset;
+    uint8_t searchDirection;
+    uint8_t searchMode;
+    uint16_t searchLimit;
+//    uint16_t searchLimitRaw;
+//    double searchLimit;
+
+    uint16_t maxHomeAccelRaw;
+    double maxHomeAccel;
+    uint16_t maxHomeLimitVelRaw; ///< Maximum Velocity for Home limit search
+    double maxHomeLimitVel;
+    uint16_t maxHomeOffsetVelRaw; ///< Maximum Velocity to Offset position
+    double maxHomeOffsetVel;
+
+    int32_t lowerLimitRaw;
+    double lowerLimit;
+    int32_t upperLimitRaw;
+    double upperLimit;
+    uint16_t maxAccelRaw;
+    double maxAccel;
+
+    uint16_t maxVelRaw;
+    double maxVel;
+    uint16_t maxPWM;
+    uint16_t maxCurrent;
+    
+    uint16_t Kp;
+    uint16_t Ki;
+    uint16_t Kd;
+    uint16_t Kpt; ///< Motor position gain ...t?
+    uint16_t Kdt; ///< Motor derivative gain ...t?
+    uint16_t Kft; ///< Motor current gain ...t?
+
+    uint16_t encoderResolution;
+    uint8_t motorDirection;
+    uint8_t autoScale;
+    
+    uint16_t canRate;
+    uint8_t boardType;
+
+    uint16_t jamTimeRaw;
+    double jamTime;
+    uint16_t pwmSaturationTimeRaw;
+    double pwmSaturationTime;
+    uint8_t pwmDutyLimit;
+    uint8_t pwmDutyJam;
+
+    uint16_t maxInputDifference;
+    uint16_t maxError;
+    uint16_t maxEncError; ///< Maximum error for encoder failure
+
+}__attribute__((packed)) hubo_board_joint_param_t;
+
+typedef struct hubo_board_param {
+    
+    hubo_board_joint_param_t joint[HUBO_JOINT_COUNT];
+    
+}__attribute__((packed)) hubo_board_param_t;
+
 typedef struct hubo_param {
-	hubo_joint_param_t joint[HUBO_JOINT_COUNT];	///< Joint param
+	hubo_joint_param_t joint[HUBO_JOINT_COUNT];     ///< Joint param
 	hubo_jmc_param_t driver[HUBO_JMC_COUNT];		///< Motor driver param
 	hubo_sensor_param_t sensor[HUBO_SENSOR_COUNT];	///< Sensor param
 }__attribute__((packed)) hubo_param_t;
@@ -250,6 +329,11 @@ typedef struct hubo_ft {
 
 typedef struct hubo_joint_state {
         double ref;         ///< Last reference value sent
+	uint8_t comply;		///< Are we in compliance mode?
+                        ///< 0: Rigid mode
+                        ///< 1: Compliant mode
+                        ///< 2: Transitioning back to rigid
+                        ///< 3: Turning motor control back on (should never be seen by the user) 
 	double pos;     	///< actual position (rad)
 	double cur;     	///< actual current (amps)
 	double vel;     	///< actual velocity (rad/sec)
@@ -304,7 +388,20 @@ typedef struct hubo_state {
 typedef struct hubo_ref {
 	double ref[HUBO_JOINT_COUNT];	///< joint reference
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
+	int8_t comply[HUBO_JOINT_COUNT];
 }__attribute__((packed)) hubo_ref_t;
+
+
+typedef struct hubo_joint_pwm_gains {
+    double pwmCommand;
+	double Kp;
+	double Kd;
+    int8_t maxPWM;
+}__attribute__((packed)) hubo_joint_pwm_gains_t;
+
+typedef struct hubo_pwm_gains {
+    hubo_joint_pwm_gains_t joint[HUBO_JOINT_COUNT];
+}__attribute__((packed)) hubo_pwm_gains_t;
 
 typedef struct jmcDriver{
 	uint8_t jmc[5]; // other motors on the same drive
@@ -324,7 +421,7 @@ typedef struct hubo_board_cmd {
 					// Note: This might or might not be used depending on the 
 					// type of message. TODO: Figure out if 8 is sufficient (or excessive)
 
-	int16_t iValues[8];			// Integer values for the message. This may or may not be used
+	int32_t iValues[8];			// Integer values for the message. This may or may not be used
 					// depending on the type of message. TODO: Figure out of 10 is sufficient
 	
 	double dValues[8];		// Double values for the message. This may or may not be used

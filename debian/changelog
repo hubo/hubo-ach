@@ -1,3 +1,53 @@
+hubo-ach (0.1.20130726) stable; urgency=low
+
+  * Added auto install for simulators
+  * Added hubo-ach install sim-openhubo
+  * Added hubo-ach install sim-drc
+  * Added hubo-ach install sim-all
+  * Minor bug fixes
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Fri, 26 Jun 2013 18:55:00 -0400
+
+hubo-ach (0.1.20130724) stable; urgency=low
+
+  * Minor fix in hubo-ach script dealing with joint table switching
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Wed, 24 Jun 2013 14:17:00 -0400
+
+hubo-ach (0.1.20130723-2) stable; urgency=low
+
+  * Fixed bug in hubo-ach script for joint table changing
+  * Added IMU and FT name in hubo-read
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 23 Jun 2013 14:35:00 -0400
+
+hubo-ach (0.1.20130723) stable; urgency=low
+
+  * Fixed hubo_ach.py bug
+  * Fixed OpenHubo bug
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 23 Jun 2013 13:31:00 -0400
+
+hubo-ach (0.1.20130722) stable; urgency=low
+
+  * Auto Logging with limiting filesize
+  * Switch mode CAN frame added for hand boards
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Mon, 22 Jun 2013 17:55:00 -0400
+
+hubo-ach (0.1.20130719) stable; urgency=low
+
+  * Added auto state logging
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Fri, 19 Jun 2013 18:06:00 -0400
+
+hubo-ach (0.1.20130716) stable; urgency=low
+
+  * Added compliance mode
+  * added joint home default positions
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 16 Jun 2013 18:00:00 -0400
+
 hubo-ach (0.1.20130702-2) stable; urgency=low
 
   * Added Sensor Joint Tables
