@@ -118,6 +118,10 @@ def sim2state(robot,state):
     state.joint[ha.LAP].pos = pose[ind('LAP')]
     state.joint[ha.LAR].pos = pose[ind('LAR')]
 
+    state.joint[ha.RF1].pos = pose[ind('RF1')]
+    state.joint[ha.RF2].pos = pose[ind('RF2')]
+    state.joint[ha.LF1].pos = pose[ind('LF1')]
+
     return pose
 
 def pos2robot(robot, state):
@@ -154,6 +158,10 @@ def pos2robot(robot, state):
     pose[ind('LKP')] = state.joint[ha.LKN].pos
     pose[ind('LAP')] = state.joint[ha.LAP].pos
     pose[ind('LAR')] = state.joint[ha.LAR].pos
+
+    pose[ind('RF1')] = state.joint[ha.RF1].pos
+    pose[ind('RF2')] = state.joint[ha.RF2].pos
+    pose[ind('LF1')] = state.joint[ha.LF1].pos
 
     return pose
 
@@ -192,6 +200,10 @@ def ref2robot(robot, state):
     pose[ind('LAP')] = state.joint[ha.LAP].ref
     pose[ind('LAR')] = state.joint[ha.LAR].ref
 
+    pose[ind('RF1')] = state.joint[ha.RF1].ref
+    pose[ind('RF2')] = state.joint[ha.RF2].ref
+    pose[ind('LF1')] = state.joint[ha.LF1].ref
+
     return pose
 
 def virtualHuboLog(string,level=4):
@@ -216,7 +228,7 @@ if __name__=='__main__':
     for arg in args:
       print 'arg = ', arg
       if arg == 'drc':
-        options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
+        options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v2.robot.xml'
         hubo_timestep = 0.001
 
 
