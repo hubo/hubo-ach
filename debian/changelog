@@ -1,8 +1,10 @@
-hubo-ach (0.1.20130728) stable; urgency=low
+hubo-ach (0.1.20130730) stable; urgency=low
 
-  * Fixed minor issue in hubo-ach script
+  * Added Enc feedback from wrist roll and fingers
+  * changed drc model to v3
+  * minor fix to PWM duty cycle
 
- -- Daniel M. Lofaro <dan@danlofaro.com>  Sun, 28 Jun 2013 15:25:00 -0400
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Tue, 30 Jun 2013 16:43:00 -0400
 
 hubo-ach (0.1.20130726) stable; urgency=low
 
