@@ -1083,7 +1083,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 if(abs(g->joint[m0].maxPWM) > 100) 
                     g->joint[m0].maxPWM = 100; 
-                int pwmLimit = abs(g->joint[m0].maxPWM); 
+                int pwmLimit = 10*abs(g->joint[m0].maxPWM); 
 
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
@@ -1103,8 +1103,11 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 if( duty0 > abs(pwmLimit) )
                     duty0 = abs(pwmLimit);
-                
-
+/*                
+                fprintf(stderr, "%s Duty:%f Dir:%d ref:%f pos:%f Kp:%f grav:%f limit:%d | ",
+                                jointNames[m0], (double)(duty0)/10.0, dir0, s->joint[m0].ref,
+                                    s->joint[m0].pos, g->joint[m0].Kp, g->joint[m0].pwmCommand, g->joint[m0].maxPWM);
+*/
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
@@ -1113,7 +1116,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 if(abs(g->joint[m1].maxPWM) > 100)
                     g->joint[m1].maxPWM = 100;
-                pwmLimit = abs(g->joint[m1].maxPWM);
+                pwmLimit = 10*abs(g->joint[m1].maxPWM);
 
                 kP_err = 10*g->joint[m1].Kp*(s->joint[m1].ref - s->joint[m1].pos);
                 kD_err = 10*g->joint[m1].Kd*s->joint[m1].vel;
@@ -1145,14 +1148,10 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 f->data[6] =  duty1 & 0x00FF;
 
                 f->can_dlc = 7;
-
 /*
-                fprintf(stderr, "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f grav:%f | "
-                                "%s Duty:%d Dir:%d ref:%f pos:%f vel:%f grav:%f\n",
-                                jointNames[m0], duty0, dir0, s->joint[m0].ref,
-                                    s->joint[m0].pos, s->joint[m1].vel, g->pwmCommand[m0],
-                                jointNames[m1], duty1, dir1, s->joint[m1].ref,
-                                    s->joint[m1].pos, s->joint[m1].vel, g->pwmCommand[m1]);
+                fprintf(stderr, "%s Duty:%f Dir:%d ref:%f pos:%f Kp:%f grav:%f limit:%d\n",
+                                jointNames[m1], (double)(duty1)/10.0, dir1, s->joint[m1].ref,
+                                    s->joint[m1].pos, g->joint[m1].Kp, g->joint[m1].pwmCommand, g->joint[m1].maxPWM);
 */
             }
             
