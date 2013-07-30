@@ -228,7 +228,7 @@ if __name__=='__main__':
     for arg in args:
       print 'arg = ', arg
       if arg == 'drc':
-        options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v2.robot.xml'
+        options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v3.robot.xml'
         hubo_timestep = 0.001
 
 
