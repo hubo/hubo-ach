@@ -91,7 +91,6 @@ def sim2state(robot,state):
     state.joint[ha.REB].pos = pose[ind('REP')]
     state.joint[ha.RWY].pos = pose[ind('RWY')]
     state.joint[ha.RWP].pos = pose[ind('RWP')]
-    state.joint[ha.RWR].pos = pose[ind('RWR')]
 
     state.joint[ha.LSP].pos = pose[ind('LSP')]
     state.joint[ha.LSR].pos = pose[ind('LSR')]
@@ -99,7 +98,11 @@ def sim2state(robot,state):
     state.joint[ha.LEB].pos = pose[ind('LEP')]
     state.joint[ha.LWY].pos = pose[ind('LWY')]
     state.joint[ha.LWP].pos = pose[ind('LWP')]
-    state.joint[ha.LWR].pos = pose[ind('LWR')]
+
+    if ind('RWR'):
+        #Hack to check if wrist roll exists
+        state.joint[ha.LWR].pos = pose[ind('LWR')]
+        state.joint[ha.RWR].pos = pose[ind('RWR')]
 
     state.joint[ha.WST].pos = pose[ind('HPY')]
 
@@ -128,7 +131,11 @@ def pos2robot(robot, state):
     pose[ind('REP')] = state.joint[ha.REB].pos
     pose[ind('RWY')] = state.joint[ha.RWY].pos
     pose[ind('RWP')] = state.joint[ha.RWP].pos
-    pose[ind('RWR')] = state.joint[ha.RWR].pos
+
+    if ind('RWR'):
+        #Hack to check if wrist roll exists
+        pose[ind('RWR')] = state.joint[ha.RWR].pos
+        pose[ind('LWR')] = state.joint[ha.LWR].pos
 
     pose[ind('LSP')] = state.joint[ha.LSP].pos
     pose[ind('LSR')] = state.joint[ha.LSR].pos
@@ -136,7 +143,6 @@ def pos2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].pos
     pose[ind('LWY')] = state.joint[ha.LWY].pos
     pose[ind('LWP')] = state.joint[ha.LWP].pos
-    pose[ind('LWR')] = state.joint[ha.LWR].pos
 
     pose[ind('HPY')] = state.joint[ha.WST].pos
 
@@ -165,7 +171,10 @@ def ref2robot(robot, state):
     pose[ind('REP')] = state.joint[ha.REB].ref
     pose[ind('RWY')] = state.joint[ha.RWY].ref
     pose[ind('RWP')] = state.joint[ha.RWP].ref
-    pose[ind('RWR')] = state.joint[ha.RWR].ref
+
+    if ind('RWR'):
+        pose[ind('RWR')] = state.joint[ha.RWR].ref
+        pose[ind('LWR')] = state.joint[ha.LWR].ref
 
     pose[ind('LSP')] = state.joint[ha.LSP].ref
     pose[ind('LSR')] = state.joint[ha.LSR].ref
@@ -173,7 +182,6 @@ def ref2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].ref
     pose[ind('LWY')] = state.joint[ha.LWY].ref
     pose[ind('LWP')] = state.joint[ha.LWP].ref
-    pose[ind('LWR')] = state.joint[ha.LWR].ref
 
     pose[ind('HPY')] = state.joint[ha.WST].ref
 
@@ -217,8 +225,6 @@ if __name__=='__main__':
       if arg == 'drc':
         options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v2/robots/drchubo-v2.robot.xml'
         hubo_timestep = 0.001
-
-
 
     print 'dan: ',options.robotfile
     env.SetDebugLevel(4)
