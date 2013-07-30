@@ -3407,11 +3407,13 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             for( i = 0; i < numMot; i++ )
             {
                 enc16 = 0;
-                enc16 = (enc << 8) + f->data[1 + i*4];
-                enc16 = (enc << 8) + f->data[0 + i*4];
+                enc16 = (enc << 8) + f->data[0 + i*2];
+                enc16 = (enc << 8) + f->data[1 + i*2];
                 int jnt = h->driver[jmc].joints[i];          // motor on the same drive
-                double newPos = enc2rad(jnt, enc16, h);
+                int jntInt = (int)((short)((f->data[0+i*2])|(f->data[1+i*2]<<8)));
+                double newPos = enc2rad(jnt, jntInt, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
+                s->joint[jnt].pos = newPos;
             }
         }
 
