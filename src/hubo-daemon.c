@@ -2753,7 +2753,7 @@ int main(int argc, char **argv) {
         i++;
     }
     // Daemonize
-    hubo_daemonize();
+//    hubo_daemonize();
     
 
     // Initialize Hubo Structs

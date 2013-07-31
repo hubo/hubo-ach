@@ -163,9 +163,9 @@ void huboLoop() {
 	// time info
 	struct timespec t;
 	struct timespec t2;
-	//int interval = 500000000; // 2hz (0.5 sec)
+	int interval = 500000000; // 2hz (0.5 sec)
 //        int interval = 100000000; // 10hz (0.1 sec)
-	int interval = 50000000; // 20hz (0.2 sec)
+//	int interval = 50000000; // 20hz (0.2 sec)
 	//int interval = 10000000; // 100 hz (0.01 sec)
 	//int interval = 5000000; // 200 hz (0.005 sec)
 	//int interval = 2000000; // 500 hz (0.002 sec)
