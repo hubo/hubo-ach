@@ -55,8 +55,7 @@ class StatusLogger:
         ideal_time = ha.HUBO_LOOP_PERIOD*self.count
         t=time.time()
         actual_time = t-self.t_last
-        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}% T= {:.6f}'.format(ideal_time,actual_time,ideal_time/actual_time*100,openhubo.TIMESTEP))  #	
-        #virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}%'.format(ideal_time,actual_time,ideal_time/actual_time*100))
+        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}% T= {:.6f}'.format(ideal_time,actual_time,ideal_time/actual_time*100,openhubo.TIMESTEP))
         self.t_last=t
         self.count=0
 
@@ -92,7 +91,6 @@ def sim2state(robot,state):
     state.joint[ha.REB].pos = pose[ind('REP')]
     state.joint[ha.RWY].pos = pose[ind('RWY')]
     state.joint[ha.RWP].pos = pose[ind('RWP')]
-    state.joint[ha.RWR].pos = pose[ind('RWR')]
 
     state.joint[ha.LSP].pos = pose[ind('LSP')]
     state.joint[ha.LSR].pos = pose[ind('LSR')]
@@ -100,7 +98,11 @@ def sim2state(robot,state):
     state.joint[ha.LEB].pos = pose[ind('LEP')]
     state.joint[ha.LWY].pos = pose[ind('LWY')]
     state.joint[ha.LWP].pos = pose[ind('LWP')]
-    state.joint[ha.LWR].pos = pose[ind('LWR')]
+
+    if ind('RWR'):
+        #Hack to check if wrist roll exists
+        state.joint[ha.LWR].pos = pose[ind('LWR')]
+        state.joint[ha.RWR].pos = pose[ind('RWR')]
 
     state.joint[ha.WST].pos = pose[ind('HPY')]
 
@@ -133,7 +135,11 @@ def pos2robot(robot, state):
     pose[ind('REP')] = state.joint[ha.REB].pos
     pose[ind('RWY')] = state.joint[ha.RWY].pos
     pose[ind('RWP')] = state.joint[ha.RWP].pos
-    pose[ind('RWR')] = state.joint[ha.RWR].pos
+
+    if ind('RWR'):
+        #Hack to check if wrist roll exists
+        pose[ind('RWR')] = state.joint[ha.RWR].pos
+        pose[ind('LWR')] = state.joint[ha.LWR].pos
 
     pose[ind('LSP')] = state.joint[ha.LSP].pos
     pose[ind('LSR')] = state.joint[ha.LSR].pos
@@ -141,7 +147,6 @@ def pos2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].pos
     pose[ind('LWY')] = state.joint[ha.LWY].pos
     pose[ind('LWP')] = state.joint[ha.LWP].pos
-    pose[ind('LWR')] = state.joint[ha.LWR].pos
 
     pose[ind('HPY')] = state.joint[ha.WST].pos
 
@@ -174,7 +179,10 @@ def ref2robot(robot, state):
     pose[ind('REP')] = state.joint[ha.REB].ref
     pose[ind('RWY')] = state.joint[ha.RWY].ref
     pose[ind('RWP')] = state.joint[ha.RWP].ref
-    pose[ind('RWR')] = state.joint[ha.RWR].ref
+
+    if ind('RWR'):
+        pose[ind('RWR')] = state.joint[ha.RWR].ref
+        pose[ind('LWR')] = state.joint[ha.LWR].ref
 
     pose[ind('LSP')] = state.joint[ha.LSP].ref
     pose[ind('LSR')] = state.joint[ha.LSR].ref
@@ -182,7 +190,6 @@ def ref2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].ref
     pose[ind('LWY')] = state.joint[ha.LWY].ref
     pose[ind('LWP')] = state.joint[ha.LWP].ref
-    pose[ind('LWR')] = state.joint[ha.LWR].ref
 
     pose[ind('HPY')] = state.joint[ha.WST].ref
 
@@ -231,8 +238,6 @@ if __name__=='__main__':
         options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v3.robot.xml'
         hubo_timestep = 0.001
 
-
-
     print 'dan: ',options.robotfile
     env.SetDebugLevel(4)
     time.sleep(.25)
@@ -259,9 +264,9 @@ if __name__=='__main__':
     options.simtime = (simtimeFlag == 'simtime') or options.physics
 
     # Detect Load robot and scene based on openhubo version
-    if oh_version=='0.8.0':
+    if oh_version>='0.8.0':
         [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options)
-    elif oh_version=='0.7.0':
+    elif oh_version>='0.7.0':
         [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
     else:
         [robot,ctrl,ind,ghost,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
