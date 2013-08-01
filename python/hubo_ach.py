@@ -42,7 +42,7 @@ HUBO_IMU1	  = 5 # Index of IMU1
 HUBO_IMU2	  = 6 # Index of IMU2
 
 HUBO_JOINT_COUNT                  = 42
-HUBO_JMC_COUNT                    = 0x26
+HUBO_JMC_COUNT                    = 0x36
 HUBO_IMU_COUNT                    = 3
 HUBO_CHAN_REF_NAME                = 'hubo-ref'
 HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
