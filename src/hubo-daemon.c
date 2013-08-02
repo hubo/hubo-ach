@@ -3271,40 +3271,40 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
             val = (f->data[1]<<8) | f->data[0];
-            s->imu[TILT_R].a_x = ((double)(val))/100.0;
+            s->imu[TILT_R].a_x = ((double)(val))/100.0 * M_PI/180.0;
             
             val = (f->data[3]<<8) | f->data[2];
-            s->imu[TILT_R].a_y = ((double)(val))/100.0;
+            s->imu[TILT_R].a_y = ((double)(val))/100.0 * M_PI/180.0;
 
             val = (f->data[5]<<8) | f->data[4];
-            s->imu[TILT_R].a_z = ((double)(val))/750.0;
+            s->imu[TILT_R].a_z = ((double)(val))/750.0 * M_PI/180.0;
         }
         else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
         {
             val = (f->data[1]<<8) | f->data[0];
-            s->imu[TILT_L].a_x = ((double)(val))/100.0;
+            s->imu[TILT_L].a_x = ((double)(val))/100.0 * M_PI/180.0;
             
             val = (f->data[3]<<8) | f->data[2];
-            s->imu[TILT_L].a_y = ((double)(val))/100.0;
+            s->imu[TILT_L].a_y = ((double)(val))/100.0 * M_PI/180.0;
 
             val = (f->data[5]<<8) | f->data[4];
-            s->imu[TILT_L].a_z = ((double)(val))/750.0;
+            s->imu[TILT_L].a_z = ((double)(val))/750.0 * M_PI/180.0;
         }   
         else if(num==h->sensor[HUBO_IMU0].boardNo ||
                 num==h->sensor[HUBO_IMU1].boardNo ||
                 num==h->sensor[HUBO_IMU2].boardNo)
         {
             val = (f->data[1]<<8) | f->data[0];
-            s->imu[IMU].a_x = ((double)(val))/100.0;
+            s->imu[IMU].a_x = ((double)(val))/100.0 * M_PI/180.0;
 
             val = (f->data[3]<<8) | f->data[2];
-            s->imu[IMU].a_y = ((double)(val))/100.0;
+            s->imu[IMU].a_y = ((double)(val))/100.0 * M_PI/180.0;
             
             val = (f->data[5]<<8) | f->data[4];
-            s->imu[IMU].w_x = ((double)(val))/100.0;
+            s->imu[IMU].w_x = ((double)(val))/100.0 * M_PI/180.0;
 
             val = (f->data[7]<<8) | f->data[6];
-            s->imu[IMU].w_y = ((double)(val))/100.0;
+            s->imu[IMU].w_y = ((double)(val))/100.0 * M_PI/180.0;
         }
         else
             fprintf(stderr, "Invalid value for IMU sensor: %d\n\t"
