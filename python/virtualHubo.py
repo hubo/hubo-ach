@@ -20,22 +20,45 @@ __license__ = 'GPLv3 license'
 import hubo_ach as ha
 import ach
 import time
-from ctypes import *
+import numpy as np
+# from ctypes import *
 
 from optparse import OptionParser
-import select
+# import select
 
-from openravepy import *
-from numpy import *
-import time
-import sys
-from servo import *
-import openhubo 
+# from openravepy import *
+from openravepy import raveLog
+from numpy import pi
+# import time
+# import sys
+import openhubo
 
 skip = 100
 skipi = 0
 skiptemp = 0.0
+hubo_timestep = 0.0005
 
+class StatusLogger:
+    """Simple and efficient status updater for the main loop"""
+    def __init__(self,skipcount=100,init_time=0.0):
+        self.t_last=init_time
+        self.skip=skipcount
+        self.count=0
+        self.rate=0.0
+
+    def tick(self):
+        self.count+=1
+        if self.count>=self.skip:
+            self.show()
+
+    def show(self):
+        ideal_time = ha.HUBO_LOOP_PERIOD*self.count
+        t=time.time()
+        actual_time = t-self.t_last
+        virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}% T= {:.6f}'.format(ideal_time,actual_time,ideal_time/actual_time*100,openhubo.TIMESTEP))  #	
+        #virtualHuboLog('Sim time: {:.3f}, Actual time: {:.3f}, RT rate: {:.3f}%'.format(ideal_time,actual_time,ideal_time/actual_time*100))
+        self.t_last=t
+        self.count=0
 
 class Timer(object):
     def __init__(self, name=None):
@@ -52,7 +75,7 @@ class Timer(object):
         if (skipi < skip):
             skipi = skipi + 1
         else:
-            skiptemp = skiptemp/100.0
+            skiptemp = skiptemp/skip
             if self.name:
                 print '[%s]' % self.name,
            # print 'Elapsed: %s' % (time.time() - self.tstart)
@@ -61,227 +84,241 @@ class Timer(object):
 
 def sim2state(robot,state):
 
-        pose=robot.GetDOFValues() # gets the current state
-        # Get current state from simulation 
-        state.joint[ha.RSP].pos = pose[ind('RSP')]
-        state.joint[ha.RSR].pos = pose[ind('RSR')]
-        state.joint[ha.RSY].pos = pose[ind('RSY')]
-        state.joint[ha.REB].pos = pose[ind('REP')]
-        state.joint[ha.RWY].pos = pose[ind('RWY')]
-        state.joint[ha.RWP].pos = pose[ind('RWP')]
-        
-        state.joint[ha.LSP].pos = pose[ind('LSP')]
-        state.joint[ha.LSR].pos = pose[ind('LSR')]
-        state.joint[ha.LSY].pos = pose[ind('LSY')]
-        state.joint[ha.LEB].pos = pose[ind('LEP')]
-        state.joint[ha.LWY].pos = pose[ind('LWY')]
-        state.joint[ha.LWP].pos = pose[ind('LWP')]
+    pose=robot.GetDOFValues()
+    # Get current state from simulation
+    state.joint[ha.RSP].pos = pose[ind('RSP')]
+    state.joint[ha.RSR].pos = pose[ind('RSR')]
+    state.joint[ha.RSY].pos = pose[ind('RSY')]
+    state.joint[ha.REB].pos = pose[ind('REP')]
+    state.joint[ha.RWY].pos = pose[ind('RWY')]
+    state.joint[ha.RWP].pos = pose[ind('RWP')]
+    state.joint[ha.RWR].pos = pose[ind('RWR')]
 
-        state.joint[ha.WST].pos = pose[ind('HPY')]
+    state.joint[ha.LSP].pos = pose[ind('LSP')]
+    state.joint[ha.LSR].pos = pose[ind('LSR')]
+    state.joint[ha.LSY].pos = pose[ind('LSY')]
+    state.joint[ha.LEB].pos = pose[ind('LEP')]
+    state.joint[ha.LWY].pos = pose[ind('LWY')]
+    state.joint[ha.LWP].pos = pose[ind('LWP')]
+    state.joint[ha.LWR].pos = pose[ind('LWR')]
 
-        state.joint[ha.RHY].pos = pose[ind('RHY')]
-        state.joint[ha.RHR].pos = pose[ind('RHR')]
-        state.joint[ha.RHP].pos = pose[ind('RHP')]
-        state.joint[ha.RKN].pos = pose[ind('RKP')]
-        state.joint[ha.RAP].pos = pose[ind('RAP')]
-        state.joint[ha.RAR].pos = pose[ind('RAR')]
+    state.joint[ha.WST].pos = pose[ind('HPY')]
 
-        state.joint[ha.LHY].pos = pose[ind('LHY')]
-        state.joint[ha.LHR].pos = pose[ind('LHR')]
-        state.joint[ha.LHP].pos = pose[ind('LHP')]
-        state.joint[ha.LKN].pos = pose[ind('LKP')]
-        state.joint[ha.LAP].pos = pose[ind('LAP')]
-        state.joint[ha.LAR].pos = pose[ind('LAR')]
+    state.joint[ha.RHY].pos = pose[ind('RHY')]
+    state.joint[ha.RHR].pos = pose[ind('RHR')]
+    state.joint[ha.RHP].pos = pose[ind('RHP')]
+    state.joint[ha.RKN].pos = pose[ind('RKP')]
+    state.joint[ha.RAP].pos = pose[ind('RAP')]
+    state.joint[ha.RAR].pos = pose[ind('RAR')]
 
-        return pose
+    state.joint[ha.LHY].pos = pose[ind('LHY')]
+    state.joint[ha.LHR].pos = pose[ind('LHR')]
+    state.joint[ha.LHP].pos = pose[ind('LHP')]
+    state.joint[ha.LKN].pos = pose[ind('LKP')]
+    state.joint[ha.LAP].pos = pose[ind('LAP')]
+    state.joint[ha.LAR].pos = pose[ind('LAR')]
+
+    state.joint[ha.RF1].pos = pose[ind('RF1')]
+    state.joint[ha.RF2].pos = pose[ind('RF2')]
+    state.joint[ha.LF1].pos = pose[ind('LF1')]
+
+    return pose
 
 def pos2robot(robot, state):
     # Sets the CMD reference to the robot
-        pose=robot.GetDOFValues() # gets the current state
-        pose[ind('RSP')] = state.joint[ha.RSP].pos
-        pose[ind('RSR')] = state.joint[ha.RSR].pos
-        pose[ind('RSY')] = state.joint[ha.RSY].pos
-        pose[ind('REP')] = state.joint[ha.REB].pos
-        pose[ind('RWY')] = state.joint[ha.RWY].pos
-        pose[ind('RWP')] = state.joint[ha.RWP].pos
+    pose=robot.GetDOFValues() # gets the current state
+    pose[ind('RSP')] = state.joint[ha.RSP].pos
+    pose[ind('RSR')] = state.joint[ha.RSR].pos
+    pose[ind('RSY')] = state.joint[ha.RSY].pos
+    pose[ind('REP')] = state.joint[ha.REB].pos
+    pose[ind('RWY')] = state.joint[ha.RWY].pos
+    pose[ind('RWP')] = state.joint[ha.RWP].pos
+    pose[ind('RWR')] = state.joint[ha.RWR].pos
 
-        pose[ind('LSP')] = state.joint[ha.LSP].pos
-        pose[ind('LSR')] = state.joint[ha.LSR].pos
-        pose[ind('LSY')] = state.joint[ha.LSY].pos
-        pose[ind('LEP')] = state.joint[ha.LEB].pos
-        pose[ind('LWY')] = state.joint[ha.LWY].pos
-        pose[ind('LWP')] = state.joint[ha.LWP].pos
+    pose[ind('LSP')] = state.joint[ha.LSP].pos
+    pose[ind('LSR')] = state.joint[ha.LSR].pos
+    pose[ind('LSY')] = state.joint[ha.LSY].pos
+    pose[ind('LEP')] = state.joint[ha.LEB].pos
+    pose[ind('LWY')] = state.joint[ha.LWY].pos
+    pose[ind('LWP')] = state.joint[ha.LWP].pos
+    pose[ind('LWR')] = state.joint[ha.LWR].pos
 
-        pose[ind('HPY')] = state.joint[ha.WST].pos
+    pose[ind('HPY')] = state.joint[ha.WST].pos
 
-        pose[ind('RHY')] = state.joint[ha.RHY].pos
-        pose[ind('RHR')] = state.joint[ha.RHR].pos
-        pose[ind('RHP')] = state.joint[ha.RHP].pos
-        pose[ind('RKP')] = state.joint[ha.RKN].pos
-        pose[ind('RAP')] = state.joint[ha.RAP].pos
-        pose[ind('RAR')] = state.joint[ha.RAR].pos
+    pose[ind('RHY')] = state.joint[ha.RHY].pos
+    pose[ind('RHR')] = state.joint[ha.RHR].pos
+    pose[ind('RHP')] = state.joint[ha.RHP].pos
+    pose[ind('RKP')] = state.joint[ha.RKN].pos
+    pose[ind('RAP')] = state.joint[ha.RAP].pos
+    pose[ind('RAR')] = state.joint[ha.RAR].pos
 
-        pose[ind('LHY')] = state.joint[ha.LHY].pos
-        pose[ind('LHR')] = state.joint[ha.LHR].pos
-        pose[ind('LHP')] = state.joint[ha.LHP].pos
-        pose[ind('LKP')] = state.joint[ha.LKN].pos
-        pose[ind('LAP')] = state.joint[ha.LAP].pos
-        pose[ind('LAR')] = state.joint[ha.LAR].pos
+    pose[ind('LHY')] = state.joint[ha.LHY].pos
+    pose[ind('LHR')] = state.joint[ha.LHR].pos
+    pose[ind('LHP')] = state.joint[ha.LHP].pos
+    pose[ind('LKP')] = state.joint[ha.LKN].pos
+    pose[ind('LAP')] = state.joint[ha.LAP].pos
+    pose[ind('LAR')] = state.joint[ha.LAR].pos
 
-        return pose
+    pose[ind('RF1')] = state.joint[ha.RF1].pos
+    pose[ind('RF2')] = state.joint[ha.RF2].pos
+    pose[ind('LF1')] = state.joint[ha.LF1].pos
+
+    return pose
 
 def ref2robot(robot, state):
     # Sets the CMD reference to the robot
-        pose=robot.GetDOFValues() # gets the current state
-        pose[ind('RSP')] = state.joint[ha.RSP].ref
-        pose[ind('RSR')] = state.joint[ha.RSR].ref
-        pose[ind('RSY')] = state.joint[ha.RSY].ref
-        pose[ind('REP')] = state.joint[ha.REB].ref
-        pose[ind('RWY')] = state.joint[ha.RWY].ref
-        pose[ind('RWP')] = state.joint[ha.RWP].ref
-        
-        pose[ind('LSP')] = state.joint[ha.LSP].ref
-        pose[ind('LSR')] = state.joint[ha.LSR].ref
-        pose[ind('LSY')] = state.joint[ha.LSY].ref
-        pose[ind('LEP')] = state.joint[ha.LEB].ref
-        pose[ind('LWY')] = state.joint[ha.LWY].ref
-        pose[ind('LWP')] = state.joint[ha.LWP].ref
+    pose=robot.GetDOFValues() # gets the current state
+    pose[ind('RSP')] = state.joint[ha.RSP].ref
+    pose[ind('RSR')] = state.joint[ha.RSR].ref
+    pose[ind('RSY')] = state.joint[ha.RSY].ref
+    pose[ind('REP')] = state.joint[ha.REB].ref
+    pose[ind('RWY')] = state.joint[ha.RWY].ref
+    pose[ind('RWP')] = state.joint[ha.RWP].ref
+    pose[ind('RWR')] = state.joint[ha.RWR].ref
 
-        pose[ind('HPY')] = state.joint[ha.WST].ref
+    pose[ind('LSP')] = state.joint[ha.LSP].ref
+    pose[ind('LSR')] = state.joint[ha.LSR].ref
+    pose[ind('LSY')] = state.joint[ha.LSY].ref
+    pose[ind('LEP')] = state.joint[ha.LEB].ref
+    pose[ind('LWY')] = state.joint[ha.LWY].ref
+    pose[ind('LWP')] = state.joint[ha.LWP].ref
+    pose[ind('LWR')] = state.joint[ha.LWR].ref
 
-        pose[ind('RHY')] = state.joint[ha.RHY].ref
-        pose[ind('RHR')] = state.joint[ha.RHR].ref
-        pose[ind('RHP')] = state.joint[ha.RHP].ref
-        pose[ind('RKP')] = state.joint[ha.RKN].ref
-        pose[ind('RAP')] = state.joint[ha.RAP].ref
-        pose[ind('RAR')] = state.joint[ha.RAR].ref
+    pose[ind('HPY')] = state.joint[ha.WST].ref
 
-        pose[ind('LHY')] = state.joint[ha.LHY].ref
-        pose[ind('LHR')] = state.joint[ha.LHR].ref
-        pose[ind('LHP')] = state.joint[ha.LHP].ref
-        pose[ind('LKP')] = state.joint[ha.LKN].ref
-        pose[ind('LAP')] = state.joint[ha.LAP].ref
-        pose[ind('LAR')] = state.joint[ha.LAR].ref
+    pose[ind('RHY')] = state.joint[ha.RHY].ref
+    pose[ind('RHR')] = state.joint[ha.RHR].ref
+    pose[ind('RHP')] = state.joint[ha.RHP].ref
+    pose[ind('RKP')] = state.joint[ha.RKN].ref
+    pose[ind('RAP')] = state.joint[ha.RAP].ref
+    pose[ind('RAR')] = state.joint[ha.RAR].ref
 
-        return pose
+    pose[ind('LHY')] = state.joint[ha.LHY].ref
+    pose[ind('LHR')] = state.joint[ha.LHR].ref
+    pose[ind('LHP')] = state.joint[ha.LHP].ref
+    pose[ind('LKP')] = state.joint[ha.LKN].ref
+    pose[ind('LAP')] = state.joint[ha.LAP].ref
+    pose[ind('LAR')] = state.joint[ha.LAR].ref
 
+    pose[ind('RF1')] = state.joint[ha.RF1].ref
+    pose[ind('RF2')] = state.joint[ha.RF2].ref
+    pose[ind('LF1')] = state.joint[ha.LF1].ref
 
+    return pose
+
+def virtualHuboLog(string,level=4):
+    raveLog('[virtualHubo.py] '+string,level)
 
 if __name__=='__main__':
-
+    global hubo_timestep
     parser = OptionParser()
-#    parser.add_option("-n", "--file", dest="filename",
-#        help="write report to FILE", metavar="FILE")
-#    parser.add_option("-q", "--quiet",
-#        action="store_false", dest="verbose", default=True,
-#        help="don't print status messages to stdout")
 
     (options, args) = parser.parse_args()
-
-
-#    print 'options: ', options
-#    print 'args: ', args[0], ' : num args = ',len(args)
-
+    (env,options)=openhubo.setup('qtcoin',True)
+    print 'all args = ', args
     try:
         flag = args[0]
     except:
-        flag = -1
-
+        flag = 'unspecified'
     try:
-	simtimeFlag = args[1]
+        simtimeFlag = args[1]
     except:
-	simtimeFlag = -1
+        simtimeFlag = 'unspecified'
 
-    (env,options)=openhubo.setup('qtcoin',True)
+    for arg in args:
+      print 'arg = ', arg
+      if arg == 'drc':
+        options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v3.robot.xml'
+        hubo_timestep = 0.001
+
+
+
+    print 'dan: ',options.robotfile
     env.SetDebugLevel(4)
     time.sleep(.25)
 
-    if( 'nophysics' == flag ):
-         print 'No Dynamic mode'
-         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True, None, True)  # this will disable physics
+    try:
+        oh_version=openhubo.__version__
+    except AttributeError:
+        oh_version='old'
+    virtualHuboLog("Detected OpenHubo version {}".format(oh_version))
+
+    # Set up simulation options based on command line args
+    options.ghost=True
+
+    if flag == 'nophysics':
+        options.physics=False
+        options.stop=False
+        openhubo.TIMESTEP=ha.HUBO_LOOP_PERIOD
+        print 'No Dynamics mode'
     else:
-         [robot,ctrl,ind,ref,recorder]=openhubo.load(env,options.robotfile,options.scenefile,True)
-         ctrl.SendCommand('set radians ')
-    time.sleep(.5)
-    env.StartSimulation(openhubo.TIMESTEP)
-    time.sleep(.5)
-   
-    #Change the pose to lift the elbows and send
+        options.physics=True
+        options.stop=True
 
+    #Enable simtime if required, or if force by physics
+    options.simtime = (simtimeFlag == 'simtime') or options.physics
 
-    # Hubo-Ach Start and setup:
+    # Detect Load robot and scene based on openhubo version
+    if oh_version=='0.8.0':
+        [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options)
+    elif oh_version=='0.7.0':
+        [robot,ctrl,ind,ghost,recorder]=openhubo.load_scene(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
+    else:
+        [robot,ctrl,ind,ghost,recorder]=openhubo.load(env,options.robotfile,options.scenefile,options.stop, options.physics, options.ghost)
+
+    # Setup ACH channels to interface with hubo
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
     s.flush()
     state = ha.HUBO_STATE()
-    
+
     ts = ach.Channel(ha.HUBO_CHAN_VIRTUAL_TO_SIM_NAME)
     ts.flush()
     sim = ha.HUBO_VIRTUAL()
-    
+
     fs = ach.Channel(ha.HUBO_CHAN_VIRTUAL_FROM_SIM_NAME)
     fs.flush()
 
-# start edit here
-#    print('Press ENTER to start sim')
-#    tmp = raw_input()
-#    print tmp
+    virtualHuboLog('Starting Simulation...',3)
 
-    print('Starting Sim')
+    fs.put(sim)
+    statuslogger=StatusLogger(100,time.time())
+    while True:
+        openhubo.TIMESTEP = hubo_timestep
+        statuslogger.tick()
 
-    if( 'physics' == flag ):
-        env.StopSimulation()
+        if options.simtime:
+            [status, framesizes] = ts.get(sim, wait=True, last=False)
 
-    fs.put(sim) 
-    while(1):
-      with Timer('Get_Pose'):
-        if(( 'physics' == flag) | ('simtime' == simtimeFlag )):
-            [statuss, framesizes] = ts.get(sim, wait=True, last=False)
+        [status, framesizes] = s.get(state, wait=False, last=True)
 
-        [statuss, framesizes] = s.get(state, wait=False, last=True)
+        #Extract pose information from ACH Channels
+        ref_pose = ref2robot(robot, state)
+        body_pose = pos2robot(robot, state)
 
-        if( 'nophysics' == flag ):
-            pose = ref2robot(ref, state)
-            ref.SetDOFValues(pose)
-            pose = pos2robot(robot, state)
-            robot.SetDOFValues(pose)
-#            pose = ref2robot(robot, state)
+        if not options.physics:
+            # Simulation is a "viewer", shows current pos and ref
+            ghost.SetDOFValues(ref_pose)
+            robot.SetDOFValues(body_pose)
         else:
-            # Set Reference from simulation
-            pose = ref2robot(robot, state)
-            ctrl.SetDesired(pose)   # sends to robot
+            # Simulation functions as robot "emulator", pass ref
+            # channel to controller
+            ctrl.SetDesired(ref_pose)
 
-
-
-    # this will step the simulation  note: i can run env step in a loop if nothign else changes
-
-        if( ('physics' == flag ) | ('simtime' == simtimeFlag)):
-            N = numpy.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
-            T = 1/N*ha.HUBO_LOOP_PERIOD
-    #        print 'openhubo.TIMESTEP = ',openhubo.TIMESTEP, ' : N = ', N, ' : T = ', T
-            for x in range(0,int(N)):
+        if options.simtime:
+            #Update "official" time based on simulation steps
+            N = np.ceil(ha.HUBO_LOOP_PERIOD/openhubo.TIMESTEP)
+            for x in xrange(int(N)):
                 env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
-                sim.time = sim.time + openhubo.TIMESTEP
-            if('physics' == flag ):
-                s.put(state)
+            sim.time += N*openhubo.TIMESTEP
+
+            if options.physics:
                 pose = sim2state(robot,state)
-            fs.put(sim) 
+
+            # put the current state
+            s.put(state)
+            fs.put(sim)
         else:
             env.StepSimulation(openhubo.TIMESTEP)  # this is in seconds
-# put the current state
 
         time.sleep(0.001)  # sleep to allow for keyboard input
 
-
-# end here
-    openhubo.pause(2)
-
-    #Hack to get hand 
-    if robot.GetName() == 'rlhuboplus' or robot.GetName() == 'huboplus':
-        ctrl.SendCommand('openloop '+' '.join(['{}'.format(x) for x in range(42,57)]))
-        for i in range(42,57):
-            pose[i]=pi/2
-        ctrl.SetDesired(pose)
-        openhubo.pause(2)
-
-        pose[42:57]=0
-        ctrl.SetDesired(pose)

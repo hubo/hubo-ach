@@ -2,7 +2,7 @@
 
 # Daniel M. Lofaro (dan@danlofaro.com)
 # M.X. Grey ( mxgrey@gatech.edu )
-# Last updated: 2013-03-22
+# Last updated: 2013-07-19
 
 export LD_LIBRARY_PATH=/usr/lib:
 
@@ -20,16 +20,41 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 HUBO_REF_CHAN='hubo-ref'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-board-cmd'
+HUBO_GAINS_CHAN='hubo-pwm-gains'
+HUBO_BOARD_PARAM='hubo-board-param'
 HUBO_VIRTUAL='hubo-virtual-to-sim'
 HUBO_VIRTUAL='hubo-virtual-from-sim'
 
+
 DAEMON_DIR='/etc/hubo-ach'
+HUBO_LOG_DIR="$DAEMON_DIR/log"
+HUBO_LOG_MAX=10
+
+var=$(date)
+HUBO_NAME_TMP_DATE=$(date)
+TMP=$(echo -n "${var//[[:space:]]/}")
+HUBO_LOG_NAME=$TMP
+HUBO_LOG_FULL_NAME="$HUBO_LOG_DIR/$HUBO_LOG_NAME.log"
 DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
+FLAG_NOCONSOLE=0
+FLAG_DRC_MODE=0
+FLAG_NO_LOG_MODE=0
+FLAG_DRC_HUBO=0
+FLAG_DRC_HUBO_SIM='drc'
+FLAG_OPENHUBO_SIM='openhubo'
+FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
+
+trim()
+{
+  local var=$@
+  echo -n "${var//[[:space:]]/}"
+}
+
 
 MakeAch()
 {
@@ -37,10 +62,42 @@ MakeAch()
 	ach -1 -C hubo-ref -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
+        ach -1 -C hubo-pwm-gains -m 10 -n 3000
+        ach -1 -C hubo-board-param -m 10 -n 3000
 	ach -1 -C hubo-virtual-to-sim -m 10 -n 3000
 	ach -1 -C hubo-virtual-from-sim -m 10 -n 3000
         sudo chmod 777 /dev/shm/achshm-hubo-*
 }
+
+Load()
+{
+
+hubo-ach daemon drc
+echo 'Loading Hubo joint table'
+case $2 in 
+	'beta1')
+		echo 'Beta-1'
+		sudo hubo-homeparams -l /etc/hubo-ach/drc-hubo-beta-1-default.home
+	;;
+	'beta2')
+		echo 'Beta-2'
+		sudo hubo-homeparams -l /etc/hubo-ach/drc-hubo-beta-2-default.home
+	;;
+	'rainbow2')
+		echo 'Rainbow-beta-2'
+		sudo hubo-homeparams -l /etc/hubo-ach/drc-hubo-beta-2-rainbow-default.home
+	;;
+	*)
+		echo 'No change - no file loaded'
+	;;
+	esac
+
+hubo-ach killall
+
+}
+
+
+
 
 Clean()
 {
@@ -51,6 +108,8 @@ Clean()
 
 Update()
 {
+        sudo apt-get install python-pip
+        sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
 	sudo rm /tmp/hubo-ach* 
 	cat /etc/hubo-ach/hubo-ach-safe-clean.sh > /tmp/hubo-ach.update
 #	sudo echo "sudo rm $(ls /tmp/ | grep hubo | grep deb)" >> /tmp/hubo-ach.update
@@ -107,6 +166,7 @@ Kill()
 	sudo kill -9 $(pidof hubo-daemon)
 	sudo kill -9 $(pidof hubo-read)
 	sudo kill -9 $(pidof hubo-console)
+        sudo kill -9 $(pidof hubo-log)
 }
 
 Remote()
@@ -178,28 +238,106 @@ StopHubo()
 
 	*)
 		sudo killall -e hubo-daemon
-
+                sudo kill -9 $(pidof hubo-log)
 		sudo ach -U hubo-ref
 		sudo ach -U hubo-state
 		sudo ach -U hubo-board-cmd
+                sudo ach -U hubo-pwm-gains
+                sudo ach -U hubo-board-param
+        
 
-		sudo ifconfig can0 down
-		sudo ifconfig can1 down
-		sudo ifconfig can2 down
-		sudo ifconfig can3 down
+		sudo ifconfig can0 down &>/dev/null 
+		sudo ifconfig can1 down &>/dev/null
+		sudo ifconfig can2 down &>/dev/null
+		sudo ifconfig can3 down &>/dev/null
 
 	;;
 	esac
 }
 
+StartLog()
+{
+  sudo mkdir $HUBO_LOG_DIR &>/dev/null 
+  sudo chmod -R 777 $HUBO_LOG_DIR
+  echo ' '
+  echo "Log File: $HUBO_LOG_FULL_NAME"
+  echo ' '
+  cd $HUBO_LOG_DIR
+  (ls -t|head -n $HUBO_LOG_MAX;ls)|sort|uniq -u|xargs rm &>/dev/null
+  sudo hubo-log -f $HUBO_LOG_FULL_NAME
+}
+
+ClearLog()
+{
+  sudo rm -R $HUBO_LOG_DIR
+  sudo mkdir $HUBO_LOG_DIR &>/dev/null 
+  echo 'Logs Cleared'
+}
+
+
 StartHubo()
 {
+
+    SetHuboType $2
+#   case "$2" in
+#   'drc')
+#        sudo rm /etc/hubo-ach/joint.table
+#        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+#        sudo rm /etc/hubo-ach/sensor.table
+#        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
+#        FLAG_DRC_MODE=1
+#        echo 'Loaded DRC-Hubo Joint Table'
+#    ;;
+#    *)   
+#        sudo rm /etc/hubo-ach/joint.table
+#        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
+#        sudo rm /etc/hubo-ach/sensor.table
+#        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
+#        echo 'Loaded Hubo Plus Joint Table'
+#   esac
+#
+#   sudo sync
+#   sudo sleep 1
+ 
    RunDaemon
-   StartConsole
+   if [[ $FLAG_NOCONSOLE -eq 0 ]]
+   then
+       echo 'Starting in Console Mode'
+       StartConsole
+   else
+       echo 'Starting in No Console Mode'
+   fi
 }
+
+
+SetHuboType()
+{
+   case "$1" in
+   'drc')
+        sudo rm /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/drc-hubo.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/drc-hubo.sensor.table /etc/hubo-ach/sensor.table
+        FLAG_DRC_MODE=1
+        echo 'Loaded DRC-Hubo Joint Table'
+    ;;
+    *)
+        sudo rm /etc/hubo-ach/joint.table
+        sudo cp /etc/hubo-ach/huboplus.joint.table /etc/hubo-ach/joint.table
+        sudo rm /etc/hubo-ach/sensor.table
+        sudo cp /etc/hubo-ach/huboplus.sensor.table /etc/hubo-ach/sensor.table
+        echo 'Loaded Hubo Plus Joint Table'
+   esac
+
+   sudo sync
+   sudo sleep 1
+
+}
+
 
 RunDaemon()
 {
+
 	case "$2" in
 	'help')
 		echo
@@ -223,17 +361,17 @@ RunDaemon()
 	*)
 
 
-		if [ $(pidof hubo-daemon) > 0		]
-                then
-	            exit 0 
-                else
+#		if [ $(pidof hubo-daemon) -gt 0		]
+#                then
+#	            exit 0 
+#                else
 
-			sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 			sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
-	    		sudo ifconfig can0 up
-			sudo ifconfig can1 up
-			sudo ifconfig can2 up
-			sudo ifconfig can3 up
+	    		sudo ifconfig can0 up &>/dev/null
+			sudo ifconfig can1 up &>/dev/null
+			sudo ifconfig can2 up &>/dev/null
+			sudo ifconfig can3 up &>/dev/null
 
 #		sudo ach -1 -C hubo-ref -m 10 -n 3000
 #		sudo ach -1 -C hubo-ref-filter -m 10 -n 3000
@@ -245,7 +383,15 @@ RunDaemon()
 #		ach -1 -C hubo-ref-filter -m 10 -n 3000
 #		ach -1 -C hubo-state -m 10 -n 3000
 #		ach -1 -C hubo-init-cmd -m 10 -n 3000
-
+                        if [[ $FLAG_NO_LOG_MODE -eq 1 ]]
+                        then
+                          echo ' '
+                          echo 'No Logging Mode'
+                          echo ' '
+                        else
+                          StartLog
+                        fi
+                         
 			DAEMON_ARGS=''
 			for IN_ARG in $@
 			do
@@ -254,8 +400,12 @@ RunDaemon()
 					DAEMON_ARGS+=" $IN_ARG"
 				fi
 			done
-       	             	    sudo hubo-daemon $DAEMON_ARGS 
-                fi
+                        if [[ $FLAG_DRC_MODE -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -drc"
+                        fi
+       	             	sudo hubo-daemon $DAEMON_ARGS 
+#                fi
 	;;
 	esac
 }
@@ -332,7 +482,9 @@ OpenHubo()
 	case "$3" in
 	'physics')
 		SetSim
-		python -i /etc/hubo-ach/virtualHubo.py physics
+                HUBO_SIM_ARGS='physics '$FLAG_OPENHUBO
+	        python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+		#python -i /etc/hubo-ach/virtualHubo.py physics
 	;;
 	
 	'nophysics')
@@ -341,11 +493,15 @@ OpenHubo()
                         case "$5" in 
 			'remote')
 				Remote $6
-				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime
+                                HUBO_SIM_ARGS='nophysics simtime '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
 			;;
 			*)
 				SetSim
-				python -i /etc/hubo-ach/virtualHubo.py nophysics simtime
+                                HUBO_SIM_ARGS='nophysics simtime '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics simtime $FLAG_OPENHUBO
 			;;
 			esac
 		;;
@@ -353,11 +509,15 @@ OpenHubo()
                         case "$4" in 
 			'remote')
 				Remote $5
-				python -i /etc/hubo-ach/virtualHubo.py nophysicss
+                                HUBO_SIM_ARGS='nophysics '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
 			;;
 			*)
 				RunDaemon
-				python -i /etc/hubo-ach/virtualHubo.py nophysics
+                                HUBO_SIM_ARGS='nophysics '$FLAG_OPENHUBO
+				python -i /etc/hubo-ach/virtualHubo.py $HUBO_SIM_ARGS
+				#python -i /etc/hubo-ach/virtualHubo.py nophysics $FLAG_OPENHUBO
 			;;
 			esac
 		;;
@@ -642,14 +802,62 @@ RestartHelp()
 
 }
 
+Install()
+{
+case "$2" in
+        'sim-drc')
+                sudo mkdir /etc/hubo-ach/sim/
+                sudo chmod -R 777 /etc/hubo-ach/sim/
+                cd /etc/hubo-ach/sim/
+                sudo rm -r drchubo
+		git clone https://github.com/hubo/drchubo.git 
+                echo 'DRC Hubo URDF installed - must have OpenHubo Installed'
+                echo 'If not installed type $ hubo-ach install sim-openhubo'
+                echo ' '
+        ;;
+	'sim-openhubo')
+                sudo mkdir /etc/hubo-ach/sim/
+                sudo chmod -R 777 /etc/hubo-ach/sim/
+                cd /etc/hubo-ach/sim/
+                sudo rm -r openHubbo
+		git clone https://github.com/hubo/openHubo.git 
+		cd openHubo/util
+		./clean-all.sh
+		cd ..
+		./setup
+		echo 'OpenHubo Installed'
+	;;
+	'sim-all')
+		echo 'install all sim items'
+		hubo-ach install sim-openhubo
+		hubo-ach install sim-drc
+		echo 'installed all sim items'
+	;;
+        *)
+                echo 'Install Options: '
+		echo '	sim-drc		- DRC-Hubo URDF model (OpenHubo Install Required)'
+		echo '  sim-openhubo    - OpenHubo URDF and base system'
+        ;;
+        esac
+}
+
 ShowUsage()
 {
 	echo
 	echo 'start         : Start all channels and processes and consle'
+        echo '              :Options:'
+        echo '                     (no-arg)      : loads Hubo Plus joint table'
+        echo '                     drc           : loads drc-hubo joint table'
+	echo 'daemon        : Same as "start" but does not run hubo-ach console'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
         echo 'console       : Starts the hubo conole'
+	echo 'load          : Loads pre defigned home paramaters for the hubos'
+	echo '              : Options:'
+   	echo '              :       beta1         : Loads default home pos for DRC-Hubo-Beta-1'
+   	echo '              :       beta2         : Loads default home pos for DRC-Hubo-Beta-2'
+   	echo '              :       rainbow2      : Loads default RAINBOW home pos for DRC-Hubo-Beta-2'
         echo 'read          : Starts the hubo read application to read state data'
         echo 'make          : makes all the hubo channels'
 	echo 'kill          : Emergency kill the daemon process'
@@ -675,9 +883,18 @@ ShowUsage()
 	echo '              :                             remote xxx.xxx.xxx.xxx  : same as remote command'
 	echo 'remote        : Starts a remote connection to xxx.xxx.xxx.xxx via achd'
 	echo 'killremote    : kills the remote connection'
+	echo 'install       : Installs different packages including simulators'
+	echo '		    : Options:'
+	echo '              :     (no-arg)       : shows package list'
+	echo '              :     PackageName    : Installs package with PackageName'
+	echo '              :       sim-openhubo : openhubo base system'
+        echo '              :       sim-drc      : drc hubo model (requires openhubo)'
+        echo '              :       sim-all      : install all above packages'
 	echo 'clean         : cleans and removes installed hubo-ach (source and apt-get)'
         echo 'update        : cleans, removes, then updates hubo-ach'
 	echo 'config        : Do a first-time setup'
+        echo 'nolog         : disables logging'
+        echo 'clearlog      : deletes old log files'
 	echo
 	echo 'Type help after any of the above commands for'
 	echo '   a more detailed description'
@@ -685,9 +902,28 @@ ShowUsage()
 }
 
 
+SetFlags()
+{
+for var in "$@"
+do
+#    echo "$var"
+    case "$var" in
+      'nolog' )
+          FLAG_NO_LOG_MODE=1
+      ;;
+      'drc' )
+          FLAG_DRC_HUBO=1
+          FLAG_OPENHUBO=$FLAG_DRC_HUBO_SIM
+          SetHuboType $var
+      ;;
+    esac
+
+done
+}
 
 
 
+SetFlags $@
 case "$1" in
 # Start hubo-console
 	'console' )
@@ -697,6 +933,11 @@ case "$1" in
 # Start all channels and processes
 	'make' )
 		MakeAch $@
+	;;
+
+# Loads new home paramaters
+	'load' )
+		Load $@
 	;;
 
 # Start hubo-read
@@ -709,6 +950,12 @@ case "$1" in
 		StartHubo $@
 	;;
 
+# runs in daemon only mode no console
+	'daemon' )
+                FLAG_NOCONSOLE=1
+		StartHubo $@
+        ;;
+
 # Start remote via achd
 	'remote' )
 		Remote $2
@@ -719,6 +966,10 @@ case "$1" in
 		KillRemote
 	;;
 
+# Installs various things
+   	'install' )
+		Install $@
+	;;
 
 # Start all channels and processes
 	'run' )
@@ -729,6 +980,11 @@ case "$1" in
 	'stop' )
 		StopHubo $2
 	;;
+# Clears all logs and deletes them
+	'clearlog' )
+		ClearLog
+	;;
+
 
 # Kill all hubo processies
 	'killprocess' )

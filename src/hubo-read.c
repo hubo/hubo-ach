@@ -129,14 +129,16 @@ void huboLoop() {
 	struct hubo_ref H_ref;
 	struct hubo_state H_state;
 	hubo_param_t H_param;
+        hubo_pwm_gains_t H_gains;
 	memset( &H_ref,   0, sizeof(H_ref));
 	memset( &H_state, 0, sizeof(H_state));
 	memset( &H_param, 0, sizeof(H_param));
+        memset( &H_gains, 0, sizeof(H_gains) );
 
 
 
 	// set default values for Hubo
-	setJointParams(&H_param, &H_state);
+	setJointParams(&H_param, &H_state, &H_gains);
 
 	size_t fs;
 	//int r = ach_get( &chan_hubo_ref, &H, sizeof(H), &fs, NULL, ACH_O_LAST );
@@ -226,28 +228,28 @@ void huboLoop() {
 		}}
 
 		i = HUBO_FT_R_FOOT;
-		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
+		printf("RF%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
 			H_state.ft[i].f_z);
 
 		i = HUBO_FT_L_FOOT;
-		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
+		printf("LF%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
 			H_state.ft[i].f_z);
 
 		i = HUBO_FT_R_HAND;
-		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
+		printf("RH%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
 			H_state.ft[i].f_z);
 
 		i = HUBO_FT_L_HAND;
-		printf("%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
+		printf("LH%-4s: Mx = %-12f My = %-12f Fz = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.ft[i].m_x,
 			H_state.ft[i].m_y,
@@ -255,21 +257,21 @@ void huboLoop() {
 
 		i = HUBO_IMU0;
 	//TODO: Add in Z gyro? Is it useful?
-		printf("%-4s: Ax = %-12f Ay = %-12f Az = %-12f\n",
+		printf("IMU0%-2s: Ax = %-12f Ay = %-12f Az = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.imu[0].a_x,
 			H_state.imu[0].a_y,
 			H_state.imu[0].a_z);
 
 		i = HUBO_IMU1;
-		printf("%-4s: Ax = %-12f Ay = %-12f Az = %-12f\n",
+		printf("IMU1%-2s: Ax = %-12f Ay = %-12f Az = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.imu[1].a_x,
 			H_state.imu[1].a_y,
 			H_state.imu[1].a_z);
 
 		i = HUBO_IMU2;
-		printf("%-4s: Ax = %-12f Ay = %-12f Wx = %-12f Wy = %-12f\n",
+		printf("IMU2%-2s: Ax = %-12f Ay = %-12f Wx = %-12f Wy = %-12f\n",
 			H_param.sensor[i].name,
 			H_state.imu[2].a_x,
 			H_state.imu[2].a_y,
