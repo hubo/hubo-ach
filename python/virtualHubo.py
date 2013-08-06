@@ -37,6 +37,8 @@ skip = 100
 skipi = 0
 skiptemp = 0.0
 hubo_timestep = 0.0005
+FLAG_DRC = False
+
 
 class StatusLogger:
     """Simple and efficient status updater for the main loop"""
@@ -83,16 +85,19 @@ class Timer(object):
             skipi = 0
 
 def sim2state(robot,state):
-
+    global FLAG_DRC
     pose=robot.GetDOFValues()
     # Get current state from simulation
+    if(FLAG_DRC):
+      state.joint[ha.RWR].pos = pose[ind('RWR')]
+      state.joint[ha.LWR].pos = pose[ind('LWR')]
+
     state.joint[ha.RSP].pos = pose[ind('RSP')]
     state.joint[ha.RSR].pos = pose[ind('RSR')]
     state.joint[ha.RSY].pos = pose[ind('RSY')]
     state.joint[ha.REB].pos = pose[ind('REP')]
     state.joint[ha.RWY].pos = pose[ind('RWY')]
     state.joint[ha.RWP].pos = pose[ind('RWP')]
-    state.joint[ha.RWR].pos = pose[ind('RWR')]
 
     state.joint[ha.LSP].pos = pose[ind('LSP')]
     state.joint[ha.LSR].pos = pose[ind('LSR')]
@@ -100,7 +105,6 @@ def sim2state(robot,state):
     state.joint[ha.LEB].pos = pose[ind('LEP')]
     state.joint[ha.LWY].pos = pose[ind('LWY')]
     state.joint[ha.LWP].pos = pose[ind('LWP')]
-    state.joint[ha.LWR].pos = pose[ind('LWR')]
 
     state.joint[ha.WST].pos = pose[ind('HPY')]
 
@@ -125,15 +129,19 @@ def sim2state(robot,state):
     return pose
 
 def pos2robot(robot, state):
+    global FLAG_DRC
     # Sets the CMD reference to the robot
     pose=robot.GetDOFValues() # gets the current state
+    if(FLAG_DRC):
+      pose[ind('RWR')] = state.joint[ha.RWR].pos
+      pose[ind('LWR')] = state.joint[ha.LWR].pos
+
     pose[ind('RSP')] = state.joint[ha.RSP].pos
     pose[ind('RSR')] = state.joint[ha.RSR].pos
     pose[ind('RSY')] = state.joint[ha.RSY].pos
     pose[ind('REP')] = state.joint[ha.REB].pos
     pose[ind('RWY')] = state.joint[ha.RWY].pos
     pose[ind('RWP')] = state.joint[ha.RWP].pos
-    pose[ind('RWR')] = state.joint[ha.RWR].pos
 
     pose[ind('LSP')] = state.joint[ha.LSP].pos
     pose[ind('LSR')] = state.joint[ha.LSR].pos
@@ -141,7 +149,6 @@ def pos2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].pos
     pose[ind('LWY')] = state.joint[ha.LWY].pos
     pose[ind('LWP')] = state.joint[ha.LWP].pos
-    pose[ind('LWR')] = state.joint[ha.LWR].pos
 
     pose[ind('HPY')] = state.joint[ha.WST].pos
 
@@ -166,15 +173,19 @@ def pos2robot(robot, state):
     return pose
 
 def ref2robot(robot, state):
+    global FLAG_DRC
     # Sets the CMD reference to the robot
     pose=robot.GetDOFValues() # gets the current state
+    if(FLAG_DRC):
+      pose[ind('RWR')] = state.joint[ha.RWR].ref
+      pose[ind('LWR')] = state.joint[ha.LWR].ref
+
     pose[ind('RSP')] = state.joint[ha.RSP].ref
     pose[ind('RSR')] = state.joint[ha.RSR].ref
     pose[ind('RSY')] = state.joint[ha.RSY].ref
     pose[ind('REP')] = state.joint[ha.REB].ref
     pose[ind('RWY')] = state.joint[ha.RWY].ref
     pose[ind('RWP')] = state.joint[ha.RWP].ref
-    pose[ind('RWR')] = state.joint[ha.RWR].ref
 
     pose[ind('LSP')] = state.joint[ha.LSP].ref
     pose[ind('LSR')] = state.joint[ha.LSR].ref
@@ -182,7 +193,6 @@ def ref2robot(robot, state):
     pose[ind('LEP')] = state.joint[ha.LEB].ref
     pose[ind('LWY')] = state.joint[ha.LWY].ref
     pose[ind('LWP')] = state.joint[ha.LWP].ref
-    pose[ind('LWR')] = state.joint[ha.LWR].ref
 
     pose[ind('HPY')] = state.joint[ha.WST].ref
 
@@ -211,6 +221,9 @@ def virtualHuboLog(string,level=4):
 
 if __name__=='__main__':
     global hubo_timestep
+    global FLAG_DRC
+
+
     parser = OptionParser()
 
     (options, args) = parser.parse_args()
@@ -229,6 +242,7 @@ if __name__=='__main__':
       print 'arg = ', arg
       if arg == 'drc':
         options.robotfile = '/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v3.robot.xml'
+        FLAG_DRC = True
         hubo_timestep = 0.001
 
 
