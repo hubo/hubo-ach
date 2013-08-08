@@ -91,6 +91,9 @@ def sim2state(robot,state):
     if(FLAG_DRC):
       state.joint[ha.RWR].pos = pose[ind('RWR')]
       state.joint[ha.LWR].pos = pose[ind('LWR')]
+      state.joint[ha.RF1].pos = pose[ind('RF1')]
+      state.joint[ha.RF2].pos = pose[ind('RF2')]
+      state.joint[ha.LF1].pos = pose[ind('LF1')]
 
     state.joint[ha.RSP].pos = pose[ind('RSP')]
     state.joint[ha.RSR].pos = pose[ind('RSR')]
@@ -122,9 +125,6 @@ def sim2state(robot,state):
     state.joint[ha.LAP].pos = pose[ind('LAP')]
     state.joint[ha.LAR].pos = pose[ind('LAR')]
 
-    state.joint[ha.RF1].pos = pose[ind('RF1')]
-    state.joint[ha.RF2].pos = pose[ind('RF2')]
-    state.joint[ha.LF1].pos = pose[ind('LF1')]
 
     return pose
 
@@ -135,6 +135,9 @@ def pos2robot(robot, state):
     if(FLAG_DRC):
       pose[ind('RWR')] = state.joint[ha.RWR].pos
       pose[ind('LWR')] = state.joint[ha.LWR].pos
+      pose[ind('RF1')] = state.joint[ha.RF1].pos
+      pose[ind('RF2')] = state.joint[ha.RF2].pos
+      pose[ind('LF1')] = state.joint[ha.LF1].pos
 
     pose[ind('RSP')] = state.joint[ha.RSP].pos
     pose[ind('RSR')] = state.joint[ha.RSR].pos
@@ -166,9 +169,6 @@ def pos2robot(robot, state):
     pose[ind('LAP')] = state.joint[ha.LAP].pos
     pose[ind('LAR')] = state.joint[ha.LAR].pos
 
-    pose[ind('RF1')] = state.joint[ha.RF1].pos
-    pose[ind('RF2')] = state.joint[ha.RF2].pos
-    pose[ind('LF1')] = state.joint[ha.LF1].pos
 
     return pose
 
@@ -179,6 +179,9 @@ def ref2robot(robot, state):
     if(FLAG_DRC):
       pose[ind('RWR')] = state.joint[ha.RWR].ref
       pose[ind('LWR')] = state.joint[ha.LWR].ref
+      pose[ind('RF1')] = state.joint[ha.RF1].ref
+      pose[ind('RF2')] = state.joint[ha.RF2].ref
+      pose[ind('LF1')] = state.joint[ha.LF1].ref
 
     pose[ind('RSP')] = state.joint[ha.RSP].ref
     pose[ind('RSR')] = state.joint[ha.RSR].ref
@@ -210,9 +213,6 @@ def ref2robot(robot, state):
     pose[ind('LAP')] = state.joint[ha.LAP].ref
     pose[ind('LAR')] = state.joint[ha.LAR].ref
 
-    pose[ind('RF1')] = state.joint[ha.RF1].ref
-    pose[ind('RF2')] = state.joint[ha.RF2].ref
-    pose[ind('LF1')] = state.joint[ha.LF1].ref
 
     return pose
 
