@@ -1,3 +1,9 @@
+hubo-ach (0.1.20130808) stable; urgency=low
+
+  * Fixed finger bug in Hubo-Plus model in simulator
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Thurs, 08 Aug 2013 17:10:00 -0400
+
 hubo-ach (0.1.20130806) stable; urgency=low
 
   * Fixed minor simulator bug
