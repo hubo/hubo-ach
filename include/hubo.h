@@ -387,7 +387,7 @@ typedef struct hubo_state {
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
         hubo_joint_status_t status[HUBO_JOINT_COUNT];
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
-	struct hubo_power_t power; // back power board
+	hubo_power_t power; // back power board
         double time;
 	int16_t refWait;
 }__attribute__((packed)) hubo_state_t;

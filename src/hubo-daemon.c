@@ -775,7 +775,7 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 
 void hgetPowerVals(hubo_param_t *h, struct can_frame *f){
     fgetPowerVals(h, f);
-    sendCan(getSocket(h,jnt), f);
+    sendCan(hubo_socket[UPPER_CAN], f);
 }
 
 void fgetPowerVals(hubo_param_t *h, struct can_frame *f){
@@ -3545,12 +3545,12 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 		int16_t current = 0;
 		int16_t power = 0;
 
-		voltage = (voltage << 8) + f->data[1 + i*2];
-		voltage = (voltage << 8) + f->data[0 + i*2];
-		current = (current << 8) + f->data[3 + i*2];
-		current = (current << 8) + f->data[2 + i*2];
-		power = (power << 8) + f->data[5 + i*2];
-		power = (power << 8) + f->data[4 + i*2];
+		voltage = (voltage << 8) + f->data[1];
+		voltage = (voltage << 8) + f->data[0];
+		current = (current << 8) + f->data[3];
+		current = (current << 8) + f->data[2];
+		power = (power << 8) + f->data[5];
+		power = (power << 8) + f->data[4];
 
        	s->power.voltage = voltage;
 	    s->power.current = current;
