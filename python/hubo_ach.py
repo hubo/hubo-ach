@@ -209,7 +209,7 @@ class HUBO_JMC_STATE(Structure):
 
 class HUBO_POWER(Structure):
 	_pack_ = 1
-	_fields = [("voltage", c_double),
+	_fields_ = [("voltage", c_double),
 				("current", c_double),
 				("power", c_double)]
 
