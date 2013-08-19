@@ -781,7 +781,7 @@ void hgetPowerVals(hubo_param_t *h, struct can_frame *f){
 void fgetPowerVals(hubo_param_t *h, struct can_frame *f){
 	f->can_id       = CMD_TXDF;
 
-	f->data[0]      = 0x13; // TODO: Change to #define in canID.h
+	f->data[0]      = 0x14; // TODO: Change to #define in canID.h
 	f->data[1]		= H_VCREAD;
 
 	f->can_dlc    = 1;
