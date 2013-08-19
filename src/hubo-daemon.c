@@ -1094,6 +1094,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 int duty0 = -(kP_err - kD_err + g->joint[m0].pwmCommand*10);
 
+                s->joint[m0].duty = (double)(duty0)/10.0;
+
                 int dir0;
                 if(duty0 >= 0)
                     dir0 = 0x00; // Counter-Clockwise
@@ -1125,6 +1127,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
+
+                s->joint[m1].duty = (double)(duty1)/10.0;
 
                 int dir1;
                 if(duty1 >= 0)
