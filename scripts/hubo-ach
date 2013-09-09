@@ -40,7 +40,7 @@ LOCK_DIR='/var/lock/hubo'
 
 FLAG_NOCONSOLE=0
 FLAG_DRC_MODE=0
-FLAG_NO_LOG_MODE=0
+FLAG_NO_LOG_MODE=1
 FLAG_DRC_HUBO=0
 FLAG_DRC_HUBO_SIM='drc'
 FLAG_OPENHUBO_SIM='openhubo'
@@ -58,7 +58,6 @@ trim()
 
 MakeAch()
 {
-
 	ach -1 -C hubo-ref -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
@@ -893,7 +892,7 @@ ShowUsage()
 	echo 'clean         : cleans and removes installed hubo-ach (source and apt-get)'
         echo 'update        : cleans, removes, then updates hubo-ach'
 	echo 'config        : Do a first-time setup'
-        echo 'nolog         : disables logging'
+        echo 'takelog       : enables hubo-ach logging'
         echo 'clearlog      : deletes old log files'
 	echo
 	echo 'Type help after any of the above commands for'
@@ -908,8 +907,8 @@ for var in "$@"
 do
 #    echo "$var"
     case "$var" in
-      'nolog' )
-          FLAG_NO_LOG_MODE=1
+      'takelog' )
+          FLAG_NO_LOG_MODE=0
       ;;
       'drc' )
           FLAG_DRC_HUBO=1
