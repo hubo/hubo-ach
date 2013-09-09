@@ -1,3 +1,14 @@
 usr/include/hubo.h
 usr/include/hubo-daemonID.h
 usr/include/hubo-jointparams.h
+etc/hubo-ach/drc-hubo-beta-1-default.home
+etc/hubo-ach/huboplus.joint.table
+etc/hubo-ach/drc-hubo-beta-2-default.home
+etc/hubo-ach/huboplus.sensor.table
+etc/hubo-ach/drc-hubo-beta-2-rainbow-default.home
+etc/hubo-ach/joint.table
+etc/hubo-ach/drc-hubo.joint.table
+etc/hubo-ach/sensor.table
+etc/hubo-ach/drc-hubo.sensor.table
+etc/hubo-ach/virtualHubo.py
+etc/hubo-ach/hubo-ach-safe-clean.sh
