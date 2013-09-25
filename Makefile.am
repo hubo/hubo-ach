@@ -49,8 +49,9 @@ hubo_homeparams_LDADD = libhuboparams.la -lm -lc -lrt -lach
 hubo_log_SOURCES = src/hubo-log.c
 hubo_log_LDADD = libhuboparams.la -lm -lc -lrt -lach
 
-hubo_multi_chan_SOURCES = src/hubo-multi-chan.c 
-hubo_multi_chan_LDADD = -lm -lc -lrt libhuboparams.la libhubodaemonizer.la
+hubo_multi_chan_SOURCES = src/hubo-daemonizer.c src/hubo-multi-chan.c 
+hubo_multi_chan_LDADD = libhuboparams.la -lm -lc -lrt -lach
+
 
 python_PYTHON = python/hubo_ach.py
 

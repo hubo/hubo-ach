@@ -158,7 +158,6 @@ int main(int argc, char **argv) {
     fprintf(stdout, " Ready!\n");
 
 
-	size_t fs;
 
         printf("Wainting for state to be posted\n");
 //	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -189,9 +188,12 @@ int main(int argc, char **argv) {
     }
 */
 
+
+/*
         printf("Wainting for ref to be posted\n");
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_WAIT );
 	assert( sizeof(H_ref) == fs );
+*/
 
     printf("\nReady\n");
     char *buf;

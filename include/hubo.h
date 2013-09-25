@@ -399,7 +399,6 @@ typedef struct hubo_ref {
 	int16_t mode[HUBO_JOINT_COUNT]; 	///< mode 0 = filter mode, 1 = direct reference mode
         uint8_t active[HUBO_JOINT_COUNT]; ///< 0 if not active 1 if is active
 	int8_t comply[HUBO_JOINT_COUNT];
->>>>>>> origin/master
 }__attribute__((packed)) hubo_ref_t;
 
 

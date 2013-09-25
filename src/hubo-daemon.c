@@ -3590,15 +3590,11 @@ int main(int argc, char **argv) {
     memset( &H_virtual, 0, sizeof(H_virtual));
 
 
-    // open hubo reference
-    int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+    // open hubo state
+    int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
 
     r = ach_open(&chan_hubo_gains, HUBO_CHAN_PWM_GAINS_NAME, NULL);
-    hubo_assert( ACH_OK == r, __LINE__ );
-
-    // open hubo state
-    int r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
 
     // open hubo reference

@@ -234,5 +234,5 @@ class HUBO_REF(Structure):
     _pack_ = 1
     _fields_ = [("ref",    c_double*HUBO_JOINT_COUNT),
                 ("mode",   c_int16*HUBO_JOINT_COUNT),
-                ("active", c_uint8*HUBO_JOINT_COUNT),
+                ("active", c_ubyte*HUBO_JOINT_COUNT),
                 ("comply", c_ubyte*HUBO_JOINT_COUNT)]

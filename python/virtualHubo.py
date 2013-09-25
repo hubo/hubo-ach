@@ -94,6 +94,9 @@ def sim2state(robot,state):
       state.joint[ha.RF1].pos = pose[ind('RF1')]
       state.joint[ha.RF2].pos = pose[ind('RF2')]
       state.joint[ha.LF1].pos = pose[ind('LF1')]
+      state.joint[ha.NK1].pos = pose[ind('NK1')]
+      state.joint[ha.NK2].pos = pose[ind('NK2')]
+      state.joint[ha.NKY].pos = pose[ind('NKY')]
 
     state.joint[ha.RSP].pos = pose[ind('RSP')]
     state.joint[ha.RSR].pos = pose[ind('RSR')]
@@ -138,6 +141,9 @@ def pos2robot(robot, state):
       pose[ind('RF1')] = state.joint[ha.RF1].pos
       pose[ind('RF2')] = state.joint[ha.RF2].pos
       pose[ind('LF1')] = state.joint[ha.LF1].pos
+      pose[ind('NK1')] = state.joint[ha.NK1].pos
+      pose[ind('NK2')] = state.joint[ha.NK2].pos
+      pose[ind('NKY')] = state.joint[ha.NKY].pos
 
     pose[ind('RSP')] = state.joint[ha.RSP].pos
     pose[ind('RSR')] = state.joint[ha.RSR].pos
@@ -182,6 +188,9 @@ def ref2robot(robot, state):
       pose[ind('RF1')] = state.joint[ha.RF1].ref
       pose[ind('RF2')] = state.joint[ha.RF2].ref
       pose[ind('LF1')] = state.joint[ha.LF1].ref
+      pose[ind('NK1')] = state.joint[ha.NK1].ref
+      pose[ind('NK2')] = state.joint[ha.NK2].ref
+      pose[ind('NKY')] = state.joint[ha.NKY].ref
 
     pose[ind('RSP')] = state.joint[ha.RSP].ref
     pose[ind('RSR')] = state.joint[ha.RSR].ref
