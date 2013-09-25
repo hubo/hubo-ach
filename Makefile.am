@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach
+EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach drc-hubo-beta-1-default.home drc-hubo-beta-2-default.home drc-hubo-beta-2-rainbow-default.home
 
 #huboscriptdir = $(sysconfdir)/bin
 huboscriptdir = /usr/bin
@@ -24,7 +24,7 @@ include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonI
 
 huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = tables/joint.table tables/sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
+huboachconf_DATA = tables/drc-hubo-beta-1-default.home tables/drc-hubo-beta-2-default.home tables/drc-hubo-beta-2-rainbow-default.home tables/huboplus.joint.table tables/drc-hubo.joint.table tables/joint.table tables/sensor.table tables/drc-hubo.sensor.table tables/huboplus.sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
 
 #hubo_jointparamsdir = $(prefix)/lib
 hubo_jointparamsdir = /usr/lib
@@ -32,22 +32,22 @@ hubo_jointparams_LTLIBRARIES = libhuboparams.la
 libhuboparams_la_SOURCES = src/hubo-jointparams.c
 libhuboparams_la_LDFLAGS = -module -avoid-version -shared
 
-hubo_daemonizerdir = /usr/lib
-hubo_daemonizer_LTLIBRARIES = libhubodaemonizer.la
-libhubodaemonizer_la_SOURCES = src/hubo-daemonizer.c
-libhubodaemonizer_la_LDFLAGS = -module -avoid-version -shared
+bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-homeparams hubo-log hubo-multi-chan
 
-#bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-ach-multi-chan
-bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-multi-chan
-
-hubo_daemon_SOURCES = src/hubo-daemon.c src/hubo-socketcan.c
-hubo_daemon_LDADD = -lm -lrt -lc libhuboparams.la libhubodaemonizer.la
+hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-socketcan.c
+hubo_daemon_LDADD = libhuboparams.la -lm -lrt -lc
 
 hubo_console_SOURCES = src/hubo-console.cpp
-hubo_console_LDADD = -lrt -lc -lm -lreadline libhuboparams.la
+hubo_console_LDADD = -lrt -lc -lm -lreadline libhuboparams.la -lach
 
-hubo_read_SOURCES = src/hubo-read.c 
-hubo_read_LDADD = -lm -lc -lrt libhuboparams.la
+hubo_read_SOURCES = src/hubo-read.c
+hubo_read_LDADD = libhuboparams.la -lm -lc -lrt -lach
+
+hubo_homeparams_SOURCES = src/hubo-homeparams.cpp
+hubo_homeparams_LDADD = libhuboparams.la -lm -lc -lrt -lach
+
+hubo_log_SOURCES = src/hubo-log.c
+hubo_log_LDADD = libhuboparams.la -lm -lc -lrt -lach
 
 hubo_multi_chan_SOURCES = src/hubo-multi-chan.c 
 hubo_multi_chan_LDADD = -lm -lc -lrt libhuboparams.la libhubodaemonizer.la

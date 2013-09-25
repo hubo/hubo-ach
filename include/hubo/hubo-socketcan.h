@@ -13,6 +13,7 @@ extern hubo_can_t hubo_socket[4];
 int sendCan(hubo_can_t, struct can_frame *f);
 void openAllCAN(int vCan);
 int readCan(hubo_can_t skt, struct can_frame *f, double timeoD);
+int flushCan(hubo_can_t skt, int timeOut, double giveUp);
 
 #ifdef __cplusplus
 }
