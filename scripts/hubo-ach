@@ -816,7 +816,8 @@ case "$2" in
                 sudo chmod -R 777 /etc/hubo-ach/sim/
                 cd /etc/hubo-ach/sim/
                 sudo rm -r drchubo
-		git clone https://github.com/hubo/drchubo.git 
+#		git clone https://github.com/hubo/drchubo.git 
+		git clone https://github.com/daslrobotics/drchubo.git 
                 echo 'DRC Hubo URDF installed - must have OpenHubo Installed'
                 echo 'If not installed type $ hubo-ach install sim-openhubo'
                 echo ' '
@@ -826,7 +827,8 @@ case "$2" in
                 sudo chmod -R 777 /etc/hubo-ach/sim/
                 cd /etc/hubo-ach/sim/
                 sudo rm -r openHubbo
-		git clone https://github.com/hubo/openHubo.git 
+#		git clone https://github.com/hubo/openHubo.git 
+		git clone https://github.com/daslrobotics/openHubo.git 
 		cd openHubo/util
 		./clean-all.sh
 		cd ..
