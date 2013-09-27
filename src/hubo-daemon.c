@@ -142,7 +142,7 @@ void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame 
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hgetPowerVals(hubo_param_t *h, struct can_frame *f);
-void FgetPowerVals(hubo_param_t *h, struct can_frame *f);
+void fgetPowerVals(hubo_param_t *h, struct can_frame *f);
 void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hGetFT(int board, struct can_frame *f, int can);
 void fGetFT(int board, struct can_frame *f);
@@ -3545,12 +3545,15 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 		int16_t current = 0;
 		int16_t power = 0;
 
-		voltage = (voltage << 8) + f->data[1];
-		voltage = (voltage << 8) + f->data[0];
-		current = (current << 8) + f->data[3];
-		current = (current << 8) + f->data[2];
-		power = (power << 8) + f->data[5];
-		power = (power << 8) + f->data[4];
+		//voltage = (voltage << 8) + f->data[1];
+		//voltage = (voltage << 8) + f->data[0];
+		voltage = doubleFromBytePair(f->data[1], f->data[0]);
+		//current = (current << 8) + f->data[3];
+		//current = (current << 8) + f->data[2];
+		current = doubleFromBytePair(f->data[3], f->data[2]);
+		//power = (power << 8) + f->data[5];
+		//power = (power << 8) + f->data[4];
+		power = doubleFromBytePair(f->data[5], f->data[4]);
 
        	s->power.voltage = voltage;
 	    s->power.current = current;
