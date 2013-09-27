@@ -279,8 +279,8 @@ void huboLoop() {
 			H_state.imu[2].w_y);
 	//	printf("REB: Cur = %f \t  Diff = %f \t State = %f \t Ref = %f\n",H_state.joint[jnt].cur, jntDiff, H_state.joint[jnt].pos, H_ref.ref[jnt]);
 		*/
-		printf("%-2s: V = %-12f A = %-12f P = %-12f\n",
-			"PWR",
+		printf("PWR%-2s: V = %-12f A = %-12f P = %-12f\n",
+			"",
 			H_state.power.voltage,
 			H_state.power.current,
 			H_state.power.power);
