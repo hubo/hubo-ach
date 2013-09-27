@@ -495,7 +495,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
         /* Get all Current data */
-//        getCurrentAllSlow(&H_state, H_param, &frame);
+        getCurrentAllSlow(&H_state, H_param, &frame);
 
         // Get current timestamp to send out with the state struct
 
@@ -779,12 +779,10 @@ void hgetPowerVals(hubo_param_t *h, struct can_frame *f){
 }
 
 void fgetPowerVals(hubo_param_t *h, struct can_frame *f){
-	f->can_id       = CMD_TXDF;
-
-	f->data[0]      = 0x14; // TODO: Change to #define in canID.h
-	f->data[1]		= H_VCREAD;
-
-	f->can_dlc    = 1;
+	f->can_id = CMD_TXDF;
+	f->data[0] = JMC14;
+	f->data[1] = H_VCREAD;
+	f->can_dlc = 2;
 }
 
 void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f){
@@ -3539,27 +3537,17 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 s->status[jnt0].encError    = (f->data[j]>>7)   & 0x01;
             }
         }
-    } else if (fs == H_ENC_BASE_RXDF + 0x14){ //Voltage, Current Return Message
-	   
-		int16_t voltage = 0;
-		int16_t current = 0;
-		int16_t power = 0;
-
-		//voltage = (voltage << 8) + f->data[1];
-		//voltage = (voltage << 8) + f->data[0];
-		voltage = doubleFromBytePair(f->data[1], f->data[0]);
-		//current = (current << 8) + f->data[3];
-		//current = (current << 8) + f->data[2];
-		current = doubleFromBytePair(f->data[3], f->data[2]);
-		//power = (power << 8) + f->data[5];
-		//power = (power << 8) + f->data[4];
-		power = doubleFromBytePair(f->data[5], f->data[4]);
-
-       	s->power.voltage = voltage;
-	    s->power.current = current;
-		s->power.power = power;	
-	}
-    
+    }
+    else if (fs == H_ENC_BASE_RXDF + JMC14)
+    {
+        // Voltage, Current Return Message
+        double voltage = doubleFromBytePair(f->data[1],f->data[0])/100.0;
+        double current = doubleFromBytePair(f->data[3],f->data[2])/100.0;
+        double power   = doubleFromBytePair(f->data[5],f->data[4])/10.0;
+        s->power.voltage = voltage;
+        s->power.current = current;
+        s->power.power = power;	
+    }
     return 0;
 }
 

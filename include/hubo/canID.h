@@ -210,6 +210,18 @@ extern "C" {
 #define SETTING11_RXDF			H_CURRENT_BASE_RXDF+JMC11
 
 
+// For JMC14 sub-controller
+// Smart Power Controller
+#define JMC14					0x0E
+#define REF14_TXDF				REF_BASE_TXDF+JMC14
+#define ENC14_RXDF				H_ENC_BASE_RXDF+JMC14
+#define CUR14_RXDF				H_CUR_BASE_RXDF+JMC14
+#define PM14_RXDF				PM_BASE_RXDF+JMC14
+#define STAT14_RXDF				STAT_BASE_RXDF+JMC14
+#define NAME14_RXDF				NAME_BASE_RXDF+JMC14
+#define SETTING14_RXDF			H_CURRENT_BASE_RXDF+JMC14
+
+
 // For EJMC0 sub-controller
 // Right Wrist
 #define EJMC0					0x20
