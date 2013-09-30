@@ -62,6 +62,7 @@ using namespace std;
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
+ach_channel_t chan_hubo_ref_neck;      // hubo-ach neck
 ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 ach_channel_t chan_hubo_gains;
@@ -74,7 +75,7 @@ void *xmalloc (int);
 void parse(char *s);
 int test(char *s , struct hubo *h);
 char* getArg(string s, int argNum);
-void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state);
+void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_ref *h_ref_neck);
 int name2mot(char*s, hubo_param_t *h);
 double hubo_get(char*s, struct hubo_ref *h, hubo_param_t *p);
 void hubo_jmc_beep(hubo_param_t *h, hubo_board_cmd_t *c, char* buff);
@@ -102,6 +103,10 @@ int main() {
 	int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
 	assert( ACH_OK == r );
 
+	// ref neck
+	r = ach_open(&chan_hubo_ref_neck, HUBO_CHAN_REF_NECK_NAME, NULL);
+	assert( ACH_OK == r );
+
 	// open hubo state
 	r = ach_open(&chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL);
 	assert( ACH_OK == r );
@@ -114,11 +119,13 @@ int main() {
 
         // get initial values for hubo
         struct hubo_ref H_ref;
+        struct hubo_ref H_ref_neck;
         hubo_board_cmd_t H_cmd;
         struct hubo_state H_state;
         hubo_param_t H_param;
         hubo_pwm_gains_t H_gains;
         memset( &H_ref,   0, sizeof(H_ref));
+        memset( &H_ref_neck,   0, sizeof(H_ref_neck));
         memset( &H_cmd,   0, sizeof(H_cmd));
         memset( &H_state, 0, sizeof(H_state));
         memset( &H_param, 0, sizeof(H_param));
@@ -140,6 +147,8 @@ int main() {
 	r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
 	assert( sizeof(H_ref) == fs );
 
+	r = ach_get( &chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck), &fs, NULL, ACH_O_LAST );
+	assert( sizeof(H_ref) == fs );
 
     r = ach_get( &chan_hubo_gains, &H_gains, sizeof(H_gains), &fs, NULL, ACH_O_LAST );
     assert( sizeof(H_gains) == fs );
@@ -155,13 +164,13 @@ int main() {
         printf("   ");
 
         /* get update after every command */
-        hubo_update(&H_ref, &H_state);
+        hubo_update(&H_ref, &H_state, &H_ref_neck);
         
         int tsleep = 0;
         char* buf0 = getArg(buf, 0);
 
         if (strcmp(buf0,"update")==0) {
-            hubo_update(&H_ref, &H_state);
+            hubo_update(&H_ref, &H_state, &H_ref_neck);
             printf("--->Hubo Information Updated\n");
         }
         else if (strcmp(buf0,"get")==0) {
@@ -175,10 +184,12 @@ int main() {
             char* str = getArg(buf,2);
             if(sscanf(str, "%f", &f) != 0){  //It's a float.
                 H_ref.ref[jnt] = (double)f;
+                H_ref_neck.ref[jnt] = H_ref.ref[jnt];
                 H_ref.comply[jnt] = 0;
 
                 H_ref.mode[jnt] = HUBO_REF_MODE_REF_FILTER;
                 int r = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
+                    r = ach_put( &chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck) );
                 char* tmp = getArg(buf,1);
                 printf(">> %s = %f rad \n",tmp,f);
             }
@@ -331,7 +342,7 @@ int main() {
             r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
             printf("%s - Getting Status \n", H_param.joint[H_cmd.joint].name);
             usleep(50*1000);
-            hubo_update(&H_ref, &H_state);
+            hubo_update(&H_ref, &H_state, &H_ref_neck);
             hubo_joint_status_t e = H_state.status[H_cmd.joint];
             printf("Mode         : %d \n", H_ref.mode[H_cmd.joint]);
             printf("Zeroed       : %d \n", H_state.joint[H_cmd.joint].zeroed);
@@ -351,7 +362,7 @@ int main() {
         else if (strcmp(buf0,"statusAll")==0) {
             printf("   - Getting Status All\n");
             usleep(50*1000);
-            hubo_update(&H_ref, &H_state);
+            hubo_update(&H_ref, &H_state, &H_ref_neck);
           for( int i = 0; i < HUBO_JOINT_COUNT; i++) {
             hubo_joint_status_t e = H_state.status[i];
             printf("%s - %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n"
@@ -526,7 +537,7 @@ void hubo_jmc_home_all(hubo_param_t *h, hubo_board_cmd_t *c, char* buff) {
     int r = ach_put( &chan_hubo_board_cmd, c, sizeof(*c) );
 //	printf(">> Home %s \n",getArg(buff,1));
 }
-void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state) {
+void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state, struct hubo_ref *h_ref_neck) {
     size_t fs;
     int r = ach_get( &chan_hubo_ref, h_ref, sizeof(*h_ref), &fs, NULL, ACH_O_LAST );
     if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
@@ -534,6 +545,9 @@ void hubo_update(struct hubo_ref *h_ref, struct hubo_state *h_state) {
     r = ach_get( &chan_hubo_state, h_state, sizeof(*h_state), &fs, NULL, ACH_O_LAST );
     if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
             assert( sizeof(*h_state) == fs );}
+    r = ach_get( &chan_hubo_ref_neck, h_ref_neck, sizeof(*h_ref_neck), &fs, NULL, ACH_O_LAST );
+    if((r == ACH_OK) | (r == ACH_MISSED_FRAME)) {
+            assert( sizeof(*h_ref_neck) == fs );}
     // look into posix message que
     // posix rt signal can give signal number and an interger
 }

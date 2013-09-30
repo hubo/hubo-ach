@@ -316,7 +316,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_ref) == fs, __LINE__ );
-    r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
 
     r = ach_get( &chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "Ref_Neck r = %s\n",ach_result_to_string(r));}
@@ -449,6 +448,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                     fprintf(stderr, "Ref Neck r = %s\n",ach_result_to_string(r));}
             }
         else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
+
+        /* set the ref to the new neck values */
 	H_ref.ref[NKY] = H_ref_neck.ref[NKY];
 	H_ref.ref[NK1] = H_ref_neck.ref[NK1];
 	H_ref.ref[NK2] = H_ref_neck.ref[NK2];
