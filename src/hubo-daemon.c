@@ -780,6 +780,7 @@ void hgetPowerVals(hubo_param_t *h, struct can_frame *f){
 
 void fgetPowerVals(hubo_param_t *h, struct can_frame *f){
 	f->can_id = CMD_TXDF;
+	//f->can_id = REF_BASE_TXDF + 14;
 	f->data[0] = JMC14;
 	f->data[1] = H_VCREAD;
 	f->can_dlc = 2;
@@ -3538,13 +3539,13 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             }
         }
     }
-    else if (fs == H_ENC_BASE_RXDF + JMC14)
+    else //if (fs > 0x60) //JMC14)
     {
         // Voltage, Current Return Message
         double voltage = doubleFromBytePair(f->data[1],f->data[0])/100.0;
         double current = doubleFromBytePair(f->data[3],f->data[2])/100.0;
         double power   = doubleFromBytePair(f->data[5],f->data[4])/10.0;
-        s->power.voltage = voltage;
+        s->power.voltage = (double)fs; //voltage;
         s->power.current = current;
         s->power.power = power;	
     }
