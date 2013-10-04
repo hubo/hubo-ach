@@ -1,3 +1,10 @@
+hubo-ach (0.1.20130909) stable; urgency=low
+
+  * Logging is disabled by default
+  * Joint tables now in hubo-ach-dev
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Thurs, 09 Sep 2013 16:00:00 -0400
+
 hubo-ach (0.1.20130808) stable; urgency=low
 
   * Fixed finger bug in Hubo-Plus model in simulator

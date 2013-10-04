@@ -325,8 +325,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 //    hubo_assert( sizeof(H_state) == fs, __LINE__ );
 
     // set joint parameters for Hubo
-    //**setJointParams(H_param, &H_state, &H_gains);
-    //**setSensorDefaults(H_param);
+    setJointParams(H_param, &H_state, &H_gains);
+    setSensorDefaults(H_param);
 
     /* Create CAN Frame */
     struct can_frame frame;
@@ -335,7 +335,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     frame.can_dlc = strlen( frame.data );
 
 
-    //**if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
+    if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
 
@@ -442,7 +442,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         
 
         /* Get all Encoder data */
-        //**getEncAllSlow(&H_state, H_param, &frame); 
+        getEncAllSlow(&H_state, H_param, &frame); 
         // Note: I moved the encoder reading to be ahead of the filter and send ref.
         // That way the filter is working off of the latest encoder data.
         // Hopefully there aren't unforeseen timing issues with this.
@@ -450,12 +450,12 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         /* Set all Ref */
         if(hubo_noRefTimeAll < T ) {
-            //**refFilterMode(&H_ref, HUBO_REF_FILTER_LENGTH, H_param, &H_state, &H_ref_filter);
-            //**setRefAll(&H_ref, H_param, &H_state, &H_gains, &frame);
+            refFilterMode(&H_ref, HUBO_REF_FILTER_LENGTH, H_param, &H_state, &H_ref_filter);
+            setRefAll(&H_ref, H_param, &H_state, &H_gains, &frame);
             H_state.refWait = 0;
         }
         else{
-            //**getBoardStatusAllSlow( &H_state, H_param, &frame);
+            getBoardStatusAllSlow( &H_state, H_param, &frame);
             hubo_noRefTimeAll = hubo_noRefTimeAll - T;
             H_state.refWait = 1;
         }
@@ -476,26 +476,29 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         huboMessage(&H_ref, &H_ref_filter, H_param, &H_state, &H_cmd, &frame);
 
         /* Get FT Sensor data */
-        //**getFTAllSlow(&H_state, H_param, &frame);
+        getFTAllSlow(&H_state, H_param, &frame);
 
         /* Get foot acceleration data */
-        //**getAccAllSlow(&H_state, H_param, &frame);
+        getAccAllSlow(&H_state, H_param, &frame);
 
         /* Get IMU data */
-        //**getIMUAllSlow(&H_state, H_param, &frame);
+        getIMUAllSlow(&H_state, H_param, &frame);
+
+		/* Get Power data */
+		getPower(&H_state, H_param, &frame);
 
 		/* Get Power data */
 		getPower(&H_state, H_param, &frame);
 
         /* Update next joint status (one each loop) */
-        //**getStatusIterate( &H_state, H_param, &frame);
+        getStatusIterate( &H_state, H_param, &frame);
 
         /* Read any aditional data left on the buffer */
 //        clearCanBuff(&H_state, H_param, &frame);
 
 
         /* Get all Current data */
-        //**getCurrentAllSlow(&H_state, H_param, &frame);
+        getCurrentAllSlow(&H_state, H_param, &frame);
 
         // Get current timestamp to send out with the state struct
 
