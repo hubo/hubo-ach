@@ -18,6 +18,7 @@ HUBO_BITRATE=0x0014 # 1 Mbit/s
 #HUBO_BITRATE=0x7F7F #	5 kbit/s
 
 HUBO_REF_CHAN='hubo-ref'
+HUBO_REF_CHAN='hubo-ref-neck'
 HUBO_STATE_CHAN='hubo-state'
 HUBO_INIT_CMD='hubo-board-cmd'
 HUBO_GAINS_CHAN='hubo-pwm-gains'
@@ -59,6 +60,7 @@ trim()
 MakeAch()
 {
 	ach -1 -C hubo-ref -m 10 -n 3000
+	ach -1 -C hubo-ref-neck -m 10 -n 3000
 	ach -1 -C hubo-state -m 10 -n 3000
 	ach -1 -C hubo-board-cmd -m 10 -n 3000
         ach -1 -C hubo-pwm-gains -m 10 -n 3000

@@ -45,6 +45,7 @@ HUBO_JOINT_COUNT                  = 42
 HUBO_JMC_COUNT                    = 0x36
 HUBO_IMU_COUNT                    = 3
 HUBO_CHAN_REF_NAME                = 'hubo-ref'
+HUBO_CHAN_REF_NECK_NAME           = 'hubo-ref-neck'
 HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME              = 'hubo-state'
 HUBO_CHAN_PWM_GAINS_NAME          = 'hubo-pwm-gains'   # PWM Gain control channel

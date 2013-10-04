@@ -276,6 +276,7 @@ uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board param
 
 // ach channels
 ach_channel_t chan_hubo_ref;      // hubo-ach
+ach_channel_t chan_hubo_ref_neck;      // hubo-ach neck
 ach_channel_t chan_hubo_board_cmd; // hubo-ach-console
 ach_channel_t chan_hubo_state;    // hubo-ach-state
 ach_channel_t chan_hubo_gains;      // PWM Control gains
@@ -300,12 +301,14 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     int i = 0;  // iterator
     // get initial values for hubo
     hubo_ref_t H_ref;
+    hubo_ref_t H_ref_neck;
     hubo_ref_t H_ref_filter;
     hubo_pwm_gains_t H_gains;
     hubo_board_cmd_t H_cmd;
     hubo_state_t H_state;
     hubo_virtual_t H_virtual;
     memset( &H_ref,   0, sizeof(H_ref));
+    memset( &H_ref_neck,   0, sizeof(H_ref_neck));
     memset( &H_ref_filter, 0, sizeof(H_ref_filter) );
     memset( &H_cmd,  0, sizeof(H_cmd));
     memset( &H_state, 0, sizeof(H_state));
@@ -316,6 +319,11 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_ref) == fs, __LINE__ );
+
+    r = ach_get( &chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck), &fs, NULL, ACH_O_LAST );
+    if(ACH_OK != r) {fprintf(stderr, "Ref_Neck r = %s\n",ach_result_to_string(r));}
+    hubo_assert( sizeof(H_ref_neck) == fs, __LINE__ );
+
     r = ach_get( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "CMD r = %s\n",ach_result_to_string(r));}
     hubo_assert( sizeof(H_cmd) == fs, __LINE__ );
@@ -349,6 +357,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     /* set encoder values to ref and state */
     for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
         H_ref.ref[i] = H_state.joint[i].pos;
+        H_ref_neck.ref[i] = H_ref.ref[i];
         H_ref.mode[i] = HUBO_REF_MODE_REF_FILTER;
         H_ref_filter.ref[i] = H_state.joint[i].pos;
         H_state.joint[i].ref = H_state.joint[i].pos;
@@ -370,6 +379,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
     /* put back on channels */
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+    ach_put(&chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck));
     ach_put(&chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd));
 //    ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
 
@@ -433,6 +443,21 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                     fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
             }
         else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
+
+	/* Modified for neck - get neck first, then put it on the ref channel struct */
+        r = ach_get( &chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck), &fs, NULL, ACH_O_LAST );  
+        if(ACH_OK != r) {
+            if(debug) {
+                    fprintf(stderr, "Ref Neck r = %s\n",ach_result_to_string(r));}
+            }
+        else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
+
+        /* set the ref to the new neck values */
+	H_ref.ref[NKY] = H_ref_neck.ref[NKY];
+	H_ref.ref[NK1] = H_ref_neck.ref[NK1];
+	H_ref.ref[NK2] = H_ref_neck.ref[NK2];
+
+
 
         r = ach_get( &chan_hubo_gains, &H_gains, sizeof(H_gains), &fs, NULL, ACH_O_LAST );
         if( !( ACH_OK==r || ACH_STALE_FRAMES==r || ACH_MISSED_FRAME==r ) )
@@ -3611,11 +3636,13 @@ int main(int argc, char **argv) {
 
     // Initialize Hubo Structs
     hubo_ref_t H_ref;
+    hubo_ref_t H_ref_neck;
     hubo_board_cmd_t H_cmd;
     hubo_state_t H_state;
     hubo_param_t H_param;
     hubo_virtual_t H_virtual;
     memset( &H_ref,   0, sizeof(H_ref));
+    memset( &H_ref_neck,   0, sizeof(H_ref_neck));
     memset( &H_cmd,  0, sizeof(H_cmd));
     memset( &H_state, 0, sizeof(H_state));
     memset( &H_param, 0, sizeof(H_param));
@@ -3624,6 +3651,9 @@ int main(int argc, char **argv) {
 
     // open hubo reference
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
+    hubo_assert( ACH_OK == r, __LINE__ );
+
+    r = ach_open(&chan_hubo_ref_neck, HUBO_CHAN_REF_NECK_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
 
     r = ach_open(&chan_hubo_gains, HUBO_CHAN_PWM_GAINS_NAME, NULL);
@@ -3651,6 +3681,7 @@ int main(int argc, char **argv) {
 
     openAllCAN( vflag );
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+    ach_put(&chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck));
     ach_put(&chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd));
 //    ach_put(&chan_hubo_state, &H_state, sizeof(H_state));
     ach_put(&chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));

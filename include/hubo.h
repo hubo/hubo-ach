@@ -113,6 +113,7 @@ extern "C" {
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
 #define		HUBO_CHAN_REF_NAME         "hubo-ref"                    ///> hubo ach channel
+#define		HUBO_CHAN_REF_NECK_NAME    "hubo-ref-neck"               ///> hubo ach channel ref for neck
 #define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
 #define         HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
