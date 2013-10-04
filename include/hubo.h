@@ -375,12 +375,19 @@ typedef struct hubo_jmc_state {
 	//	 or whether motor control / FETs are on
 }__attribute__((packed)) hubo_jmc_state_t;
 
+typedef struct hubo_power {
+	double voltage;
+	double current;
+	double power;
+}__attribute__((packed)) hubo_power_t;
+
 typedef struct hubo_state {
 	hubo_imu_t imu[HUBO_IMU_COUNT];	///< IMU
 	hubo_ft_t ft[4];   ///< ft sensors
 	struct hubo_joint_state joint[HUBO_JOINT_COUNT]; ///> Joint pos, velos, and current
         hubo_joint_status_t status[HUBO_JOINT_COUNT];
 	struct hubo_jmc_state driver[HUBO_JMC_COUNT];
+	hubo_power_t power; // back power board
         double time;
 	int16_t refWait;
 }__attribute__((packed)) hubo_state_t;

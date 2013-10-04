@@ -141,6 +141,9 @@ void hGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame 
 void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f);
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
+void hgetPowerVals(hubo_param_t *h, struct can_frame *f);
+void fgetPowerVals(hubo_param_t *h, struct can_frame *f);
+void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void hGetFT(int board, struct can_frame *f, int can);
 void fGetFT(int board, struct can_frame *f);
 void getFTAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
@@ -481,6 +484,12 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /* Get IMU data */
         getIMUAllSlow(&H_state, H_param, &frame);
 
+		/* Get Power data */
+		getPower(&H_state, H_param, &frame);
+
+		/* Get Power data */
+		getPower(&H_state, H_param, &frame);
+
         /* Update next joint status (one each loop) */
         getStatusIterate( &H_state, H_param, &frame);
 
@@ -489,7 +498,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
         /* Get all Current data */
-//        getCurrentAllSlow(&H_state, H_param, &frame);
+        getCurrentAllSlow(&H_state, H_param, &frame);
 
         // Get current timestamp to send out with the state struct
 
@@ -764,6 +773,26 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
             }
         }
     }
+}
+
+
+void hgetPowerVals(hubo_param_t *h, struct can_frame *f){
+    fgetPowerVals(h, f);
+    sendCan(hubo_socket[UPPER_CAN], f);
+}
+
+void fgetPowerVals(hubo_param_t *h, struct can_frame *f){
+	f->can_id = CMD_TXDF;
+	//f->can_id = REF_BASE_TXDF + 14;
+	f->data[0] = JMC14;
+	f->data[1] = H_VCREAD;
+	f->can_dlc = 2;
+}
+
+void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f){
+	hgetPowerVals(h, f);
+	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+	decodeFrame(s, h, f);	
 }
 
 
@@ -3165,9 +3194,19 @@ void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
 
 int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
     int fs = (int)f->can_id;
-    
+
+    if (fs == H_ENC_BASE_RXDF + 0xE)
+    {
+        // Voltage, Current Return Message
+        double voltage = doubleFromBytePair(f->data[1],f->data[0])/100.0;
+        double current = doubleFromBytePair(f->data[3],f->data[2])/100.0;
+        double power   = doubleFromBytePair(f->data[5],f->data[4])/10.0;
+        s->power.voltage = voltage;
+        s->power.current = current;
+        s->power.power = power;	
+    }
     /* Force-Torque Readings */
-    if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs <= H_SENSOR_FT_MAX_RXDF) )
+    else if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs <= H_SENSOR_FT_MAX_RXDF) )
     {
         int num = fs - H_SENSOR_FT_BASE_RXDF;
         int16_t val;
@@ -3513,7 +3552,6 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             }
         }
     } 
-    
     return 0;
 }
 
