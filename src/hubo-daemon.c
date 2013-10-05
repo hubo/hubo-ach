@@ -137,6 +137,7 @@ int ref2enc( int jnt, double ref, hubo_param_t *h );
 void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f);
 int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 double enc2rad(int jnt, int enc, hubo_param_t *h);
+double enc2radNkDrc(int jnt, int enc, hubo_param_t *h);
 void hGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f);
 void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f);
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
@@ -3165,6 +3166,10 @@ double enc2rad(int jnt, int enc, hubo_param_t *h) {
         return (double)(enc*(double)p->drive/(double)p->driven/(double)p->harmonic/(double)p->enc*2.0*M_PI);
 }
 
+double enc2radNkDrc(int jnt, int enc, hubo_param_t *h) {
+    hubo_joint_param_t *p = &h->joint[jnt];
+        return (double)( ((double)enc/4096.0*2.0*M_PI) - M_PI);
+}
 
 double doubleFromBytePair(uint8_t data0, uint8_t data1){
 	unsigned int tmp = 0;
@@ -3464,7 +3469,21 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
             }
-        }
+        }        
+        else if( (numMot == 3) & (hubo_type == HUBO_ROBOT_TYPE_DRC_HUBO) & (jmc == EJMC2) ) {
+            for( i = 0; i < numMot; i++ )
+            {
+                enc16 = 0;
+                enc16 = (enc << 8) + f->data[0 + i*2];
+                enc16 = (enc << 8) + f->data[1 + i*2];
+                int jnt = h->driver[jmc].joints[i];          // motor on the same drive
+                int jntInt = (int)((short)((f->data[0+i*2])|(f->data[1+i*2]<<8)));
+                double newPos = enc2radNkDrc(jnt, jntInt, h);
+                s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
+                s->joint[jnt].pos = newPos;
+            }
+
+	}
         /* DRC Fingers and Writst Yaw 2 */
         else if( (numMot == 3) & (hubo_type == HUBO_ROBOT_TYPE_DRC_HUBO)) {
 
