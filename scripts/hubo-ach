@@ -39,6 +39,7 @@ HUBO_LOG_FULL_NAME="$HUBO_LOG_DIR/$HUBO_LOG_NAME.log"
 DAEMON_LOG_DIR='/var/log/hubo'
 LOCK_DIR='/var/lock/hubo'
 
+FLAG_REMOTE=0
 FLAG_NOCONSOLE=0
 FLAG_DRC_MODE=0
 FLAG_NO_LOG_MODE=1
@@ -46,6 +47,8 @@ FLAG_DRC_HUBO=0
 FLAG_DRC_HUBO_SIM='drc'
 FLAG_OPENHUBO_SIM='openhubo'
 FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
+
+HUBO_REMOTE_ADDRESS='0.0.0.0'
 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan0 
 #sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
@@ -189,6 +192,28 @@ esac
 
 }
 
+RunHead()
+{
+   
+   case "$2" in 
+	'kill')
+		screen -S hubohead -p 0 -X quit
+	;;
+   *)
+
+	   if [[ $FLAG_REMOTE -eq 1 ]]
+	   then
+	       echo 'Starting remote connection'
+	       Remote $HUBO_REMOTE_ADDRESS
+	   fi
+	   sudo chmod 777 /dev/ttyUSB0
+	   cd /etc/hubo-ach
+	   screen -S hubohead -d -m python hubo_drc_head.py
+   ;;
+   esac
+
+}
+
 Read()
 {
 	case "$1" in 
@@ -211,6 +236,7 @@ KillAll()
 	StopHubo $2
 	KillHubo
 	Kill
+        screen -S hubohead -p 0 -X quit
 	sudo rm $LOCK_DIR/hubo-daemon
 	sudo rm /dev/shm/achshm-hubo*
 	KillRemote
@@ -854,6 +880,12 @@ ShowUsage()
 	echo 'stop          : Close all channels and processes'
 	echo 'restart       : Restart all channels and processes'
         echo 'console       : Starts the hubo conole'
+        echo 'head          : Hubo head/neck process'
+        echo '              : Options:'
+        echo '              :       (no-arg)      : Start hubo head/neck process'
+        echo '              :       kill          : Stops hubo head/neck process'
+        echo '              :       arg remote xxx.xxx.xxxx : starts head/neck process with remote'
+        echo '              :                                 connection to xxx.xxx.xxx.xxx'
 	echo 'load          : Loads pre defigned home paramaters for the hubos'
 	echo '              : Options:'
    	echo '              :       beta1         : Loads default home pos for DRC-Hubo-Beta-1'
@@ -905,6 +937,9 @@ ShowUsage()
 
 SetFlags()
 {
+HUBO_I=0
+HUBO_TEMP1="$@"
+HUBO_TEMP=($HUBO_TEMP1)
 for var in "$@"
 do
 #    echo "$var"
@@ -912,12 +947,18 @@ do
       'takelog' )
           FLAG_NO_LOG_MODE=0
       ;;
+      'remote' )
+	  FLAG_REMOTE=1
+          HUBO_REMOTE_ADDRESS=${HUBO_TEMP[$(($HUBO_I+1))]}
+	  echo "Remote address set: "$HUBO_REMOTE_ADDRESS
+      ;;
       'drc' )
           FLAG_DRC_HUBO=1
           FLAG_OPENHUBO=$FLAG_DRC_HUBO_SIM
           SetHuboType $var
       ;;
     esac
+    HUBO_I=$(($HUBO_I+1))
 
 done
 }
@@ -975,6 +1016,11 @@ case "$1" in
 # Start all channels and processes
 	'run' )
 		RunDaemon $@
+	;;
+
+# Run head program
+        'head' )
+		RunHead $@
 	;;
 
 # Close all channels and processes

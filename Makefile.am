@@ -1,7 +1,9 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach drc-hubo-beta-1-default.home drc-hubo-beta-2-default.home drc-hubo-beta-2-rainbow-default.home
+#EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach drc-hubo-beta-1-default.home drc-hubo-beta-2-default.home drc-hubo-beta-2-rainbow-default.home
+EXTRA_DIST = tables/drc-hubo-beta-1-default.home tables/drc-hubo-beta-2-default.home tables/drc-hubo-beta-2-rainbow-default.home tables/huboplus.joint.table tables/drc-hubo.joint.table tables/joint.table tables/sensor.table tables/drc-hubo.sensor.table tables/huboplus.sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh python/hubo_drc_head.py python/settings.yaml
+
 
 #huboscriptdir = $(sysconfdir)/bin
 huboscriptdir = /usr/bin
@@ -24,7 +26,7 @@ include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonI
 
 huboachconfdir=/etc/hubo-ach
 
-huboachconf_DATA = tables/drc-hubo-beta-1-default.home tables/drc-hubo-beta-2-default.home tables/drc-hubo-beta-2-rainbow-default.home tables/huboplus.joint.table tables/drc-hubo.joint.table tables/joint.table tables/sensor.table tables/drc-hubo.sensor.table tables/huboplus.sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
+huboachconf_DATA = tables/drc-hubo-beta-1-default.home tables/drc-hubo-beta-2-default.home tables/drc-hubo-beta-2-rainbow-default.home tables/huboplus.joint.table tables/drc-hubo.joint.table tables/joint.table tables/sensor.table tables/drc-hubo.sensor.table tables/huboplus.sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh python/hubo_drc_head.py python/settings.yaml
 
 #hubo_jointparamsdir = $(prefix)/lib
 hubo_jointparamsdir = /usr/lib
