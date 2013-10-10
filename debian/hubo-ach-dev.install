@@ -12,3 +12,5 @@ etc/hubo-ach/sensor.table
 etc/hubo-ach/drc-hubo.sensor.table
 etc/hubo-ach/virtualHubo.py
 etc/hubo-ach/hubo-ach-safe-clean.sh
+etc/hubo-ach/hubo_drc_head.py
+etc/hubo-ach/settings.yaml

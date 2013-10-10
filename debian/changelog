@@ -1,3 +1,13 @@
+hubo-ach (0.1.20131009) stable; urgency=low
+
+  * Added head channel for DRC neck - can command head independent of the rest of the body
+  * Added support for RAINBOW neck CAN to Dynamexal controller with encoder feedback
+  * Added Dynamexal controller support for neck (baud 57600, Motor 1,2,3)
+  * Added power data from back pannel (V, I and P "total")  Note: requires wireing see wiki.danlofaro.com for details
+  * Minor bug fixes
+
+ -- Daniel M. Lofaro <dan@danlofaro.com>  Wed, 09 Oct 2013 22:48:00 -0400
+
 hubo-ach (0.1.20130909) stable; urgency=low
 
   * Logging is disabled by default
