@@ -196,9 +196,16 @@ RunHead()
 {
    
    case "$2" in 
-	'kill')
-		screen -S hubohead -p 0 -X quit
-	;;
+   'kill')
+      screen -S hubohead -p 0 -X quit
+   ;;
+   'status')
+     if ! screen -list | grep -q "hubohead"; then
+        echo 'head started: FAIL'
+     else
+        echo 'head started: success'
+     fi
+   ;;
    *)
 
 	   if [[ $FLAG_REMOTE -eq 1 ]]
@@ -208,7 +215,14 @@ RunHead()
 	   fi
 	   sudo chmod 777 /dev/ttyUSB0
 	   cd /etc/hubo-ach
+	   echo 'Starting hubo-head process...'
 	   screen -S hubohead -d -m python hubo_drc_head.py
+           sleep 5
+           if ! screen -list | grep -q "hubohead"; then
+                echo 'head started: FAIL'
+           else
+    		echo 'head started: success'
+           fi
    ;;
    esac
 
@@ -884,6 +898,7 @@ ShowUsage()
         echo '              : Options:'
         echo '              :       (no-arg)      : Start hubo head/neck process'
         echo '              :       kill          : Stops hubo head/neck process'
+        echo '              :       status        : Get status of hubo head/neck process'
         echo '              :       arg remote xxx.xxx.xxxx : starts head/neck process with remote'
         echo '              :                                 connection to xxx.xxx.xxx.xxx'
 	echo 'load          : Loads pre defigned home paramaters for the hubos'
