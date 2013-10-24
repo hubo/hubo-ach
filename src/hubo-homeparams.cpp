@@ -49,6 +49,7 @@ void printHelp()
                     "           -s or --save  : Saves the current home settings into [target file]\n"
                     "           -l or --load  : Loads the home settings from [target file] onto the boards\n"
                     "           -p or --print : Prints a table of joint settings out to the terminal\n"
+                    "           -a or --all   : Saves all the board params into [target file]\n"
                     "\n"
                     "       target file: You are recommend to provide the full path of a file\n"
                     "\n"
@@ -110,9 +111,20 @@ int main(int argc, char **argv)
     else if( 0 == strcmp(argv[1], "-p") || 0 == strcmp(argv[1], "--print") )
     {
         fprintf(stdout, "\n");
-        int r = printHomingParams(stdout, 0);
+        int r = printHomingParams(stdout, 0, 0);
         fprintf(stdout, "\n\n"); fflush(stdout);
         return r;
+    }
+    else if( 0 == strcmp(argv[1], "-a") || 0 == strcmp(argv[1], "--all") )
+    {
+        if(argc <= 2)
+        {
+            fprintf(stdout, "-a/--all needs a target file name!\n\n");
+            printHelp();
+            return 1;
+        }
+        
+        return saveAllParams( argv[2] );
     }
     else
     {

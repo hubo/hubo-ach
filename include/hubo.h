@@ -108,7 +108,7 @@ extern "C" {
 
 #define 	HUBO_CAN_CHAN_NUM	4	///> Number of CAN channels avaliable
 #define         HUBO_JOINT_COUNT        42              ///> The max number of joints
-#define         HUBO_JMC_COUNT          0x36            ///> The max number of JMCs
+#define         HUBO_JMC_COUNT          0x26            ///> The max number of JMCs
 #define         BNO_SENSOR_BASE         0x2F
 #define         HUBO_SENSOR_COUNT       0x36-BNO_SENSOR_BASE    ///> The max number of sensor units
 
