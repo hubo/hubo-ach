@@ -545,7 +545,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
         /* Get all Current data */
-        getCurrentAllSlow(&H_state, H_param, &frame);
+//        getCurrentAllSlow(&H_state, H_param, &frame);
 
         // Get current timestamp to send out with the state struct
 
