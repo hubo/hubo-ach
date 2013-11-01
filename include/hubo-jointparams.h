@@ -26,7 +26,10 @@ int loadHomingParams( const char *file_name );
 // Saves the current homing parameters to a file.
 // type=0 is for raw encoder units and type=1 is for radians
 int saveHomingParams( const char *file_name, int type );
-int printHomingParams( FILE* ptr_file, int type );
+// Save all the board params to a file
+// raw encoder units are used.
+int saveAllParams( const char *file_name );
+int printHomingParams( FILE* ptr_file, int type, int printAll );
 
 #ifdef __cplusplus
 }
