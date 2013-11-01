@@ -531,11 +531,11 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /* Get IMU data */
         getIMUAllSlow(&H_state, H_param, &frame);
 
-		/* Get Power data */
-		getPower(&H_state, H_param, &frame);
+        /* Get Power data */
+        getPower(&H_state, H_param, &frame);
 
-		/* Get Power data */
-		getPower(&H_state, H_param, &frame);
+        /* Get Power data */
+        getPower(&H_state, H_param, &frame);
 
         /* Update next joint status (one each loop) */
         getStatusIterate( &H_state, H_param, &frame);
