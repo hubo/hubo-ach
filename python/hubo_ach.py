@@ -48,6 +48,7 @@ HUBO_CHAN_REF_NAME                = 'hubo-ref'
 HUBO_CHAN_REF_NECK_NAME           = 'hubo-ref-neck'
 HUBO_CHAN_BOARD_CMD_NAME          = 'hubo-board-cmd'
 HUBO_CHAN_STATE_NAME              = 'hubo-state'
+HUBO_CHAN_ENC_NAME                = 'hubo-enc'
 HUBO_CHAN_PWM_GAINS_NAME          = 'hubo-pwm-gains'   # PWM Gain control channel
 HUBO_CHAN_BOARD_PARAM_NAME        = 'hubo-board-param' # hubo param ach channel
 HUBO_CHAN_REF_FILTER_NAME         = 'hubo-ref-filter'  # hubo reference with filter ach channel
@@ -208,11 +209,17 @@ class HUBO_JMC_STATE(Structure):
     _pack_ = 1
     _fields_ = [("temp" , c_double)]
 
+
+class HUBO_ENC(Structure):
+    _pack_ = 1
+    _fields_ = [("enc" ,c_double*HUBO_JOINT_COUNT)]
+
+
 class HUBO_POWER(Structure):
 	_pack_ = 1
 	_fields_ = [("voltage", c_double),
-				("current", c_double),
-				("power", c_double)]
+                    ("current", c_double),
+                    ("power", c_double)]
 
 class HUBO_STATE(Structure):
     _pack_ = 1

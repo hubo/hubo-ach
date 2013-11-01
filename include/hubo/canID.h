@@ -28,9 +28,9 @@ extern "C" {
 #define		BNO_LEFT_HAND_FT	BNO_RIGHT_FOOT_FT+6
 
 
-#define		HUBO_JOINT_COUNT	42		///> The max number of joints
-#define 	HUBO_JMC_COUNT		0x26		///> The max number of JMCs
-#define		HUBO_SENSOR_COUNT	0x36-BNO_SENSOR_BASE	///> The max number of sensor units
+//#define		HUBO_JOINT_COUNT	42		///> The max number of joints
+//#define 	HUBO_JMC_COUNT		0x26		///> The max number of JMCs
+//#define		HUBO_SENSOR_COUNT	0x36-BNO_SENSOR_BASE	///> The max number of sensor units
 
 #define H_BLANK		0x00
 

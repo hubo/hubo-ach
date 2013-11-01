@@ -49,10 +49,13 @@ from ctypes import *
 def rad2dyn(rad):
     return np.int(np.floor( (rad + np.pi)/(2.0 * np.pi) * 4096 ))
 
+def dyn2rad(en):
+    return en / 4096.0 * 2.0 * np.pi - np.pi
 
 def main(settings):
     # Open Hubo-Ach feed-forward and feed-back (reference and state) channels
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
+    e = ach.Channel(ha.HUBO_CHAN_ENC_NAME)
     r = ach.Channel(ha.HUBO_CHAN_REF_NAME)
     #s.flush()
     #r.flush()
@@ -60,11 +63,15 @@ def main(settings):
     # feed-forward will now be refered to as "state"
     state = ha.HUBO_STATE()
 
+    # encoder channel will be refered to as "encoder"
+    encoder = ha.HUBO_ENC()
+
     # feed-back will now be refered to as "ref"
     ref = ha.HUBO_REF()
 
     # Get the current feed-forward (state) 
-    [statuss, framesizes] = s.get(state, wait=False, last=False)
+    [statuss, framesizes] = s.get(state, wait=False, last=True)
+    [statuss, framesizes] = e.get(encoder, wait=False, last=True)
 
     portName = settings['port']
     baudRate = settings['baudRate']
@@ -108,22 +115,25 @@ def main(settings):
         for actuator in myActuators:
             if ( actuator.id == 1):
                 actuator.goal_position = rad2dyn(state.joint[ha.NKY].ref)
-#                tmp = rad2dyn(state.joint[ha.NKY].ref)
-#		print tmp
             if ( actuator.id == 2):
                 actuator.goal_position = rad2dyn(state.joint[ha.NK1].ref)
             if ( actuator.id == 3):
                 actuator.goal_position = rad2dyn(state.joint[ha.NK2].ref)
-#            actuator.goal_position = random.randrange(450, 600)
         net.synchronize()
 
 
         for actuator in myActuators:
             actuator.read_all()
             time.sleep(0.01)
-#        for actuator in myActuators:
-#            print actuator._id, "\t", actuator.current_position
-        time.sleep(0.05)
+            if ( actuator.id == 1):
+                encoder.enc[ha.NKY] = dyn2rad(actuator.current_position)
+            if ( actuator.id == 2):
+                encoder.enc[ha.NK1] = dyn2rad(actuator.current_position)
+            if ( actuator.id == 3):
+                encoder.enc[ha.NK2] = dyn2rad(actuator.current_position)
+#	print encoder.enc[ha.NKY], " : ", encoder.enc[ha.NK1], " : ", encoder.enc[ha.NK2]
+        e.put(encoder)
+        time.sleep(0.02)
 
 def validateInput(userInput, rangeMin, rangeMax):
     '''

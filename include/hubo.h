@@ -116,10 +116,11 @@ extern "C" {
 #define		HUBO_CHAN_REF_NECK_NAME    "hubo-ref-neck"               ///> hubo ach channel ref for neck
 #define		HUBO_CHAN_BOARD_CMD_NAME   "hubo-board-cmd"              ///> hubo console channel for ach
 #define		HUBO_CHAN_STATE_NAME       "hubo-state"                  ///> hubo state ach channel
+#define		HUBO_CHAN_ENC_NAME         "hubo-enc"                    ///> hubo enc ach channel
 #define         HUBO_CHAN_PWM_GAINS_NAME   "hubo-pwm-gains"              ///> PWM Gain control channel
-#define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"                  ///> hubo param ach channel
-#define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"            ///> hubo reference with filter ach channel
-#define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"    ///> virtual channel trigger to simulator
+#define		HUBO_CHAN_BOARD_PARAM_NAME "hubo-board-param"            ///> hubo param ach channel
+#define 	HUBO_CHAN_REF_FILTER_NAME  "hubo-ref-filter"             ///> hubo reference with filter ach channel
+#define 	HUBO_CHAN_VIRTUAL_TO_SIM_NAME "hubo-virtual-to-sim"      ///> virtual channel trigger to simulator
 #define 	HUBO_CHAN_VIRTUAL_FROM_SIM_NAME "hubo-virtual-from-sim"  ///> virtual channel trigger from simulator
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0005		///> Default time for CAN to time out
 //#define		HUBO_CAN_TIMEOUT_DEFAULT 0.0002		///> Default time for CAN to time out
@@ -375,6 +376,10 @@ typedef struct hubo_jmc_state {
 	// TODO: Add more things, such as whether an alarm is on
 	//	 or whether motor control / FETs are on
 }__attribute__((packed)) hubo_jmc_state_t;
+
+typedef struct hubo_enc {
+    double enc[HUBO_JOINT_COUNT];
+}__attribute__((packed)) hubo_enc_t;
 
 typedef struct hubo_power {
 	double voltage;
