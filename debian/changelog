@@ -3,6 +3,7 @@ hubo-ach (0.1.20131101) stable; urgency=low
   * Added encoder feedback for head process
   * Added head ach channel for encoder feedback
   * Added current feedback for all joints (20x slower then hubo-ach T)
+  * Removed duplicate def from include/hubo/canID.h (already in include/hubo.h): HUBO_JOINT_COUNT, HUBO_JMC_COUNT, HUBO_SENSOR_COUNT
 
  -- Daniel M. Lofaro <dan@danlofaro.com>  Fri, 01 Nov 2013 17:50:00 -0400
 
