@@ -142,6 +142,7 @@ void hGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame 
 void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f);
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
+void getCurrentAllSlowMod(hubo_state_t *s, hubo_param_t *h, struct can_frame *f, int mod);
 void hgetPowerVals(hubo_param_t *h, struct can_frame *f);
 void fgetPowerVals(hubo_param_t *h, struct can_frame *f);
 void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
@@ -298,6 +299,11 @@ int statusJntItt = 5;
 int statusJnti = 0;
 int readBuffi = 3;
 int hubo_type = HUBO_ROBOT_TYPE_HUBO_PLUS;
+
+/*mod buffer for current*/
+int imod0_glob = 0;
+int imod1_glob = 1;
+
 
 void huboLoop(hubo_param_t *H_param, int vflag) {
     int i = 0;  // iterator
@@ -546,6 +552,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         /* Get all Current data */
 //        getCurrentAllSlow(&H_state, H_param, &frame);
+        getCurrentAllSlowMod(&H_state, H_param, &frame, 20);
 
         // Get current timestamp to send out with the state struct
 
@@ -992,6 +999,46 @@ void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             }
         }
     }    
+
+}
+
+void getCurrentAllSlowMod(hubo_state_t *s, hubo_param_t *h, struct can_frame *f, int mod) {
+    ///> Requests all motor currents and records to hubo_state
+    char c[HUBO_JMC_COUNT];
+    memset( &c, 0, sizeof(c));
+    //memset( &c, 1, sizeof(c));
+    int jmc = 0;
+    int i = 0;
+//    c[h->joint[REB].jmc] = 0;
+    int canChan = 0;
+
+    int imod0 = mod;
+    int imod1 = mod;
+
+    for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++)
+    {
+        for( i = 0; i < HUBO_JOINT_COUNT; i++ )
+        {
+            jmc = h->joint[i].jmc;
+            if(0 == c[jmc])    // check to see if already asked that motor controller
+            {
+                if( ((imod0_glob + imod0) % mod == 0 ) | ((imod1_glob + imod1) % mod == 0)){
+                    hGetCurrentValue(i, h, f);
+                    readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+                    decodeFrame(s, h, f);
+                    c[jmc] = 1;
+                }
+                if(canChan == 0) imod0 += 1;
+                if(canChan == 1) imod1 += 1;
+                   
+            }
+        }
+    }
+    
+    imod0_glob +=1;
+    imod1_glob +=1;
+    if(imod0_glob > mod) imod0_glob = 0;    
+    if(imod1_glob > mod) imod1_glob = 0;    
 
 }
 
