@@ -1,7 +1,8 @@
 #include "hubo-io-trace.h"
 #include <stdio.h>
 #include <string.h>
-#include <hubo/canID.h>
+#include "hubo/canID.h"
+#include "hubo.h"
 
 void decodeFrame(const struct can_frame* f) {
 
@@ -9,44 +10,141 @@ void decodeFrame(const struct can_frame* f) {
   
 
   if (fs >= H_SENSOR_FT_BASE_RXDF &&
-      fs < H_SENSOR_FT_MAX_RXDF) {
+      fs <= H_SENSOR_FT_MAX_RXDF) {
 
-    printf("FT sensor\n");
+    printf("FT sensor for board %d\n", fs - H_SENSOR_FT_BASE_RXDF);
 
   } else if (fs >= H_SENSOR_IMU_BASE_RXDF && 
-             fs < H_SENSOR_IMU_MAX_RXDF) {
+             fs <= H_SENSOR_IMU_MAX_RXDF) {
 
-    printf("IMU sensor\n");
+    printf("IMU sensor for board %d\n", fs - H_SENSOR_IMU_BASE_RXDF);
 
   } else if( fs >= H_CURRENT_BASE_RXDF && 
              fs < H_CURRENT_MAX_RXDF ) {
 
-    printf("current sensor\n");
+    printf("current sensor for jmc %d\n", fs - H_CURRENT_BASE_RXDF);
 
   } else if ( fs >= H_ENC_BASE_RXDF && fs < H_ENC_MAX_RXDF ) {
 
-    printf("encoder\n");
+    printf("encoder for jmc %d\n", fs - H_ENC_BASE_RXDF);
 
   } else if( fs >= H_STAT_BASE_RXDF && fs < H_STAT_MAX_RXDF ) {
 
-    printf("stat??\n");
+    printf("status for jmc %d\n", fs - H_STAT_BASE_RXDF);
 
   } else if (fs == CMD_TXDF) {
+
+    const char* opcode_str = 0;
     
-    printf("cmd\n");
+    switch (f->data[1]) {
+
+    case H_BEEP: opcode_str = "beep"; break;
+    case H_HOME: opcode_str = "home"; break;
+    case 0x13:   opcode_str = "complimentary mode change"; break;
+    case H_SET_POS_GAIN_0: opcode_str = "set pos gain 0"; break;
+    case H_SET_POS_GAIN_1: opcode_str = "set pos gain 1"; break;
+    case H_SET_CUR_GAIN_0: opcode_str = "set cur gain 0"; break;
+    case H_SET_CUR_GAIN_1: opcode_str = "set cur gain 1"; break;
+    case H_GET_CURRENT: opcode_str = "get current"; break;
+    case H_ALARM: opcode_str = "alarm"; break;
+    case H_OPENLOOP_PWM: opcode_str = "open loop pwm"; break;
+    case H_SET_CTRL_MODE: opcode_str = "set ctrl mode"; break;
+    case H_GET_ENCODER: opcode_str = "get encoder"; break;
+    case H_GET_STATUS: opcode_str = "get status"; break;
+
+    case H_SET_DEADZONE+0:
+    case H_SET_DEADZONE+1:
+    case H_SET_DEADZONE+2:
+    case H_SET_DEADZONE+3:
+      opcode_str = "set deadzone"; break;
+
+    case H_SET_HOME_PARAM+0:
+    case H_SET_HOME_PARAM+1:
+    case H_SET_HOME_PARAM+2:
+    case H_SET_HOME_PARAM+3:
+      opcode_str = "set home param"; break;
+
+    case H_SET_ENC_RES+0:
+    case H_SET_ENC_RES+1:
+    case H_SET_ENC_RES+2:
+    case H_SET_ENC_RES+3:
+      opcode_str = "set encoder resolution"; break;
+
+    case H_SET_MAX_ACC_VEL+0:
+    case H_SET_MAX_ACC_VEL+1:
+    case H_SET_MAX_ACC_VEL+2:
+    case H_SET_MAX_ACC_VEL+3:
+      opcode_str = "set max acc vel"; break;
+
+    case H_SET_LOW_POS_LIM+0:
+    case H_SET_LOW_POS_LIM+1:
+    case H_SET_LOW_POS_LIM+2:
+    case H_SET_LOW_POS_LIM+3:
+      opcode_str = "set lower pos lim"; break;
+
+    case H_SET_UPP_POS_LIM+0:
+    case H_SET_UPP_POS_LIM+1:
+    case H_SET_UPP_POS_LIM+2:
+    case H_SET_UPP_POS_LIM+3:
+      opcode_str = "set upper pos lim"; break;
+
+    case H_SET_HOME_VEL_ACC+0:
+    case H_SET_HOME_VEL_ACC+1:
+    case H_SET_HOME_VEL_ACC+2:
+    case H_SET_HOME_VEL_ACC+3:
+      opcode_str = "set home vel acc"; break;
+
+    case H_GAIN_OVERRIDE:
+      opcode_str = "gain override"; break;
+
+    case H_SET_BOARD_NUM:
+      opcode_str = "set board number"; break;
+
+    case H_SET_ERR_BOUND:
+      opcode_str = "set err bound"; break;
+
+    case H_SWITCH_DRIVER:
+      opcode_str = "switch driver"; break;
+
+    case H_MOTOR_CTRL_ON:
+      opcode_str = "enable motor"; break;
+
+    case H_MOTOR_CTRL_OFF:
+      opcode_str = "disable motor"; break;
+
+    case H_SET_ENC_ZERO:
+      opcode_str = "zero encoder"; break;
+
+    case H_INIT_BOARD:
+      opcode_str = "init board"; break;
+      
+    case H_REQ_NULL:
+      opcode_str = "null sensor"; break;
+
+    case H_REQ_PARAMS:
+      opcode_str = "req params"; break;
+
+    default:
+      opcode_str = "UNKNOWN"; break;
+
+    }
+    
+    
+    printf("cmd for jmc %d with opcode %s (%d = 0x%x)\n", f->data[0], opcode_str,
+           (int)(f->data[1]), (int)(f->data[1]));
 
   } else if (fs == REQ_SENSOR_TXDF) {
 
     printf("req sensor\n");
 
   } else if (fs >= REF_BASE_TXDF &&
-             fs <= REF_BASE_TXDF + HUBO_JMC_COUNT) {
+             fs < REF_BASE_TXDF + HUBO_JMC_COUNT) {
 
-    printf("ref\n");
+    printf("ref for jmc %d\n", fs - REF_BASE_TXDF);
 
   } else {
 
-    printf("*** UNKNOWN (%d) ***\n", fs);
+    printf("*** UNKNOWN (%d = 0x%x) ***\n", fs, fs);
     exit(1);
     
   }
@@ -121,7 +219,7 @@ int main(int argc, char** argv) {
       
       double t = (trace.timestamp - first_time)*1e-9;
       
-      printf("%s at time %5.3f, %d transmitted\n",
+      printf("%s at time %5.6f, %d transmitted\n",
              label, t, trace.transmitted);
 
       if (trace.transmitted == sizeof(struct can_frame)) {
