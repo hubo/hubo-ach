@@ -37,13 +37,16 @@ huboiotrace_LTLIBRARIES = libhuboiotrace.la
 libhuboiotrace_la_SOURCES = src/hubo-io-trace.c
 libhuboiotrace_la_LDFLAGS = -module -avoid-version -shared
 
-bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-homeparams hubo-log hubo-io-logger
+bin_PROGRAMS = hubo-daemon hubo-console hubo-read hubo-homeparams hubo-log hubo-io-logger hubo-io-logreader
 
 hubo_daemon_SOURCES = src/hubo-daemonizer.c src/hubo-daemon.c src/hubo-socketcan.c
 hubo_daemon_LDADD = libhuboparams.la libhuboiotrace.la -lm -lrt -lc 
 
 hubo_io_logger_SOURCES = src/hubo-io-logger.c
 hubo_io_logger_LDADD = libhuboiotrace.la -lm -lrt -lc 
+
+hubo_io_logreader_SOURCES = src/hubo-io-logreader.c
+hubo_io_logreader_LDADD = libhuboiotrace.la -lm -lrt -lc 
 
 hubo_console_SOURCES = src/hubo-console.cpp
 hubo_console_LDADD = -lrt -lc -lm -lreadline libhuboparams.la -lach

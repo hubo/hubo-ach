@@ -45,10 +45,13 @@ int iotrace_open(int is_server) {
 
   } else {
 
+    errno = 0;
+
     // connect client to server_filename
     if (connect(s, (struct sockaddr *) &addr, len) == -1) {
-      perror("connect");
-      exit(1);
+      fprintf(stderr, "connect to io trace socket failed: %s\n", strerror(errno));
+      close(s);
+      return -2;
     }
 
   }
