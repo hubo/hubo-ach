@@ -42,10 +42,18 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hubo-daemon.h"
 #include "hubo/hubo-socketcan.h"
 
+#include "hubo-io-trace.h"
 
 hubo_can_t hubo_socket[4];
 
 int hubo_ver_can = 0;
+
+
+int trace_socket = -1; // file descriptor for tracing: -2 means don't deal
+
+
+
+
 
 static int openCAN(char* name) {
 
@@ -85,6 +93,10 @@ void openAllCAN(int vCan) {
 	//H.socket[1]	=	skt1;
 	hubo_socket[1]	=	skt1;
 
+	if (trace_socket == -1) { // not opened yet
+		trace_socket = iotrace_open(0);
+	}
+
 }
 
 /**
@@ -98,6 +110,18 @@ void openAllCAN(int vCan) {
 int sendCan(hubo_can_t skt, struct can_frame *f) {
 	//int bytes_sent = write( skt, f, sizeof(*f) );
 	int bytes_sent = write( skt, f, sizeof(*f) );
+
+	if (trace_socket >= 0) {
+		io_trace_t trace;
+		trace.timestamp = iotrace_gettime();
+		trace.is_read = 0;
+		trace.fd = skt;
+		trace.num_calls = 1;
+		trace.transmitted = bytes_sent;
+		trace.frame = *f;
+		iotrace_write(trace_socket, &trace);
+	}
+
 	if( (bytes_sent < 0) & (1 == hubo_ver_can) ) {
 		perror("bad write");
 	} /*else if( debug == 1 ) {
@@ -204,6 +228,21 @@ torDriverOnOff
 */
 // read can with timeout
 	int bytes_read = readn( skt, f, sizeof(*f), timeo );
+
+	if (trace_socket >= 0) {
+
+		io_trace_t trace;
+		trace.timestamp = iotrace_gettime();
+		trace.is_read = 1;
+		trace.fd = skt;
+		trace.num_calls = 1;
+		trace.transmitted = bytes_read;
+		trace.frame = *f;
+
+		iotrace_write(trace_socket, &trace);
+
+	}
+
 //	int bytes_read = read( skt, &f, sizeof(f));
 
 // this is the working one with no timeout
