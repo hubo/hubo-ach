@@ -130,7 +130,7 @@ void decodeFrame(const struct can_frame* f) {
     }
     
     
-    printf("cmd for jmc %d with opcode %s (%d = 0x%x)\n", f->data[0], opcode_str,
+    printf("cmd for jmc %d with opcode %s (%d = 0x%X)\n", f->data[0], opcode_str,
            (int)(f->data[1]), (int)(f->data[1]));
 
   } else if (fs == REQ_SENSOR_TXDF) {
@@ -144,10 +144,25 @@ void decodeFrame(const struct can_frame* f) {
 
   } else {
 
-    printf("*** UNKNOWN (%d = 0x%x) ***\n", fs, fs);
+    printf("*** UNKNOWN (%d = 0x%X) ***\n", fs, fs);
     exit(1);
     
   }
+
+  int i;
+
+  printf("id hex: 0x%04X, ", f->can_id);
+
+  printf("data hex: [ ");
+  for (i=1; i<=f->can_dlc; ++i) { printf("0x%02X ", f->data[i]); }
+  printf("]\n");
+
+  printf("id dec: %4d, ", f->can_id);
+
+  printf("data dec: [ ");
+  for (i=1; i<=f->can_dlc; ++i) { printf("%3d ", f->data[i]); }
+  printf("]\n");
+
 
 
 }
@@ -186,6 +201,7 @@ int main(int argc, char** argv) {
   int successful[2] = { 0, 0 };
 
   int64_t first_time = -1;
+  double last_time = 0;
 
   while (!feof(fp)) {
 
@@ -219,8 +235,10 @@ int main(int argc, char** argv) {
       
       double t = (trace.timestamp - first_time)*1e-9;
       
-      printf("%s at time %5.6f, %d transmitted\n",
-             label, t, trace.transmitted);
+      printf("socket %d: %s at time %5.6f (dt=%5.6f), %d transmitted\n",
+             trace.fd, label, t, t-last_time, trace.transmitted);
+
+      last_time = t;
 
       if (trace.transmitted == sizeof(struct can_frame)) {
         decodeFrame(&trace.frame);
