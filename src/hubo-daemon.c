@@ -299,10 +299,16 @@ int64_t tsdiff(const struct timespec* b,
 extern int have_iotrace_chan;
 extern ach_channel_t iotrace_chan;
 
+enum {
+    BAIL_ON_READ = 1,
+    NOBAIL_ON_READ = 0
+};
+
 /* loop until timeout or a write happens, all the while dispatching the reads */
 void pump_message_loop(hubo_can_t write_skt,
                        const struct can_frame* write_frame,
-                       double timeoutD) {
+                       double timeoutD,
+                       int bail_on_read) {
 
     
     struct timespec current_time, deadline_time;
@@ -352,6 +358,7 @@ void pump_message_loop(hubo_can_t write_skt,
 
             // handle reads
             int i;
+            int did_read = 0;
 
             for (i=0; i<2; ++i) {
                 if (FD_ISSET(hubo_socket[i], &read_fds)) {
@@ -377,6 +384,7 @@ void pump_message_loop(hubo_can_t write_skt,
                         errno = read_errno;
                         perror("read in pump_message_loop");
                     } else {
+                        did_read = 1;
                         decodeFrame(global_loop_state,
                                     global_loop_param,
                                     &frame);
@@ -416,6 +424,10 @@ void pump_message_loop(hubo_can_t write_skt,
 
             }
 
+            if (bail_on_read && did_read) {
+                return;
+            }
+
         }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
@@ -439,14 +451,14 @@ void pump_message_loop(hubo_can_t write_skt,
 void meta_readCan(hubo_can_t skt,
                   struct can_frame* f,
                   double timeoutD) {
-    const double short_read_timeout_sec = 0.000010; // 10us
-    pump_message_loop(-1, NULL, short_read_timeout_sec);
+    const double long_read_timeout_sec = 0.050; // 50ms
+    pump_message_loop(-1, NULL, long_read_timeout_sec, BAIL_ON_READ);
 }
 
 void meta_sendCan(hubo_can_t skt,
                   struct can_frame* f) {
     const double long_write_timeout_sec = 0.050; // 50ms
-    pump_message_loop(skt, f, long_write_timeout_sec);
+    pump_message_loop(skt, f, long_write_timeout_sec, NOBAIL_ON_READ);
 }
 
 
@@ -754,7 +766,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             }
 
             if (loop_remaining_nsec > 0) {
-                pump_message_loop(-1, NULL, loop_remaining_nsec*1e-9);
+                pump_message_loop(-1, NULL, loop_remaining_nsec*1e-9, NOBAIL_ON_READ);
             }
 
             tsadd(&loop_time, loop_interval_nsec, &loop_time);
@@ -800,15 +812,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 }
 
-void clearCanBuff(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
-    int i = 0;
-    for(i = 0; i < readBuffi; i++) {
-        meta_readCan(0, f, 0);
-        nop_decodeFrame(s, h, f);
-        meta_readCan(1, f, 0);
-        nop_decodeFrame(s, h, f);
-    }
-}
 
 void getStatusIterate( hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
@@ -2463,9 +2466,6 @@ void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h
 void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
     fInitializeBoard(jnt, h, f);
     meta_sendCan(getSocket(h,jnt), f);
-    //meta_readCan(hubo_socket[h->joint[jnt].can], f, 4);    // 8 bytes to read and 4 sec timeout
-    // TODO: Why is the readCan here??
-    meta_readCan(getSocket(h,jnt), f, HUBO_CAN_TIMEOUT_DEFAULT*100);    // 8 bytes to read and 4 sec timeout
 }
 
 void fInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
