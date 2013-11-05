@@ -295,7 +295,8 @@ int64_t tsdiff(const struct timespec* b,
     return ts2i64(b) - ts2i64(a);
 }
                
-extern int trace_socket;
+extern int have_iotrace_chan;
+extern ach_channel_t iotrace_chan;
 
 /* loop until timeout or a write happens, all the while dispatching the reads */
 void pump_message_loop(hubo_can_t write_skt,
@@ -359,7 +360,7 @@ void pump_message_loop(hubo_can_t write_skt,
                     ssize_t bytes_read = read(hubo_socket[i], &frame, sizeof(frame));
                     int read_errno = errno;
                     
-                    if (trace_socket >= 0) {
+                    if (have_iotrace_chan) {
                         io_trace_t trace;
                         trace.timestamp = iotrace_gettime();
                         trace.is_read = 1;
@@ -367,7 +368,7 @@ void pump_message_loop(hubo_can_t write_skt,
                         trace.result_errno = read_errno;
                         trace.transmitted = bytes_read;
                         trace.frame = frame;
-                        iotrace_write(trace_socket, &trace);
+                        ach_put(&iotrace_chan, &trace, sizeof(trace));
                     }
                     
           
@@ -393,7 +394,7 @@ void pump_message_loop(hubo_can_t write_skt,
                                               sizeof(*write_frame));
                 int write_errno = errno;
 
-                if (trace_socket >= 0) {
+                if (have_iotrace_chan) {
                     io_trace_t trace;
                     trace.timestamp = iotrace_gettime();
                     trace.is_read = 0;
@@ -401,7 +402,7 @@ void pump_message_loop(hubo_can_t write_skt,
                     trace.result_errno = write_errno;
                     trace.transmitted = bytes_written;
                     trace.frame = *write_frame;
-                    iotrace_write(trace_socket, &trace);
+                    ach_put(&iotrace_chan, &trace, sizeof(trace));
                 }
                 
                 if (bytes_written != sizeof(*write_frame)) {

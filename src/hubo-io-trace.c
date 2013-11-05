@@ -16,6 +16,7 @@
 
 #define SOCK_PATH "/tmp/hubo-io-trace"
 
+/*
 int iotrace_open(int is_server) {
 
   int s, s2, t, len;
@@ -111,6 +112,7 @@ void iotrace_close(int trace_socket, int do_unlink) {
   }
 
 }
+*/
 
 int64_t iotrace_gettime() {
 

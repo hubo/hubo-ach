@@ -49,11 +49,8 @@ hubo_can_t hubo_socket[4];
 int hubo_ver_can = 0;
 
 
-int trace_socket = -1; // file descriptor for tracing: -2 means don't deal
-
-
-
-
+ach_channel_t iotrace_chan;
+int have_iotrace_chan = 0;
 
 static int openCAN(char* name) {
 
@@ -93,9 +90,11 @@ void openAllCAN(int vCan) {
 	//H.socket[1]	=	skt1;
 	hubo_socket[1]	=	skt1;
 
-	if (trace_socket == -1) { // not opened yet
-		trace_socket = iotrace_open(0);
-	}
+        ach_status_t result = ach_open(&iotrace_chan,
+                                       IO_TRACE_CHAN_NAME,
+                                       NULL);
+
+        have_iotrace_chan = (result == ACH_OK);
 
 }
 
@@ -116,7 +115,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
         perror("write");
     }
 
-    if (trace_socket >= 0) {
+    if (have_iotrace_chan) {
         io_trace_t trace;
         trace.timestamp = iotrace_gettime();
         trace.is_read = 0;
@@ -124,7 +123,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
         trace.result_errno = errno;
         trace.transmitted = bytes_sent;
         trace.frame = *f;
-        iotrace_write(trace_socket, &trace);
+        ach_put(&iotrace_chan, &trace, sizeof(trace));
     }
 
     if (bytes_sent < 0) { bytes_sent = 0; }
@@ -194,7 +193,7 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
 
     }
 
-    if (trace_socket >= 0) {
+    if (have_iotrace_chan) {
                 
         io_trace_t trace;
         trace.timestamp = iotrace_gettime();
@@ -204,7 +203,7 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
         trace.transmitted = bytes_read;
         trace.frame = *f;
 
-        iotrace_write(trace_socket, &trace);
+        ach_put(&iotrace_chan, &trace, sizeof(trace));
 
     }
 

@@ -20,13 +20,7 @@ typedef struct io_trace  {
   struct can_frame frame;
 } io_trace_t;
 
-int iotrace_open(int is_server);
-
-void iotrace_write(int trace_socket, const io_trace_t* trace);
-
-int iotrace_read(int trace_socket, io_trace_t* trace);
-
-void iotrace_close(int trace_socket, int do_unlink);
+#define IO_TRACE_CHAN_NAME "hubo-io-trace"
 
 int64_t iotrace_gettime();
 
