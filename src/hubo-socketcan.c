@@ -95,6 +95,8 @@ void openAllCAN(int vCan) {
                                        NULL);
 
         have_iotrace_chan = (result == ACH_OK);
+        fprintf(stderr, "open iotrace channel: %s\n", 
+                ach_result_to_string(result));
 
 }
 
