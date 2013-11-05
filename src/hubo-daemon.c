@@ -90,6 +90,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 hubo_state_t* global_loop_state = 0;
 hubo_param_t* global_loop_param = 0;
+int global_loop_enc_valid[HUBO_JOINT_COUNT];
 
 
 // Timing info
@@ -722,6 +723,15 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         }
 
+        int all_valid = true;
+        int i;
+        for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+            if (!global_loop_enc_valid[i]) {
+                fprintf(stderr, "warning: requested encoder reading for %s but got none\n",
+                        jointNames[i]);
+            }
+        }
+
 
         fflush(stdout);
         fflush(stderr);
@@ -955,10 +965,16 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
     int i = 0;
 //	c[h->joint[REB].jmc] = 0;
     int canChan = 0;
+
+    for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+        global_loop_enc_valid[i] = 1;
+    }
+    
     for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
         for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
             jmc = h->joint[i].jmc;
             if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+                global_loop_enc_valid[i] = 0;
                 hGetEncValue(i, 0x00, h, f);
                 meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                 nop_decodeFrame(s, h, f);
@@ -3608,6 +3624,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_loop_enc_valid[jnt] = 1;
             }
         }
         /* DRC Fingers and Writst Yaw 2 */
@@ -3623,6 +3640,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, jntInt, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_loop_enc_valid[jnt] = 1;
             }
         }
 
@@ -3637,6 +3655,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_loop_enc_valid[jnt] = 1;
             }
         }
             
@@ -3650,6 +3669,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_loop_enc_valid[jnt] = 1;
              }
         }
 
@@ -3662,6 +3682,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_loop_enc_valid[jnt] = 1;
             }
         }
 
