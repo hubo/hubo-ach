@@ -108,34 +108,25 @@ void openAllCAN(int vCan) {
  *	CAN frame to send
  */
 int sendCan(hubo_can_t skt, struct can_frame *f) {
-	//int bytes_sent = write( skt, f, sizeof(*f) );
-	int bytes_sent = write( skt, f, sizeof(*f) );
 
-	if (trace_socket >= 0) {
-		io_trace_t trace;
-		trace.timestamp = iotrace_gettime();
-		trace.is_read = 0;
-		trace.fd = skt;
-		trace.num_calls = 1;
-		trace.transmitted = bytes_sent;
-		trace.frame = *f;
-		iotrace_write(trace_socket, &trace);
-	}
+    errno = 0;
+    int bytes_sent = write( skt, f, sizeof(*f) );
 
-	if( (bytes_sent < 0) & (1 == hubo_ver_can) ) {
-		perror("bad write");
-	} /*else if( debug == 1 ) {
+    if (trace_socket >= 0) {
+        io_trace_t trace;
+        trace.timestamp = iotrace_gettime();
+        trace.is_read = 0;
+        trace.fd = skt;
+        trace.num_calls = 1;
+        trace.transmitted = bytes_sent;
+        trace.frame = *f;
+        iotrace_write(trace_socket, &trace);
+    }
 
-		printf("%d bytes sent -- ", bytes_sent);
-		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
-		int i = 0;
-		for(i = 0; i < f->can_dlc; i++) {
-			printf(" %i ",f->data[i]);
-		}
-		printf("\n");
-	}*/ //TODO: Come up with better debug system
+    if (bytes_sent != sizeof(*f)) {
+        perror("write");
+    }
 
-	return bytes_sent;
 }
 
 int flushCan(hubo_can_t skt, int timeOut, double giveUp)
@@ -157,107 +148,72 @@ int flushCan(hubo_can_t skt, int timeOut, double giveUp)
     return bytes_read;
 }
 
-static int readn (int sockfd, void *buff, size_t n, int timeo){ // microsecond pause
-	int n_left;
-	int n_read;
-	char *ptr;
-	ptr = buff;
-	n_left = n;
-	struct timeval timeout;
-	fd_set fds;
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = timeo;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-  
-
-        /* read buffer only no wait */ 
-        char zeroFlag = 0;
-/*        if(0 == timeo) {
-            n_read=read(sockfd,ptr,n_left);
-            zeroFlag = 1;
-        }
-*/
-
-	while(n_left>0 & zeroFlag == 0){
-
-		if (select(sockfd+1, &fds, 0, 0, &timeout)>0){
-			if((n_read=read(sockfd,ptr,n_left))<0){
-				if(errno == EINTR)
-					n_read=0;
-				else{
-					return -1;
-				}
-			}
-			else if(n_read==0){
-				if( 1 == hubo_ver_can ){
-//					printf("n_read=0\n");
-				}
-				break;
-			}
-			n_left-=n_read;
-			//printf("%s\n", ptr);
-			ptr+=n_read;
-
-		}
-		else{
-			return -1;
-		}
-	}
-	return (n-n_left);
-}
-
-
+#define USEC_PER_SEC 1000000
 
 int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
-	// note timeo is the time out in seconds
 
-	int timeo = (int)(timeoD*1000000.0);
-	//int bytes_read = readn( skt, &f, sizeof(f), timeo );
-//	struct	can_frame F;
-/*
-	F.data[0] = 3;
-torDriverOnOff
-	F.data[1] = 3;
-	F.data[2] = 3;
-	F.data[3] = 3;
-	F.data[4] = 3;
-	F.data[5] = 3;
-	F.data[6] = 3;
-*/
-// read can with timeout
-	int bytes_read = readn( skt, f, sizeof(*f), timeo );
+    fd_set read_fds;
 
-	if (trace_socket >= 0) {
+    int result;
 
-		io_trace_t trace;
-		trace.timestamp = iotrace_gettime();
-		trace.is_read = 1;
-		trace.fd = skt;
-		trace.num_calls = 1;
-		trace.transmitted = bytes_read;
-		trace.frame = *f;
+    // note timeo is the time out in microseconds
+    int timeo = (int)(timeoD*1e6);
+    
+    struct timeval timeout;
 
-		iotrace_write(trace_socket, &trace);
+    int bytes_read = 0;
 
-	}
+    FD_ZERO(&read_fds);
+    FD_SET(skt, &read_fds);
 
-//	int bytes_read = read( skt, &f, sizeof(f));
+    timeout.tv_sec = timeo / USEC_PER_SEC;
+    timeout.tv_usec = timeo % USEC_PER_SEC;
+    
+    errno = 0;
+    result = select(skt+1, &read_fds, 0, 0, &timeout);
 
-// this is the working one with no timeout
-//	int bytes_read = read( skt, f, sizeof(*f));
-	if( (bytes_read < 0) & (1 == hubo_ver_can) ) {
-//		perror("bad read");
-	} /*else if( debug == 1 ) {
-		printf("%d bytes read -- ", bytes_read);
-		int i = 0;
-		printf(" ID=%i - DLC=%i - Data= ",f->can_id, f->can_dlc);
-		for(i = 0; i < f->can_dlc; i++) {
-			printf(" %d ",f->data[i]);
-		}
-		printf("\n");
-	}*/ //TODO: Come up with better debug system
+    if (result < 0) {
 
-	return bytes_read;
+        if (errno != EINTR) {
+            perror("select");
+        }
+
+    } else if (result && FD_ISSET(skt, &read_fds)) {
+        
+        errno = 0;
+        bytes_read = read( skt, f, sizeof(*f) );
+
+        if (bytes_read < 0) {
+            perror("read");
+        }
+
+    }
+
+    if (trace_socket >= 0) {
+                
+        io_trace_t trace;
+        trace.timestamp = iotrace_gettime();
+        trace.is_read = 1;
+        trace.fd = skt;
+        trace.num_calls = 1;
+        trace.transmitted = bytes_read;
+        trace.frame = *f;
+
+        iotrace_write(trace_socket, &trace);
+
+    }
+
+    // just turn errors into no read
+    if (bytes_read < 0) { bytes_read = 0; }
+
+    return bytes_read;
+
 }
+
+
+/* Local Variables:                          */
+/* mode: c                                   */
+/* c-basic-offset: 4                         */
+/* indent-tabs-mode:  nil                    */
+/* End:                                      */
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
