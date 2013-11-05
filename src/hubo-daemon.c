@@ -769,17 +769,25 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         }
 
         int all_valid = 1;
+        const int print_enc_errs = 0;
+
         for (i=0; i<HUBO_JOINT_COUNT; ++i) {
             if (H_state.joint[i].active && !global_loop_enc_valid[i]) {
                 if (all_valid) {
-                    fprintf(stderr, "warning: no encoder reading for ");
+                    if (print_enc_errs) {
+                        fprintf(stderr, "warning: no encoder reading for ");
+                    }
                     all_valid = 0;
                 }
-                fprintf(stderr, "%s ", jointNames[i]);
+                if (print_enc_errs) {
+                    fprintf(stderr, "%s ", jointNames[i]);
+                }
             }
         }
         if (!all_valid) {
-            fprintf(stderr, " (after %d successful loops)\n", successful_encs);
+            if (print_enc_errs) {
+                fprintf(stderr, " (after %d successful loops)\n", successful_encs);
+            }
             successful_encs = 0;
         } else {
             ++successful_encs;
