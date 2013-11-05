@@ -1,4 +1,3 @@
-/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 /*
 Copyright (c) 2012, Daniel M. Lofaro
 All rights reserved.
@@ -87,6 +86,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Somewhere in your app */
 
+hubo_state_t* global_loop_state = 0;
+hubo_param_t* global_loop_param = 0;
 
 
 // Timing info
@@ -262,6 +263,26 @@ unsigned short DrcFingerSignConvention(short h_input,unsigned char h_type);
 unsigned long DrcSignConvention(long h_input);
 
 
+void nop_decodeFrame(hubo_state_t* state,
+                     hubo_param_t* param,
+                     struct can_frame* f) {
+
+  decodeFrame(state, param, f);
+
+}
+
+void meta_readCan(hubo_can_t skt,
+                  struct can_frame* f,
+                  double timeoutD) {
+  readCan(skt, f, timeoutD);
+}
+
+void meta_sendCan(hubo_can_t skt,
+                  struct can_frame* f) {
+  sendCan(skt, f);
+}
+
+
 /* Flags */
 int verbose;
 int debug;
@@ -352,8 +373,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 /*
         if(true == H_state.joint[i].active) {
             hGetBoardStatus(i, &H_state, &H_param, &frame);
-            readCan(getSocket(&H_param,i), &frame, HUBO_CAN_TIMEOUT_DEFAULT*100.0);
-            decodeFrame(&H_state, &H_param, &frame);
+            meta_readCan(getSocket(&H_param,i), &frame, HUBO_CAN_TIMEOUT_DEFAULT*100.0);
+            nop_decodeFrame(&H_state, &H_param, &frame);
             if(((int)H_state.status[i].homeFlag) == (int)HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
         }
 */
@@ -524,10 +545,10 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 void clearCanBuff(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
     int i = 0;
     for(i = 0; i < readBuffi; i++) {
-        readCan(0, f, 0);
-        decodeFrame(s, h, f);
-        readCan(1, f, 0);
-        decodeFrame(s, h, f);
+        meta_readCan(0, f, 0);
+        nop_decodeFrame(s, h, f);
+        meta_readCan(1, f, 0);
+        nop_decodeFrame(s, h, f);
     }
 }
 
@@ -565,7 +586,7 @@ static inline void tsnorm(struct timespec *ts){
 void hSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 {
     fSetNonComplementaryMode(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
@@ -582,7 +603,7 @@ void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 {
     fSetNonComplementaryMode(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
@@ -752,13 +773,13 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
             jmc = h->joint[i].jmc;
             if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
                 hGetEncValue(i, 0x00, h, f);
-                readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-                decodeFrame(s, h, f);
+                meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                nop_decodeFrame(s, h, f);
                 if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
                    LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
                         hGetEncValue(i, 0x01, h, f);
-                        readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-                        decodeFrame(s, h, f);
+                        meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                        nop_decodeFrame(s, h, f);
                 }
                 c[jmc] = 1;
             }
@@ -787,8 +808,8 @@ void getBoardStatusAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f
             if((0 == c[jmc]) && (canChan == h->joint[i].can)) 
             {
                 hGetBoardStatus(i, s, h, f);
-                readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
-                decodeFrame(s, h, f);
+                meta_readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+                nop_decodeFrame(s, h, f);
                 c[jmc] = 1;
             }
         }
@@ -798,8 +819,8 @@ void getBoardStatusAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f
 void hGetFT(int board, struct can_frame *f, int can)
 {
     fGetFT(board,f);
-    sendCan(hubo_socket[can],f);
-    readCan(hubo_socket[can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    meta_sendCan(hubo_socket[can],f);
+    meta_readCan(hubo_socket[can], f, HUBO_CAN_TIMEOUT_DEFAULT);
 }
 
 void fGetFT(int board, struct can_frame *f)
@@ -816,16 +837,17 @@ void fGetFT(int board, struct can_frame *f)
 void getFTAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
     hGetFT(h->sensor[HUBO_FT_R_FOOT].boardNo, f, h->sensor[HUBO_FT_R_FOOT].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetFT(h->sensor[HUBO_FT_L_FOOT].boardNo, f, h->sensor[HUBO_FT_L_FOOT].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetFT(h->sensor[HUBO_FT_R_HAND].boardNo, f, h->sensor[HUBO_FT_R_HAND].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetFT(h->sensor[HUBO_FT_L_HAND].boardNo, f, h->sensor[HUBO_FT_L_HAND].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
+
 }
 
 void fGetAcc(int board, struct can_frame *f)
@@ -841,17 +863,17 @@ void fGetAcc(int board, struct can_frame *f)
 void hGetAcc(int board, struct can_frame *f)
 {
     fGetAcc(board,f);
-    sendCan(hubo_socket[LOWER_CAN],f);
-    readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    meta_sendCan(hubo_socket[LOWER_CAN],f);
+    meta_readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 }
 
 void getAccAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
     hGetAcc(h->sensor[HUBO_FT_R_FOOT].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetAcc(h->sensor[HUBO_FT_L_FOOT].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 }
 
 void fGetIMU(int board, struct can_frame *f)
@@ -868,23 +890,23 @@ void fGetIMU(int board, struct can_frame *f)
 void hGetIMU(int board, struct can_frame *f)
 {
     fGetIMU(board,f);
-    sendCan(hubo_socket[LOWER_CAN],f);
-    readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    meta_sendCan(hubo_socket[LOWER_CAN],f);
+    meta_readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 }
 
 void getIMUAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
     hGetIMU(h->sensor[HUBO_IMU0].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     // I have been told that there is only one IMU,
     // so the rest of these are probably worthless.
 /*
     hGetIMU(h->sensor[HUBO_IMU1].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetIMU(h->sensor[HUBO_IMU2].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 */
 }
 
@@ -905,8 +927,8 @@ void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             if(0 == c[jmc])    // check to see if already asked that motor controller
             {
                 hGetCurrentValue(i, h, f);
-                readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
-                decodeFrame(s, h, f);
+                meta_readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+                nop_decodeFrame(s, h, f);
                 c[jmc] = 1;
             }
         }
@@ -1160,7 +1182,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 struct can_frame frame; 
                 memset(&frame, 0, sizeof(frame)); 
                 fEnableFeedbackController(m0, h, &frame); 
-                sendCan(getSocket(h,m0), &frame); 
+                meta_sendCan(getSocket(h,m0), &frame); 
 
                 s->joint[m0].comply = 2; 
                 s->joint[m1].comply = 2; 
@@ -1217,7 +1239,7 @@ void hSetPosGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     else if(h->joint[jnt].motNo == 1)
         fSetPosGain1(jnt, h, f, c->iValues[0], c->iValues[1], c->iValues[2]);
     
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     fprintf(stdout, "Joint number %d has changed position gain values to:\n\tKp:%d\tKi:%d\tKd:%d\n",
             jnt, c->iValues[0], c->iValues[1], c->iValues[2] );
 }
@@ -1261,7 +1283,7 @@ void hSetCurGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     else if(h->joint[jnt].motNo == 1)
         fSetCurGain1(jnt, h, f, c->iValues[0], c->iValues[1], c->iValues[2]);
     
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     fprintf(stdout, "Joint number %d has changed current gain values to:\n\tKp:%d\tKi:%d\tKd:%d\n",
             jnt, c->iValues[0], c->iValues[1], c->iValues[2] );
 }
@@ -1387,7 +1409,7 @@ void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int th
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode) {
 
     fSetComplementaryMode(jnt, h, f, the_mode);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 */
 // 4
@@ -1423,7 +1445,7 @@ void hSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t sou
             break;
     }
     fSetAlarm(jnt, h, f, h_sound);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, int sound)
@@ -1464,7 +1486,7 @@ void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 
             fOpenLoopPWM_2CH(jnt, h, f, dir1, c->iValues[0], dir2, c->iValues[1]);
             
-            sendCan(getSocket(h,jnt), f);
+            meta_sendCan(getSocket(h,jnt), f);
         }
     }
     else if(h->joint[jnt].numMot == 3)
@@ -1495,7 +1517,7 @@ void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
             fOpenLoopPWM_3CH(jnt, h, f, dir1, c->iValues[0], dir2, c->iValues[1],
                          dir3, c->iValues[2] );
             
-            sendCan(getSocket(h,jnt), f);
+            meta_sendCan(getSocket(h,jnt), f);
         }
     }
     else if(h->joint[jnt].numMot == 5)
@@ -1533,7 +1555,7 @@ void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
                         dir3, c->iValues[2], dir4, c->iValues[3],
                         dir5, c->iValues[4] );
 
-            sendCan(getSocket(h,jnt), f);
+            meta_sendCan(getSocket(h,jnt), f);
         }
     }
 } 
@@ -1601,17 +1623,17 @@ void hSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param
     {
         case D_POSITION:
             fSetControlMode(jnt, h, f, 0); // 0 > Position control
-            sendCan(getSocket(h,jnt),f);
+            meta_sendCan(getSocket(h,jnt),f);
 //            s->driver[h->joint[jnt].jmc].ctrlMode = D_POSITION;
             break;
         case D_CURRENT:
             fSetControlMode(jnt, h, f, 1); // 1 > Current control
-            sendCan(getSocket(h,jnt),f);
+            meta_sendCan(getSocket(h,jnt),f);
 //            s->driver[h->joint[jnt].jmc].ctrlMode = D_CURRENT;
             break;
         case D_HYBRID:
             fSetControlMode(jnt, h, f, 2);
-            sendCan(getSocket(h,jnt),f);
+            meta_sendCan(getSocket(h,jnt),f);
             break;
         default:
             fprintf(stderr,"Invalid Control Mode: %d\n\t"
@@ -1636,7 +1658,7 @@ void fSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, int mode)
 
 void hGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
     fGetEncValue( jnt, encChoice, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
     f->can_id       = CMD_TXDF;     // Set ID
@@ -1658,21 +1680,21 @@ void fGetBoardStatusAndErrorFlags(int jnt, hubo_param_t *h, struct can_frame *f)
 void hGetBoardStatus(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
     fGetBoardStatusAndErrorFlags( jnt, h, f );
-    sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeFrame(s, h, f);
+    meta_sendCan(getSocket(h,jnt), f);
+    meta_readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    nop_decodeFrame(s, h, f);
 }
 
 void hGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f) { ///> make can frame for getting the motor current in amps (10mA resolution)
     fGetCurrentValue( jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 
 void hSetBeep(int jnt, hubo_param_t *h, struct can_frame *f, double beepTime)
 {
     fSetBeep(jnt, h, f, beepTime);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetBeep(int jnt, hubo_param_t *h, struct can_frame *f, double beepTime)
@@ -1710,7 +1732,7 @@ void hSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone)
     if(deadzone>=0&&deadzone<=255)
     {
         fSetDeadZone(jnt, h, f, deadzone);
-        sendCan(getSocket(h,jnt),f);
+        meta_sendCan(getSocket(h,jnt),f);
     }
     else
         fprintf(stderr,"Invalid value for deadzone: %d\n\t"
@@ -1748,7 +1770,7 @@ void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_fram
     offset = (int32_t)ref2enc(c->joint, c->dValues[0], h);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
     
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f )
@@ -1773,7 +1795,7 @@ void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_f
                     " -- Joint:%s\tOffset:%d\tDir:%d\tLim:%d\n", jointNames[c->joint], offset, dir, c->iValues[0]);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
 
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetHomeSearchParams(int jnt, hubo_param_t *h, struct can_frame *f, int limit,
@@ -1830,7 +1852,7 @@ void hSetEncoderResolution(hubo_board_cmd_t *c, hubo_param_t *h, struct can_fram
         res = res | c->iValues[0];
 
     fSetEncoderResolution(c->joint, h, f, res);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetEncoderResolution(int jnt, hubo_param_t *h, struct can_frame *f, int res)
@@ -1853,7 +1875,7 @@ void hSetMaxAccVel(int jnt, hubo_param_t *h, struct can_frame *f, int maxAcc, in
     else if( maxVel < 65536 && maxVel > 0 )
     {
         fSetMaxAccVel(jnt, h, f, maxAcc, maxVel);
-        sendCan(getSocket(h,jnt),f);
+        meta_sendCan(getSocket(h,jnt),f);
     }
     else
         fprintf(stderr, "Max Velocity value is out of bounds: %d\n\t"
@@ -1901,7 +1923,7 @@ void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
     }
 
     fSetLowerPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void hSetLowerPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
@@ -1909,7 +1931,7 @@ void hSetLowerPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame
     fprintf(stdout, "Setting lower position limit:\n"
                     " -- Joint:%s\tLimit:%d\tEnabled:%d\tUpdate:%d\n", jointNames[c->joint], c->iValues[0], c->iValues[2], c->iValues[1]);
     fSetLowerPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetLowerPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit)
@@ -1956,7 +1978,7 @@ void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
     }
 
     fSetUpperPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
@@ -1964,7 +1986,7 @@ void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame
     fprintf(stdout, "Setting upper position limit:\n"
                     " -- Joint:%s\tLimit:%d\tEnabled:%d\tUpdate:%d\n", jointNames[c->joint], c->iValues[0], c->iValues[2], c->iValues[1]);
     fSetUpperPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetUpperPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit)
@@ -2005,7 +2027,7 @@ void hSetHomeAccVel(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     fSetHomeAccVel(c->joint, h, f, (float)c->dValues[0], c->iValues[0], c->iValues[1],
             mode, c->iValues[2]);
 
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetHomeAccVel(int jnt, hubo_param_t *h, struct can_frame *f, float mAcc, int mVelS,
@@ -2030,7 +2052,7 @@ void fSetHomeAccVel(int jnt, hubo_param_t *h, struct can_frame *f, float mAcc, i
 void hSetGainOverride(int jnt, hubo_param_t *h, struct can_frame *f, int gain0, int gain1, double dur)
 {
     fSetGainOverride(jnt, h, f, gain0, gain1, (int)(dur*1000));
-    sendCan(getSocket(h,jnt),f);
+    meta_sendCan(getSocket(h,jnt),f);
 }
 
 
@@ -2053,7 +2075,7 @@ void hSetBoardNumber(int jnt, hubo_param_t *h, struct can_frame *f, int boardNum
     fprintf(stdout, "WARNING: Changing board number %d to %d with baud rate %d\n\t",
             getJMC(h,jnt), boardNum, rate);
     fSetBoardNumber(jnt, h, f, boardNum, rate);
-    sendCan(getSocket(h,jnt),f);
+    meta_sendCan(getSocket(h,jnt),f);
 }
 
 
@@ -2078,7 +2100,7 @@ void hSetJamPwmLimits(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     fSetJamPwmLimits(c->joint, h, f, (int)(c->dValues[0]*1000), (int)(c->dValues[1]*1000),
                 c->iValues[0], c->iValues[1] );
 
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetJamPwmLimits(int jnt, hubo_param_t *h, struct can_frame *f, int jamLimit, int pwmLimit,
@@ -2107,7 +2129,7 @@ void hSetErrorBound(int jnt, hubo_param_t *h, struct can_frame *f, int inputDiff
             "Max temperature: %d\n", jnt, inputDiffErr, maxError, tempError);
 
     fSetErrorBound(jnt, h, f, inputDiffErr, maxError, tempError);
-    sendCan(getSocket(h,jnt),f);
+    meta_sendCan(getSocket(h,jnt),f);
 }
 
 void fSetErrorBound(int jnt, hubo_param_t *h, struct can_frame *f, int inputDiffErr, int maxError,
@@ -2134,7 +2156,7 @@ void hGotoLimitAndGoOffset(int jnt, hubo_ref_t *r, hubo_ref_t *r_filt, hubo_para
         hubo_state_t *s, struct can_frame *f, int send)
 {
     fGotoLimitAndGoOffset(jnt, h, f);
-    sendCan( getSocket(h,jnt), f );
+    meta_sendCan( getSocket(h,jnt), f );
     fprintf(stdout," -- Homing Joint #%d\n\t",jnt);
     r->ref[jnt] = 0.0;
     r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
@@ -2172,10 +2194,10 @@ void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h
 
 void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
     fInitializeBoard(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
-    //readCan(hubo_socket[h->joint[jnt].can], f, 4);    // 8 bytes to read and 4 sec timeout
+    meta_sendCan(getSocket(h,jnt), f);
+    //meta_readCan(hubo_socket[h->joint[jnt].can], f, 4);    // 8 bytes to read and 4 sec timeout
     // TODO: Why is the readCan here??
-    readCan(getSocket(h,jnt), f, HUBO_CAN_TIMEOUT_DEFAULT*100);    // 8 bytes to read and 4 sec timeout
+    meta_readCan(getSocket(h,jnt), f, HUBO_CAN_TIMEOUT_DEFAULT*100);    // 8 bytes to read and 4 sec timeout
 }
 
 void fInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
@@ -2238,13 +2260,13 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
     if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
       fSetEncRef(jnt, s, r, h, g, f);
-      sendCan(getSocket(h,jnt), f);
+      meta_sendCan(getSocket(h,jnt), f);
     }
     else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type & (jnt != RF2) & (jnt != RF3) & (jnt != RF4) & (jnt !=RF5) &
                                                      (jnt != LF2) & (jnt != LF3) & (jnt != LF4) & (jnt !=LF5)) 
     {
       fSetEncRef(jnt, s, r, h, g, f);
-      sendCan(getSocket(h,jnt), f);
+      meta_sendCan(getSocket(h,jnt), f);
     }
 
     memset(f, 0, sizeof(*f));
@@ -2267,12 +2289,12 @@ void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_par
 {
     if(onOff == D_ENABLE) { // turn on FET
         fEnableMotorDriver(jnt, h, f);
-        sendCan(getSocket(h,jnt), f); 
+        meta_sendCan(getSocket(h,jnt), f); 
         
     }
     else if(onOff == D_DISABLE) { // turn off FET
         fDisableMotorDriver(jnt, h, f);
-        sendCan(getSocket(h,jnt), f); }
+        meta_sendCan(getSocket(h,jnt), f); }
     else
         fprintf(stderr, "FET Switch Error: Invalid param[0]\n\t"
                 "Must be D_ENABLE (%d) or D_DISABLE (%d)",
@@ -2317,16 +2339,16 @@ if(isHands(jnt) == 0) {
         /* set new position reference */
 //        hSetEncRef(jnt, s, h, f);
 //        fSetEncRef(jnt, s, h, f);
-//        sendCan(getSocket(h,jnt), f);
+//        meta_sendCan(getSocket(h,jnt), f);
         fEnableFeedbackController(jnt, h, f);
-        sendCan(hubo_socket[h->joint[jnt].can], f); 
+        meta_sendCan(hubo_socket[h->joint[jnt].can], f); 
 //        hubo_noRefTimeAll = 0.01;
         }
     else if(onOff == D_DISABLE) { // turn ctrol off
         r->mode[jnt] = HUBO_REF_MODE_COMPLIANT;
         ach_put( &chan_hubo_ref, r, sizeof(*r));
         fDisableFeedbackController(jnt, h, f);
-        sendCan(hubo_socket[h->joint[jnt].can], f); }
+        meta_sendCan(hubo_socket[h->joint[jnt].can], f); }
 
     else
         fprintf(stderr, "Controller Switch Error: Invalid param[0] (%d)\n\t"
@@ -2369,7 +2391,7 @@ void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *
         ach_put( &chan_hubo_ref, r, sizeof(*r) );
 //    ach_put( &chan_hubo_ref, r, sizeof(*r) );
 
-        sendCan(getSocket(h,jnt), f);
+        meta_sendCan(getSocket(h,jnt), f);
         s->joint[jnt].zeroed == 2;        // need to add a can read back to confirm it was zeroed
     }
 }
@@ -2410,15 +2432,15 @@ void hNullIMUSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *f 
     {
         case D_IMU_SENSOR_0:
             fNullIMUSensor( h->sensor[HUBO_IMU0].boardNo, f );
-            sendCan(sensorSocket(h, HUBO_IMU0), f);
+            meta_sendCan(sensorSocket(h, HUBO_IMU0), f);
             break;
         case D_IMU_SENSOR_1:
             fNullIMUSensor( h->sensor[HUBO_IMU1].boardNo, f );
-            sendCan(sensorSocket(h, HUBO_IMU1), f);
+            meta_sendCan(sensorSocket(h, HUBO_IMU1), f);
             break;
         case D_IMU_SENSOR_2:
             fNullIMUSensor( h->sensor[HUBO_IMU2].boardNo, f );
-            sendCan(sensorSocket(h, HUBO_IMU2), f);
+            meta_sendCan(sensorSocket(h, HUBO_IMU2), f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling IMU Sensor: %d\n\t"
@@ -2457,20 +2479,20 @@ void hInitAccFTSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *
         case D_R_FOOT_FT:
         case D_R_FOOT_ACC:
             fInitAccFTSensor( h->sensor[HUBO_FT_R_FOOT].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_R_FOOT].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_R_FOOT].can], f);
             break;
         case D_L_FOOT_FT:
         case D_L_FOOT_ACC:
             fInitAccFTSensor( h->sensor[HUBO_FT_L_FOOT].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_L_FOOT].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_L_FOOT].can], f);
             break;
         case D_R_HAND_FT:
             fInitAccFTSensor( h->sensor[HUBO_FT_R_HAND].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_R_HAND].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_R_HAND].can], f);
             break;
         case D_L_HAND_FT:
             fInitAccFTSensor( h->sensor[HUBO_FT_L_HAND].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_L_HAND].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_L_HAND].can], f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
@@ -2547,19 +2569,19 @@ void hNullFTSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *f )
     {
         case D_R_FOOT_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_R_FOOT].boardNo, H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
             break;
         case D_L_FOOT_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_L_FOOT].boardNo,  H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
             break;
         case D_R_HAND_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_R_HAND].boardNo, H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_R_HAND), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_R_HAND), f);
             break;
         case D_L_HAND_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_L_HAND].boardNo,  H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_L_HAND), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_L_HAND), f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
@@ -2578,11 +2600,11 @@ void hNullAccSensor(hubo_d_param_t board, hubo_param_t *h, struct can_frame *f)
     {
         case D_R_FOOT_ACC:
             fNullAccFTSensor(h->sensor[HUBO_FT_R_FOOT].boardNo, H_NULL_ACC, f);
-            sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
             break;
         case D_L_FOOT_ACC:
             fNullAccFTSensor(h->sensor[HUBO_FT_L_FOOT].boardNo,  H_NULL_ACC, f);
-            sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling Tilt Sensor: %d\n\t"
@@ -3644,3 +3666,11 @@ uint8_t isHands(int jnt)
         return 0;
 }
 
+
+
+/* Local Variables:                          */
+/* mode: c                                   */
+/* c-basic-offset: 4                         */
+/* indent-tabs-mode:  nil                    */
+/* End:                                      */
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
