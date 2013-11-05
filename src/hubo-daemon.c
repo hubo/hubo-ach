@@ -451,8 +451,8 @@ void pump_message_loop(hubo_can_t write_skt,
 void meta_readCan(hubo_can_t skt,
                   struct can_frame* f,
                   double timeoutD) {
-    const double short_read_timeout_sec = 0.000020; // 20us
-    pump_message_loop(-1, NULL, short_read_timeout_sec, BAIL_ON_READ);
+    const double short_read_timeout_sec = 0.0; // 20us
+    pump_message_loop(-1, NULL, short_read_timeout_sec, NOBAIL_ON_READ);
 }
 
 void meta_sendCan(hubo_can_t skt,
@@ -721,48 +721,53 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         clock_gettime( CLOCK_MONOTONIC, &time );
         int64_t loop_remaining_nsec = tsdiff(&loop_time, &time);
+        const int retry_encoders = 0;
 
         int i;
 
         if (loop_remaining_nsec > 0) {
 
-            int c[HUBO_JMC_COUNT];
-            memset( &c, 0, sizeof(c));
+            if (retry_encoders) {
 
-            for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+                int c[HUBO_JMC_COUNT];
+                memset( &c, 0, sizeof(c));
 
-                int jmc = H_param->joint[i].jmc;
+                for (i=0; i<HUBO_JOINT_COUNT; ++i) {
 
-                if (c[jmc] == 0 && 
-                    H_state.joint[i].active && 
-                    !global_loop_enc_valid[i]) {
+                    int jmc = H_param->joint[i].jmc;
 
-                    c[jmc] = 1;
+                    if (c[jmc] == 0 && 
+                        H_state.joint[i].active && 
+                        !global_loop_enc_valid[i]) {
 
-                    struct can_frame frame;
+                        c[jmc] = 1;
 
-                    hGetEncValue(i, 0x00, H_param, &frame);
+                        struct can_frame frame;
 
-                    meta_readCan(hubo_socket[H_param->joint[i].can], &frame, 
-                                 HUBO_CAN_TIMEOUT_DEFAULT);
+                        hGetEncValue(i, 0x00, H_param, &frame);
 
-                    if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
-                       LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
-
-                        hGetEncValue(i, 0x01, H_param, &frame);
                         meta_readCan(hubo_socket[H_param->joint[i].can], &frame, 
                                      HUBO_CAN_TIMEOUT_DEFAULT);
 
-                    }
+                        if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
+                           LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
 
-                    clock_gettime( CLOCK_MONOTONIC, &time );
-                    loop_remaining_nsec = tsdiff(&loop_time, &time);
-                    if (loop_remaining_nsec <= 0) {
-                        break;
-                    }
+                            hGetEncValue(i, 0x01, H_param, &frame);
+                            meta_readCan(hubo_socket[H_param->joint[i].can], &frame, 
+                                         HUBO_CAN_TIMEOUT_DEFAULT);
+
+                        }
+
+                        clock_gettime( CLOCK_MONOTONIC, &time );
+                        loop_remaining_nsec = tsdiff(&loop_time, &time);
+                        if (loop_remaining_nsec <= 0) {
+                            break;
+                        }
                     
-                }
+                    }
 
+                }
+                
             }
 
             if (loop_remaining_nsec > 0) {
