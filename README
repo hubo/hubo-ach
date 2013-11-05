@@ -1,41 +1,52 @@
-***************** hubo-ach **************** 
-Support: Daniel M. Lofaro dan@danlofaro.com 
-*******************************************
+HUBO-ACH
+
+Support
+=======
+Daniel M. Lofaro, dan@danlofaro.com
 
 Run Hubo-Ach
 ============
-(1) Setup Config (first time only or new builds and param changes)
-	$ hubo-ach config
-(2) Start hubo-ach daemon.  This will automatically start hubo-console as well
-    CAN packets will not start to be sent
-	$ hubo-ach start
-(3) To stop hubo-ach daemon 
-	$ hubo-ach stop
-(4) To kill all hubo-ach basic processes
-        $ hubo-ach killall
+
+1. Setup Config (first time only or new builds and param changes):
+
+    $ hubo-ach config
+
+2. Start hubo-ach daemon.  This will automatically start hubo-console as well
+   CAN packets will not start to be sent:
+
+    $ hubo-ach start
+
+3. To stop hubo-ach daemon:
+
+    $ hubo-ach stop
+
+4. To kill all hubo-ach basic processes:
+
+    $ hubo-ach killall
 
 Install ACH
 ===========
 First-time install,
-If you have a PEAK CAN Card installed the script below will install 
-Hubo-Ach and all of it's dependencies for you automatically 
+If you have a PEAK CAN Card installed the script below will install
+Hubo-Ach and all of it's dependencies for you automatically
 
-Just run: 
-        $ ./first-time-install-hubo-ach.sh
+Just run:
+
+    $ ./first-time-install-hubo-ach.sh
 
 Or:
 
 
-(1) Add this line to /etc/apt/sources.list:
+1. Add this line to /etc/apt/sources.list:
 
     deb http://code.golems.org/debian squeeze golems.org
 
   (Replace squeeze with the codename for your distribution, ie lucid,
   precise, etc.)
 
-(2) `sudo apt-get update`
-(3) `sudo apt-get install libach1 libach-dev`
-(4) `sudo apt-get install ach-utils`
+2. `sudo apt-get update`
+3. `sudo apt-get install libach1 libach-dev`
+4. `sudo apt-get install ach-utils`
 
 
 5) If you have obtained amino from the git repo, you need to
@@ -43,129 +54,147 @@ initialize the autotools build scripts.  This requires the autotools
 and the autoconf macro archive. To install these on Debian or Ubuntu
 GNU/Linux, you can do
 
-`$ sudo apt-get install autoconf automake libtool autoconf-archive'
+    $ sudo apt-get install autoconf automake libtool autoconf-archive
 
 Then, initialize autotools with
 
-`$ autoreconf -i'
+    $ autoreconf -i
 
 This whole step is not necessary when you have obtained a distribution
 tarball which already contains the autoconf-generated configure script.
 
 Option 1)
-	$ ./hubo-ach-install.sh
+
+    $ ./hubo-ach-install.sh
 
 Option 2)
-	Configure for system:
-		$ ./configure
 
-	Build:
-		$ make
+* Configure for system:
 
-	Install:
-		$ sudo make install
+    $ ./configure
 
+* Build:
 
+    $ make
 
+* Install:
+
+    $ sudo make install
 
 Functionality:
 ==============
-    Feedforward:
-                - set position reference (rad)
 
-    Feedback: 
-                - get encoder position (rad)
-                - get IMU x angle (rad)
-                - get IMU y angle (rad)
-                - get IMU Vx velos(rad/sec)
-                - get IMU Vy velos(rad/sec)
-                - get FT Mx moment (Nm)
-                - get FT My moment (Nm)
-                - get FT Fz force (N)
-                - get foot angle from acc Ax (rad)
-                - get foot angle from acc Ay (rad)
-                - get foot G-force acc Az (G)
-                - get Motor Status (flags)
+* Feedforward:
+  - set position reference (rad)
 
-    Motor Control:
-                - home motors
-                - reset to defaults
+* Feedback:
+  - get encoder position (rad)
+  - get IMU x angle (rad)
+   - get IMU y angle (rad)
+   - get IMU Vx velos(rad/sec)
+   - get IMU Vy velos(rad/sec)
+   - get FT Mx moment (Nm)
+   - get FT My moment (Nm)
+   - get FT Fz force (N)
+   - get foot angle from acc Ax (rad)
+   - get foot angle from acc Ay (rad)
+   - get foot G-force acc Az (G)
+   - get Motor Status (flags)
+
+* Motor Control:
+  - home motors
+  - reset to defaults
 
 hubo-ach-console
 ================
 
 Console input for hubo-ach
 
-Usage:
-       Home all motors and zero sensors
-           >> hubo-ach: homeAll
-           >> hubo-ach: iniSensors
-    
-Functions: "initilize XXX" - sets defaults to motor XXX and turns on FETs
-           "initilizeAll"  - sets defaults to all motors and turns on all FETs
-           "home XXX"      - homes motor XXX
-           "homeAll"       - homes all motors that are active
-           "goto XXX val"  - sets motor XXX to goto position "val" in rad.
-                             uses linear interpolation via hubo-ref-filter
-                             0.5 sec linear filter by default
-           "get XXX"       - gets current encoder location of motor XXX
-           "zero XXX"      - zero the sensor XXX
-           "zeroacc"       - zero the foot accelerometer XXX
-           "iniSensors"    - zero all sensors
-           "ctrl XXX Y"    - turn on and off control to motor XXX.  If Y = 0 then Off, if Y = 1 then On 
-                             Note: must home joint first.
-           "ctrlAll Y"     - turn on and off control to all motors. If Y = 0 then Off, if Y = 1 then On 
-                             Note: must home joint first.
-           "reset XXX"     - Only for motors with error flags raised - no effect on motors with no errors
-                             Resets motor XXX encoders and resets all flags.  Also sets reference to 0.0 rad
-           "resetAll"      - Only for motors with error flags raised - no effect on motors with no errors
-                             Resets all motors and encoder and resets all flags
-           "status XXX"    - Gets the most recent status flags for motor XXX
+Usage
+-----
 
-Required for installation:
+Home all motors and zero sensors
+
+    hubo-ach: homeAll
+    hubo-ach: iniSensors
+
+Functions
+---------
+
+* `initilize XXX` - sets defaults to motor XXX and turns on FETs
+* `initilizeAll`  - sets defaults to all motors and turns on all FETs
+* `home XXX`      - homes motor XXX
+* `homeAll`       - homes all motors that are active
+* `goto XXX val`  - sets motor XXX to goto position `val` in rad.
+                    uses linear interpolation via hubo-ref-filter
+                    0.5 sec linear filter by default
+* `get XXX`       - gets current encoder location of motor XXX
+* `zero XXX`      - zero the sensor XXX
+* `zeroacc`       - zero the foot accelerometer XXX
+* `iniSensors`    - zero all sensors
+* `ctrl XXX Y`    - turn on and off control to motor XXX.  If Y = 0 then Off, if Y = 1 then On
+                    Note: must home joint first.
+* `ctrlAll Y`     - turn on and off control to all motors. If Y = 0 then Off, if Y = 1 then On
+                    Note: must home joint first.
+* `reset XXX`     - Only for motors with error flags raised - no effect on motors with no errors
+                    Resets motor XXX encoders and resets all flags.  Also sets reference to 0.0 rad
+* `resetAll`      - Only for motors with error flags raised - no effect on motors with no errors
+                    Resets all motors and encoder and resets all flags
+* `status XXX`    - Gets the most recent status flags for motor XXX
+
+Required for installation
+-------------------------
     sudo apt-get install libreadline-dev
 
-For joint "goto" functionality must have hubo-ref-filter running
-    Note: do not have hubo-ref-filter running when trying to write directly
-          to the hubo-ref channel.
-	$ sudo ./hubo-ref-filter
+For joint "goto" functionality
+------------------------------
+
+Must have hubo-ref-filter running
+
+Note: do not have hubo-ref-filter running when trying to write
+directly to the hubo-ref channel.
+
+    $ sudo ./hubo-ref-filter
 
 
 hubo-ach-loop
 =============
 demo loop that communicates with hubo ach
 
-install Drivers for PEAK
+Install Drivers for PEAK
 ========================
-sudo apt-get install libpopt-dev
-cd drivers
-tar -zxvf peak-linux-driver-7.7.tar.gz
-cd peak-linux-driver-7.7
-make
-=======
-
-
+    sudo apt-get install libpopt-dev
+    cd drivers
+    tar -zxvf peak-linux-driver-7.7.tar.gz
+    cd peak-linux-driver-7.7
+    make
 
 
 
 hubo-homeparams
 ===============
-For instructions on how to save and load parameters, type 
-$ hubo-homeparams
+For instructions on how to save and load parameters, type
+    $ hubo-homeparams
 without passing in any arguments, and it will print out this set of instructions:
 
-usage: hubo-homeparams [argument] [target file] [optional]
+Usage: hubo-homeparams [argument] [target file] [optional]
 
-   arguments:
-       -s or --save  : Saves the current home settings into [target file]
-       -l or --load  : Loads the home settings from [target file] onto the boards
-       -p or --print : Prints a table of joint settings out to the terminal
+arguments
+---------
 
-   target file: You are recommend to provide the full path of a file
+* -s or --save  : Saves the current home settings into [target file]
+* -l or --load  : Loads the home settings from [target file] onto the boards
+* -p or --print : Prints a table of joint settings out to the terminal
+* target file: You are recommend to provide the full path of a file
 
-   optional: Tells the -s/--save argument what format to store position data in
-       raw : Position data will be stored in encoder units
-       rad : Position data will be stored in radians
-The important thing is that giving a flag of "-s" will save the current settings into whatever file you specify, and a flag of "-l" will load whatever file you specify.
+* optional: Tells the -s/--save argument what format to store position data in
+  * raw : Position data will be stored in encoder units
+  * rad : Position data will be stored in radians
 
-I strongly recommend only using full paths for any target files, because I have not tested what happens when you give relative paths. I would guess that it will just fail to find the file.
+The important thing is that giving a flag of "-s" will save the
+current settings into whatever file you specify, and a flag of "-l"
+will load whatever file you specify.
+
+I strongly recommend only using full paths for any target files,
+because I have not tested what happens when you give relative paths. I
+would guess that it will just fail to find the file.
