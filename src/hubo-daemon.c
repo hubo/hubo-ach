@@ -60,6 +60,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hubo/hubo-socketcan.h"
 #endif
 
+#include "hubo-io-trace.h"
+
 // for ach
 #include <errno.h>
 #include <fcntl.h>
@@ -293,6 +295,7 @@ int64_t tsdiff(const struct timespec* b,
     return ts2i64(b) - ts2i64(a);
 }
                
+extern int trace_socket;
 
 /* loop until timeout or a write happens, all the while dispatching the reads */
 void pump_message_loop(hubo_can_t write_skt,
@@ -354,8 +357,22 @@ void pump_message_loop(hubo_can_t write_skt,
                     errno = 0;
                     struct can_frame frame;
                     ssize_t bytes_read = read(hubo_socket[i], &frame, sizeof(frame));
+                    int read_errno = errno;
+                    
+                    if (trace_socket >= 0) {
+                        io_trace_t trace;
+                        trace.timestamp = iotrace_gettime();
+                        trace.is_read = 1;
+                        trace.fd = hubo_socket[i];
+                        trace.result_errno = read_errno;
+                        trace.transmitted = bytes_read;
+                        trace.frame = frame;
+                        iotrace_write(trace_socket, &trace);
+                    }
+                    
           
                     if (bytes_read != sizeof(frame)) {
+                        errno = read_errno;
                         perror("read in pump_message_loop");
                     } else {
                         decodeFrame(global_loop_state,
@@ -374,8 +391,21 @@ void pump_message_loop(hubo_can_t write_skt,
                 errno = 0;
                 ssize_t bytes_written = write(write_skt, write_frame, 
                                               sizeof(*write_frame));
+                int write_errno = errno;
+
+                if (trace_socket >= 0) {
+                    io_trace_t trace;
+                    trace.timestamp = iotrace_gettime();
+                    trace.is_read = 0;
+                    trace.fd = write_skt;
+                    trace.result_errno = write_errno;
+                    trace.transmitted = bytes_written;
+                    trace.frame = *write_frame;
+                    iotrace_write(trace_socket, &trace);
+                }
                 
                 if (bytes_written != sizeof(*write_frame)) {
+                    errno = write_errno;
                     perror("write in pump_message_loop");
                 } else {
                     // did our write successfully

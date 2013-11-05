@@ -15,7 +15,7 @@ typedef struct io_trace  {
   int64_t          timestamp;
   int              is_read;
   int              fd;
-  int              num_calls;
+  int              result_errno;
   int              transmitted;
   struct can_frame frame;
 } io_trace_t;

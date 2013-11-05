@@ -115,7 +115,7 @@ void iotrace_close(int trace_socket, int do_unlink) {
 int64_t iotrace_gettime() {
 
   struct timespec t;
-  clock_gettime(CLOCK_REALTIME, &t);
+  clock_gettime(CLOCK_MONOTONIC, &t);
 
   return (int64_t)t.tv_sec * (int64_t)NSEC_PER_SEC + (int64_t)t.tv_nsec;
 

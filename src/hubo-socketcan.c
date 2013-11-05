@@ -121,7 +121,7 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
         trace.timestamp = iotrace_gettime();
         trace.is_read = 0;
         trace.fd = skt;
-        trace.num_calls = 1;
+        trace.result_errno = errno;
         trace.transmitted = bytes_sent;
         trace.frame = *f;
         iotrace_write(trace_socket, &trace);
@@ -165,6 +165,7 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
     struct timespec timeout;
 
     int bytes_read = 0;
+    int read_errno = 0;
 
     FD_ZERO(&read_fds);
     FD_SET(skt, &read_fds);
@@ -185,6 +186,7 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
         
         errno = 0;
         bytes_read = read( skt, f, sizeof(*f) );
+        read_errno = errno;
 
         if (bytes_read < 0) {
             perror("read");
@@ -198,13 +200,14 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
         trace.timestamp = iotrace_gettime();
         trace.is_read = 1;
         trace.fd = skt;
-        trace.num_calls = 1;
+        trace.result_errno = read_errno;
         trace.transmitted = bytes_read;
         trace.frame = *f;
 
         iotrace_write(trace_socket, &trace);
 
     }
+
 
     // just turn errors into no read
     if (bytes_read < 0) { bytes_read = 0; }
