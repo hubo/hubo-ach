@@ -267,19 +267,151 @@ void nop_decodeFrame(hubo_state_t* state,
                      hubo_param_t* param,
                      struct can_frame* f) {
 
-  decodeFrame(state, param, f);
+    // NOP
 
 }
+
+#define NSEC_PER_SEC 1000000000
+
+
+void tsadd(const struct timespec* src,
+           int64_t delta,
+           struct timespec* dst) {
+    
+    dst->tv_sec = src->tv_sec;
+    dst->tv_nsec = src->tv_nsec + delta;
+    tsnorm(dst);
+    
+}
+
+int64_t ts2i64(const struct timespec* t) {
+    return (int64_t)t->tv_sec * (int64_t)NSEC_PER_SEC + (int64_t)t->tv_nsec;
+}
+
+int64_t tsdiff(const struct timespec* b,
+               const struct timespec* a) {
+    return ts2i64(b) - ts2i64(a);
+}
+               
+
+/* loop until timeout or a write happens, all the while dispatching the reads */
+void pump_message_loop(hubo_can_t write_skt,
+                       const struct can_frame* write_frame,
+                       double timeoutD) {
+
+    
+    struct timespec current_time, deadline_time;
+
+    int64_t remaining_time_nsec = (int64_t)(timeoutD * NSEC_PER_SEC);
+
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    tsadd(&current_time, remaining_time_nsec, &deadline_time);
+
+    int max_fd_plus_one =  1 + ( hubo_socket[0] > hubo_socket[1] ? 
+                                 hubo_socket[0] : hubo_socket[1] );
+
+
+    while (remaining_time_nsec > 0) {
+
+        fd_set read_fds, write_fds;
+
+        // try to read everything
+        FD_ZERO(&read_fds);
+        FD_SET(hubo_socket[0], &read_fds);
+        FD_SET(hubo_socket[1], &read_fds);
+
+        // only write if we have a message provided
+        FD_ZERO(&write_fds);
+
+        if (write_skt >= 0 && write_frame != NULL) {
+            FD_SET(write_skt, &write_fds);
+        }
+
+        // set our timeout
+        struct timespec timeout;
+        timeout.tv_sec = remaining_time_nsec / (int64_t)NSEC_PER_SEC;
+        timeout.tv_nsec = remaining_time_nsec % (int64_t)NSEC_PER_SEC;
+
+        errno = 0;
+        int result = pselect(max_fd_plus_one, 
+                             &read_fds, &write_fds, NULL, 
+                             &timeout, NULL);
+
+        if (result < 0) {
+
+            if (errno != EINTR) {
+                perror("pselect");
+            }
+
+        } else if (result) {
+
+            // handle reads
+            int i;
+
+            for (i=0; i<2; ++i) {
+                if (FD_ISSET(hubo_socket[i], &read_fds)) {
+
+                    struct can_frame frame;
+                    ssize_t bytes_read = read(hubo_socket[i], &frame, sizeof(frame));
+          
+                    if (bytes_read != sizeof(frame)) {
+                        perror("read in pump_message_loop");
+                    } else {
+                        decodeFrame(global_loop_state,
+                                    global_loop_param,
+                                    &frame);
+                    }
+
+                }
+            }
+
+            // handle write
+            if (write_skt >= 0 && 
+                write_frame != NULL && 
+                FD_ISSET(write_skt, &write_fds)) {
+                
+                ssize_t bytes_written = write(write_skt, write_frame, 
+                                              sizeof(*write_frame));
+                
+                if (bytes_written != sizeof(*write_frame)) {
+                    perror("write in pump_message_loop");
+                } else {
+                    // did our write successfully
+                    return;
+                }
+
+            }
+
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        remaining_time_nsec = tsdiff(&deadline_time, &current_time);
+
+    }
+
+    if (write_skt >= 0 && write_frame != NULL) {
+        
+        // we have failed at writing and should commit suicide
+        fprintf(stderr, 
+                "failed at writing (did someone pull the CAN plug?), quitting.\n");
+
+        hubo_sig_quit = 1;
+
+    }
+
+}
+                       
 
 void meta_readCan(hubo_can_t skt,
                   struct can_frame* f,
                   double timeoutD) {
-  readCan(skt, f, timeoutD);
+    pump_message_loop(-1, NULL, timeoutD);
 }
 
 void meta_sendCan(hubo_can_t skt,
                   struct can_frame* f) {
-  sendCan(skt, f);
+    const double long_write_timeout_sec = 0.050; // 50ms
+    pump_message_loop(skt, f, long_write_timeout_sec);
 }
 
 
@@ -329,6 +461,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     memset( &H_state, 0, sizeof(H_state));
     memset( &H_virtual, 0, sizeof(H_virtual));
     memset( &H_gains, 0, sizeof(H_gains) );
+
+    global_loop_param = H_param;
+    global_loop_state = &H_state;
 
     size_t fs;
     int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
@@ -403,17 +538,18 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 //	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
 	double T = (double)HUBO_LOOP_PERIOD;
-        int interval = (int)((double)NSEC_PER_SEC*T);
+        int loop_interval_nsec = (int)((double)NSEC_PER_SEC*T);
 	printf("T = %1.3f sec\n",T);
 
 
     // time info
-    struct timespec t, time;
+    struct timespec loop_time, time;
     double tsec;
 
     // get current time
     //clock_gettime( CLOCK_MONOTONIC,&t);
-    clock_gettime( 0,&t);
+    clock_gettime(CLOCK_MONOTONIC, &loop_time);
+    tsadd(&loop_time, loop_interval_nsec, &loop_time);
 
 
     int startFlag = 1;
@@ -421,8 +557,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
 
-        // wait until next shot
-        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
 
         fs = 0;
 
@@ -534,8 +668,27 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
         /*}*/
 
-        t.tv_nsec+=interval;
-        tsnorm(&t);
+
+
+        clock_gettime( CLOCK_MONOTONIC, &time );
+        int64_t loop_remaining_nsec = tsdiff(&loop_time, &time);
+
+        if (loop_remaining_nsec > 0) {
+
+            pump_message_loop(-1, NULL, loop_remaining_nsec*1e-9);
+
+            tsadd(&loop_time, loop_interval_nsec, &loop_time);
+
+        } else {
+
+            fprintf(stderr, "missed loop deadline by %f seconds\n", 
+                    -loop_remaining_nsec*1e-9);
+
+            tsadd(&time, loop_interval_nsec, &loop_time);
+
+        }
+
+
         fflush(stdout);
         fflush(stderr);
     }
@@ -2756,7 +2909,7 @@ void hGetAllBoardParams( hubo_param_t *h, hubo_state_t *s, struct can_frame *f )
         t.tv_nsec+=NSEC_PER_SEC*0.01;
         tsnorm(&t);
 
-        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+        clock_nanosleep( CLOCK_MONOTONIC, TIMER_ABSTIME,&t, NULL);
     }
 
 

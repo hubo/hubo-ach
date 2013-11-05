@@ -151,7 +151,7 @@ int flushCan(hubo_can_t skt, int timeOut, double giveUp)
     return bytes_read;
 }
 
-#define USEC_PER_SEC 1000000
+#define NSEC_PER_SEC 1000000000
 
 int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
 
@@ -159,21 +159,21 @@ int readCan(hubo_can_t skt, struct can_frame *f, double timeoD) {
 
     int result;
 
-    // note timeo is the time out in microseconds
-    int timeo = (int)(timeoD*1e6);
+    // note timeo is the time out in nanoseconds
+    int64_t timeo = (int64_t)(timeoD*1e9);
     
-    struct timeval timeout;
+    struct timespec timeout;
 
     int bytes_read = 0;
 
     FD_ZERO(&read_fds);
     FD_SET(skt, &read_fds);
 
-    timeout.tv_sec = timeo / USEC_PER_SEC;
-    timeout.tv_usec = timeo % USEC_PER_SEC;
+    timeout.tv_sec = timeo / (int64_t)NSEC_PER_SEC;
+    timeout.tv_nsec = timeo % (int64_t)NSEC_PER_SEC;
     
     errno = 0;
-    result = select(skt+1, &read_fds, 0, 0, &timeout);
+    result = pselect(skt+1, &read_fds, 0, 0, &timeout, NULL);
 
     if (result < 0) {
 
