@@ -30,8 +30,8 @@
 #define NUM_OF_HOME_PARAMETERS 7
 
 //set file location
-static char *jointFileLocation = "/etc/" PACKAGE_NAME "/joint.table";
-static char *sensorFileLocation = "/etc/" PACKAGE_NAME "/sensor.table";
+static char *jointFileLocation = HUBO_ACH_CONFDIR "/joint.table";
+static char *sensorFileLocation = HUBO_ACH_CONFDIR "/sensor.table";
 
 
 

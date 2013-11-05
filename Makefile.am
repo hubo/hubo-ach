@@ -1,13 +1,12 @@
+
+huboachconfdir=$(sysconfdir)/hubo-ach
+
 ACLOCAL_AMFLAGS = -I m4
-AM_CPPFLAGS = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include -DHUBO_ACH_CONFDIR="\"$(huboachconfdir)\""
 
 EXTRA_DIST = hubo-ach-safe-clean.sh virtualHubo.py joint.table sensor.table scripts/hubo-ach drc-hubo-beta-1-default.home drc-hubo-beta-2-default.home drc-hubo-beta-2-rainbow-default.home
 
-#huboscriptdir = $(sysconfdir)/bin
-huboscriptdir = /usr/bin
-#init_ddir = $(sysconfdir)/init.d
-init_ddir = $(huboscriptdir)
-init_d_SCRIPTS = scripts/hubo-ach 
+bin_SCRIPTS = scripts/hubo-ach
 
 # installed under $prefix/include/
 include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonID.h
@@ -18,17 +17,14 @@ include_HEADERS = include/hubo.h include/hubo-jointparams.h include/hubo-daemonI
 #otherinclude_HEADERS = 	                \
 #	include/hubo/hubo-esdcan.h      \
 #	include/hubo/hubo-socketcan.h   \
-#	include/hubo/canID.h            
+#	include/hubo/canID.h
 
 # not installed
 
-huboachconfdir=/etc/hubo-ach
 
 huboachconf_DATA = tables/drc-hubo-beta-1-default.home tables/drc-hubo-beta-2-default.home tables/drc-hubo-beta-2-rainbow-default.home tables/huboplus.joint.table tables/drc-hubo.joint.table tables/joint.table tables/sensor.table tables/drc-hubo.sensor.table tables/huboplus.sensor.table python/virtualHubo.py hubo-ach-safe-clean.sh
 
-#hubo_jointparamsdir = $(prefix)/lib
-hubo_jointparamsdir = /usr/lib
-hubo_jointparams_LTLIBRARIES = libhuboparams.la
+lib_LTLIBRARIES = libhuboparams.la
 libhuboparams_la_SOURCES = src/hubo-jointparams.c
 libhuboparams_la_LDFLAGS = -module -avoid-version -shared
 
