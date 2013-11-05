@@ -438,7 +438,8 @@ void pump_message_loop(hubo_can_t write_skt,
 void meta_readCan(hubo_can_t skt,
                   struct can_frame* f,
                   double timeoutD) {
-    pump_message_loop(-1, NULL, 0.0);
+    const double short_read_timeout_sec = 0.000010; // 10us
+    pump_message_loop(-1, NULL, short_read_timeout_sec);
 }
 
 void meta_sendCan(hubo_can_t skt,
