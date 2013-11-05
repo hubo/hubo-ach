@@ -351,6 +351,7 @@ void pump_message_loop(hubo_can_t write_skt,
             for (i=0; i<2; ++i) {
                 if (FD_ISSET(hubo_socket[i], &read_fds)) {
 
+                    errno = 0;
                     struct can_frame frame;
                     ssize_t bytes_read = read(hubo_socket[i], &frame, sizeof(frame));
           
@@ -370,6 +371,7 @@ void pump_message_loop(hubo_can_t write_skt,
                 write_frame != NULL && 
                 FD_ISSET(write_skt, &write_fds)) {
                 
+                errno = 0;
                 ssize_t bytes_written = write(write_skt, write_frame, 
                                               sizeof(*write_frame));
                 
@@ -405,7 +407,7 @@ void pump_message_loop(hubo_can_t write_skt,
 void meta_readCan(hubo_can_t skt,
                   struct can_frame* f,
                   double timeoutD) {
-    pump_message_loop(-1, NULL, timeoutD);
+    pump_message_loop(-1, NULL, 0.0);
 }
 
 void meta_sendCan(hubo_can_t skt,
