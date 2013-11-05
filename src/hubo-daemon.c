@@ -588,6 +588,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
     int startFlag = 1;
+    int successful_encs = 0;
 
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
@@ -735,7 +736,10 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             }
         }
         if (!all_valid) {
-            fprintf(stderr, "\n");
+            fprintf(stderr, " (after %d successful loops)\n", successful_encs);
+            successful_encs = 0;
+        } else {
+            ++successful_encs;
         }
 
 
