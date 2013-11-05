@@ -726,7 +726,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         int all_valid = true;
         int i;
         for (i=0; i<HUBO_JOINT_COUNT; ++i) {
-            if (!global_loop_enc_valid[i]) {
+            if (H_state.joint[i].active && !global_loop_enc_valid[i]) {
                 fprintf(stderr, "warning: requested encoder reading for %s but got none\n",
                         jointNames[i]);
             }
@@ -967,14 +967,18 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
     int canChan = 0;
 
     for (i=0; i<HUBO_JOINT_COUNT; ++i) {
-        global_loop_enc_valid[i] = 1;
+        if (s->joint[i].active) {
+            global_loop_enc_valid[i] = 0;
+        } else {
+            global_loop_enc_valid[i] = 1;
+        }
     }
     
     for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
         for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
             jmc = h->joint[i].jmc;
-            if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
-                global_loop_enc_valid[i] = 0;
+            if((0 == c[jmc]) && // check to see if already asked that motor controller
+               (canChan == h->joint[i].can)) {
                 hGetEncValue(i, 0x00, h, f);
                 meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                 nop_decodeFrame(s, h, f);
