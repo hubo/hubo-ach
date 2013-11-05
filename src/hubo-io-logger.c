@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   ach_create_attr_init( &attr );
   
   ach_status_t result = ach_create( IO_TRACE_CHAN_NAME,
-                                    5000, sizeof(io_trace_t),
+                                    10000, sizeof(io_trace_t),
                                     &attr );
 
   if (result != ACH_OK) {
@@ -62,6 +62,10 @@ int main(int argc, char** argv) {
                       &frame_size, NULL, 0 );
 
     if (result == ACH_OK || result == ACH_MISSED_FRAME) {
+
+      if (result == ACH_MISSED_FRAME) {
+        fprintf(stderr, "missed frame(s)!\n");
+      }
 
       if (!fwrite(&trace, sizeof(io_trace_t), 1, fp)) {
         perror("write log");
