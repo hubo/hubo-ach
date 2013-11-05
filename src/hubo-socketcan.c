@@ -112,6 +112,10 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
     errno = 0;
     int bytes_sent = write( skt, f, sizeof(*f) );
 
+    if (bytes_sent != sizeof(*f)) {
+        perror("write");
+    }
+
     if (trace_socket >= 0) {
         io_trace_t trace;
         trace.timestamp = iotrace_gettime();
@@ -123,9 +127,8 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
         iotrace_write(trace_socket, &trace);
     }
 
-    if (bytes_sent != sizeof(*f)) {
-        perror("write");
-    }
+    if (bytes_sent < 0) { bytes_sent = 0; }
+    return bytes_sent;
 
 }
 
