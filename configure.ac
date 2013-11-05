@@ -33,3 +33,8 @@ AC_CHECK_FUNCS([clock_getTime memset socket])
 
 AC_CONFIG_FILES([ Makefile ])
 AC_OUTPUT
+
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([CONFIGURATION SUMMARY])
+AC_MSG_NOTICE([=====================])
+AC_MSG_NOTICE([PREFIX:          $prefix])
