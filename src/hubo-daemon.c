@@ -706,12 +706,46 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
 
+
         clock_gettime( CLOCK_MONOTONIC, &time );
         int64_t loop_remaining_nsec = tsdiff(&loop_time, &time);
 
+        int i;
+
         if (loop_remaining_nsec > 0) {
 
-            pump_message_loop(-1, NULL, loop_remaining_nsec*1e-9);
+            for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+
+                if (H_state.joint[i].active && !global_loop_enc_valid[i]) {
+
+                    struct can_frame frame;
+
+                    hGetEncValue(i, 0x00, H_param, &frame);
+
+                    meta_readCan(hubo_socket[H_param->joint[i].can], &frame, 
+                                 HUBO_CAN_TIMEOUT_DEFAULT);
+
+                    if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
+                       LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
+
+                        hGetEncValue(i, 0x01, H_param, &frame);
+                        meta_readCan(hubo_socket[H_param->joint[i].can], &frame, 
+                                     HUBO_CAN_TIMEOUT_DEFAULT);
+
+                    }
+
+                    clock_gettime( CLOCK_MONOTONIC, &time );
+                    loop_remaining_nsec = tsdiff(&loop_time, &time);
+                    if (loop_remaining_nsec <= 0) {
+                        break;
+                    }
+                    
+                }
+            }
+
+            if (loop_remaining_nsec > 0) {
+                pump_message_loop(-1, NULL, loop_remaining_nsec*1e-9);
+            }
 
             tsadd(&loop_time, loop_interval_nsec, &loop_time);
 
@@ -725,7 +759,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         }
 
         int all_valid = 1;
-        int i;
         for (i=0; i<HUBO_JOINT_COUNT; ++i) {
             if (H_state.joint[i].active && !global_loop_enc_valid[i]) {
                 if (all_valid) {
