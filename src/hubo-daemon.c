@@ -3016,7 +3016,6 @@ void hNullIMUSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *f 
 
 void hNullAllIMUSensors( hubo_param_t *h, struct can_frame *f )
 {
-    global_imu_ready = 1;
     hNullIMUSensor( D_IMU_SENSOR_0, h, f );
     hNullIMUSensor( D_IMU_SENSOR_1, h, f );
     hNullIMUSensor( D_IMU_SENSOR_2, h, f );
