@@ -1119,9 +1119,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
                     fprintf(stderr, 
                             "after %d loop iterations:\n"
-                            "  missed %8d encoder readings (%2.4f per iteration)\n"
-                            "  missed %8d FT readings      (%2.4f per iteration)\n"
-                            "  missed %8d IMU readings     (%2.4f per iteration)",
+                            "  missed %8d encoder readings (%2.2f per iteration)\n"
+                            "  missed %8d FT readings      (%2.2f per iteration)\n"
+                            "  missed %8d IMU readings     (%2.2f per iteration)\n",
                             global_loop_count,
                             global_enc_total_misses,
                             ((double)global_enc_total_misses)/global_loop_count,
@@ -1152,7 +1152,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
     }
 
-    fprintf(stderr, "exiting\n");
+    fprintf(stderr, "exiting\n\n");
 
 }
 
