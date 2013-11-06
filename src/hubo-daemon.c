@@ -3885,6 +3885,10 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 num==h->sensor[HUBO_IMU2].boardNo)
         {
 
+            if (!global_imu_ready) {
+                fprintf(stderr, "got first frame from IMU!\n");
+            }
+
             global_imu_valid[IMU] = 1;
             global_imu_ready = 1;
 
