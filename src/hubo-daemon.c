@@ -96,7 +96,6 @@ int global_loop_enc_valid[HUBO_JOINT_COUNT];
 typedef struct channel_info {
 
     int fd;
-    int ready_to_write;
     struct timespec last_write_time;
 
     can_buf_t buf;
@@ -354,14 +353,10 @@ int pump_message_loop(const struct timespec* deadline_time) {
         
     }
     
-    const int64_t write_wait_timeout_nsec = 50 * 1000; 
     const int64_t write_min_timeout_nsec = 50 * 1000; 
 
     const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; // 1sec
     const int     debug_pump = 0;
-    const int     write_always_wait = 0;
-    const int     write_never_wait = 1;
-    const int     read_unblocks_write = 0;
 
 
     struct timespec ultimate_time;
@@ -411,19 +406,6 @@ int pump_message_loop(const struct timespec* deadline_time) {
             int64_t time_since_last_write_nsec = 
                 tsdiff(&current_time, &cinfo->last_write_time);
 
-            // see if timeout has expired
-            if (!cinfo->ready_to_write) {
-
-                if (debug_pump) {
-                    fprintf(stderr, "channel %d is now ready to write!\n",
-                            cidx);
-                }
-
-                if (time_since_last_write_nsec >= write_wait_timeout_nsec) {
-                    cinfo->ready_to_write = 1;
-                }
-
-            }
 
             // see if we want to write
             if (!can_buf_isempty(&cinfo->buf)) {
@@ -433,38 +415,13 @@ int pump_message_loop(const struct timespec* deadline_time) {
                     fprintf(stderr, "channel %d has pending writes\n", cidx);
                 }
 
-                if (!cinfo->ready_to_write) {
-
-                    // not ready to write.
-                    // therefore  write_wait_timeout_nsec >= time_since_last_write_nsec
-                    int64_t wait_time = 
-                        write_wait_timeout_nsec - time_since_last_write_nsec;
-
-                    if (wait_time < 0) {
-                        fprintf(stderr, "warning: wait_time for %d is negative\n", cidx);
-                        wait_time = 0;
-                    }
-
-                    if (debug_pump) {
-                        fprintf(stderr, "channel %d not ready to write, "
-                                "will wait for at least %5.6fs\n", cidx, wait_time*1e-9);
-                    }
-
-                    if (wait_time < write_timeout_nsec) {
-                        write_timeout_nsec = wait_time;
-                    }
-
-                } else {
-
-                    if (debug_pump) {
-                        fprintf(stderr, "channel %d ready to write!\n", cidx);
-                    }
-
-                    // put it into write set
-                    writes_ready = 1;
-                    write_timeout_nsec = write_min_timeout_nsec;
-
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d ready to write!\n", cidx);
                 }
+
+                // put it into write set
+                writes_ready = 1;
+                write_timeout_nsec = write_min_timeout_nsec;
                 
             }
 
@@ -603,9 +560,6 @@ int pump_message_loop(const struct timespec* deadline_time) {
                         perror("read in pump_message_loop");
                         break;
                     } else {
-                        if (read_unblocks_write) {
-                            cinfo->ready_to_write = 1;
-                        }
                         decodeFrame(global_loop_state,
                                     global_loop_param,
                                     &frame);
@@ -616,8 +570,7 @@ int pump_message_loop(const struct timespec* deadline_time) {
             } // ready to read
 
 
-            if (!can_buf_isempty(&cinfo->buf) &&
-                cinfo->ready_to_write) {
+            if (!can_buf_isempty(&cinfo->buf)) {
 
                 if (debug_pump) {
                     fprintf(stderr, "channel %d is ready to wite\n", cidx);
@@ -625,8 +578,7 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
                 int first_write = 1;
 
-                while (!can_buf_isempty(&cinfo->buf) &&
-                       cinfo->ready_to_write) {
+                while (!can_buf_isempty(&cinfo->buf)) {
 
                     can_tagged_frame_t* tf = can_buf_head(&cinfo->buf);
                         
@@ -702,14 +654,6 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
                         clock_gettime(CLOCK_MONOTONIC, &cinfo->last_write_time);
                             
-
-                        if (!write_never_wait && (tf->expect_reply || write_always_wait)) {
-                            cinfo->ready_to_write = 0;
-                            if (debug_pump) {
-                                fprintf(stderr, "setting channel %d to not ready\n",
-                                        cidx);
-                            }
-                        }
 
                         if (!can_buf_pop(&cinfo->buf)) {
                             fprintf(stderr,
@@ -975,7 +919,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     for (i=0; i<2; ++i) {
         memset(&global_cinfo[i], 0, sizeof(channel_info_t));
         global_cinfo[i].fd = hubo_socket[i];
-        global_cinfo[i].ready_to_write = 1;
     }
 
     size_t fs;
