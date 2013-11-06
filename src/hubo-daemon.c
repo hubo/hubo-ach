@@ -354,7 +354,7 @@ int pump_message_loop(const struct timespec* deadline_time) {
         
     }
     
-    const int64_t write_wait_timeout_nsec = 0 * 1000; 
+    const int64_t write_wait_timeout_nsec = 50 * 1000; 
     const int64_t write_min_timeout_nsec = 50 * 1000; 
 
     const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; // 1sec
