@@ -1025,7 +1025,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                 }
             }
             if (!enc_all_valid) {
-                fprintf(stderr, " (after %d successful loops)\n", successful_encs);
+                fprintf(stderr, "(after %d successful loops)\n", successful_encs);
                 successful_encs = 0;
             } else {
                 ++successful_encs;
@@ -1047,7 +1047,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                 }
             }
             if (!ft_all_valid) {
-                fprintf(stderr, " (after %d successful loops)\n", successful_fts);
+                fprintf(stderr, "(after %d successful loops)\n", successful_fts);
                 successful_fts = 0;
             } else {
                 ++successful_fts;
@@ -1069,7 +1069,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                 }
             }
             if (!imu_all_valid) {
-                fprintf(stderr, " (after %d successful loops)\n", successful_imus);
+                fprintf(stderr, "(after %d successful loops)\n", successful_imus);
                 successful_imus = 0;
             } else {
                 ++successful_imus;
