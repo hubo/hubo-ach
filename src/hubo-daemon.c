@@ -87,8 +87,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 const int print_enc_errs = 0;
-const int print_imu_errs = 1;
-const int print_ft_errs = 1;
+const int print_imu_errs = 0;
+const int print_ft_errs = 0;
 
 const int print_err_summary = 1;
 const int err_summary_loop_count = 1000;
@@ -1115,13 +1115,14 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
                 ++global_loop_count;
                 
-                if (global_loop_count % err_summary_loop_count == 0) {
+                if ( (global_loop_count % err_summary_loop_count == 0) ||
+                     hubo_sig_quit ) {
 
                     fprintf(stderr, 
                             "after %d loop iterations:\n"
-                            "  missed %8d encoder readings (%2.2f per iteration)\n"
-                            "  missed %8d FT readings      (%2.2f per iteration)\n"
-                            "  missed %8d IMU readings     (%2.2f per iteration)\n",
+                            "  missed %6d encoder readings (%2.2f per iteration)\n"
+                            "  missed %6d FT readings      (%2.2f per iteration)\n"
+                            "  missed %6d IMU readings     (%2.2f per iteration)\n",
                             global_loop_count,
                             global_enc_total_misses,
                             ((double)global_enc_total_misses)/global_loop_count,
