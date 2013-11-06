@@ -91,7 +91,22 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 hubo_state_t* global_state = 0;
 hubo_param_t* global_param = 0;
+
+const int print_enc_errs = 0;
+const int print_imu_errs = 0;
+const int print_ft_errs = 0;
+
+const char* imuNames[3] = { 
+    "TILT_R", "TILT_L", "IMU"
+};
+
+const char* ftNames[4] = {
+    "R_HAND", "L_HAND", "R_FOOT", "L_FOOT"
+};
+
 int global_enc_valid[HUBO_JOINT_COUNT];
+int global_imu_valid[HUBO_IMU_COUNT];
+int global_ft_valid[4];
 
 typedef struct channel_info {
 
@@ -500,8 +515,6 @@ int pump_message_loop(const struct timespec* deadline_time) {
         }
 
 
-        // result > 0
-
         for (cidx=0; cidx<2; ++cidx) {
                 
             channel_info_t* cinfo = &global_cinfo[cidx];
@@ -674,143 +687,6 @@ int pump_message_loop(const struct timespec* deadline_time) {
         } // for each channel
 
     } // while 1
-
-    /*
-    struct timespec current_time, deadline_time;
-
-    int64_t remaining_time_nsec = (int64_t)(timeoutD * NSEC_PER_SEC);
-
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-    tsadd(&current_time, remaining_time_nsec, &deadline_time);
-
-    int max_fd_plus_one =  1 + ( hubo_socket[0] > hubo_socket[1] ? 
-                                 hubo_socket[0] : hubo_socket[1] );
-
-
-    while (remaining_time_nsec > 0) {
-
-        fd_set read_fds, write_fds;
-
-        // try to read everything
-        FD_ZERO(&read_fds);
-        FD_SET(hubo_socket[0], &read_fds);
-        FD_SET(hubo_socket[1], &read_fds);
-
-        // only write if we have a message provided
-        FD_ZERO(&write_fds);
-
-        if (write_skt >= 0 && write_frame != NULL) {
-            FD_SET(write_skt, &write_fds);
-        }
-
-        // set our timeout
-        struct timespec timeout;
-        timeout.tv_sec = remaining_time_nsec / (int64_t)NSEC_PER_SEC;
-        timeout.tv_nsec = remaining_time_nsec % (int64_t)NSEC_PER_SEC;
-
-        errno = 0;
-        int result = pselect(max_fd_plus_one, 
-                             &read_fds, &write_fds, NULL, 
-                             &timeout, NULL);
-
-        if (result < 0) {
-
-            if (errno != EINTR) {
-                perror("pselect");
-            }
-
-        } else if (result) {
-
-            // handle reads
-            int i;
-            int did_read = 0;
-
-            for (i=0; i<2; ++i) {
-                if (FD_ISSET(hubo_socket[i], &read_fds)) {
-
-                    errno = 0;
-                    struct can_frame frame;
-                    ssize_t bytes_read = read(hubo_socket[i], &frame, sizeof(frame));
-                    int read_errno = errno;
-                    
-                    if (have_iotrace_chan) {
-                        io_trace_t trace;
-                        trace.timestamp = iotrace_gettime();
-                        trace.is_read = 1;
-                        trace.fd = hubo_socket[i];
-                        trace.result_errno = read_errno;
-                        trace.transmitted = bytes_read;
-                        trace.frame = frame;
-                        ach_put(&iotrace_chan, &trace, sizeof(trace));
-                    }
-                    
-          
-                    if (bytes_read != sizeof(frame)) {
-                        errno = read_errno;
-                        perror("read in pump_message_loop");
-                    } else {
-                        did_read = 1;
-                        decodeFrame(global_state,
-                                    global_param,
-                                    &frame);
-                    }
-
-                }
-            }
-
-            // handle write
-            if (write_skt >= 0 && 
-                write_frame != NULL && 
-                FD_ISSET(write_skt, &write_fds)) {
-                
-                errno = 0;
-                ssize_t bytes_written = write(write_skt, write_frame, 
-                                              sizeof(*write_frame));
-                int write_errno = errno;
-
-                if (have_iotrace_chan) {
-                    io_trace_t trace;
-                    trace.timestamp = iotrace_gettime();
-                    trace.is_read = 0;
-                    trace.fd = write_skt;
-                    trace.result_errno = write_errno;
-                    trace.transmitted = bytes_written;
-                    trace.frame = *write_frame;
-                    ach_put(&iotrace_chan, &trace, sizeof(trace));
-                }
-                
-                if (bytes_written != sizeof(*write_frame)) {
-                    errno = write_errno;
-                    perror("write in pump_message_loop");
-                } else {
-                    // did our write successfully
-                    return;
-                }
-
-            }
-
-            if (bail_on_read && did_read) {
-                return;
-            }
-
-        }
-
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        remaining_time_nsec = tsdiff(&deadline_time, &current_time);
-
-    }
-
-    if (write_skt >= 0 && write_frame != NULL) {
-        
-        // we have failed at writing and should commit suicide
-        fprintf(stderr, 
-                "failed at writing (did someone pull the CAN plug?), quitting.\n");
-
-        hubo_sig_quit = 1;
-
-    }
-
-    */
 
 }
                        
@@ -1001,10 +877,15 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
     int startFlag = 1;
     int successful_encs = 0;
+    int successful_fts = 0;
+    int successful_imus = 0;
 
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
 
+        for (i=0; i<HUBO_IMU_COUNT; ++i) {
+            global_imu_valid[i] = 1;
+        }
 
         fs = 0;
 
@@ -1128,29 +1009,70 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         }
 
-        int all_valid = 1;
-        const int print_enc_errs = 0;
+        if (print_enc_errs) {
 
-        for (i=0; i<HUBO_JOINT_COUNT; ++i) {
-            if (H_state.joint[i].active && !global_enc_valid[i]) {
-                if (all_valid) {
-                    if (print_enc_errs) {
+            int enc_all_valid = 1;
+
+            for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+                if (H_state.joint[i].active && !global_enc_valid[i]) {
+                    if (enc_all_valid) {
                         fprintf(stderr, "warning: no encoder reading for ");
+                        enc_all_valid = 0;
                     }
-                    all_valid = 0;
-                }
-                if (print_enc_errs) {
                     fprintf(stderr, "%s ", jointNames[i]);
                 }
             }
-        }
-        if (!all_valid) {
-            if (print_enc_errs) {
+            if (!enc_all_valid) {
                 fprintf(stderr, " (after %d successful loops)\n", successful_encs);
+                successful_encs = 0;
+            } else {
+                ++successful_encs;
             }
-            successful_encs = 0;
-        } else {
-            ++successful_encs;
+
+        }
+
+        if (print_ft_errs) {
+
+            int ft_all_valid = 1;
+
+            for (i=0; i<4; ++i) {
+                if (!global_ft_valid[i]) {
+                    if (ft_all_valid) {
+                        fprintf(stderr, "warning: no FT reading for ");
+                        ft_all_valid = 0;
+                    }
+                    fprintf(stderr, "%s ", ftNames[i]);
+                }
+            }
+            if (!ft_all_valid) {
+                fprintf(stderr, " (after %d successful loops)\n", successful_fts);
+                successful_fts = 0;
+            } else {
+                ++successful_fts;
+            }
+
+        }
+
+        if (print_imu_errs) {
+
+            int imu_all_valid = 1;
+
+            for (i=0; i<4; ++i) {
+                if (!global_imu_valid[i]) {
+                    if (imu_all_valid) {
+                        fprintf(stderr, "warning: no IMU reading for ");
+                        imu_all_valid = 0;
+                    }
+                    fprintf(stderr, "%s ", imuNames[i]);
+                }
+            }
+            if (!imu_all_valid) {
+                fprintf(stderr, " (aimuer %d successful loops)\n", successful_imus);
+                successful_imus = 0;
+            } else {
+                ++successful_imus;
+            }
+
         }
 
         int b;
@@ -1164,6 +1086,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 
     }
+
+    fprintf(stderr, "exiting\n");
 
 }
 
@@ -1461,6 +1385,9 @@ void fGetFT(int board, struct can_frame *f)
 
 void getFTAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+
+    memset(global_ft_valid, 0, sizeof(global_ft_valid));
+
     hGetFT(h->sensor[HUBO_FT_R_FOOT].boardNo, f, h->sensor[HUBO_FT_R_FOOT].can);
     nop_decodeFrame(s, h, f);
 
@@ -1494,6 +1421,10 @@ void hGetAcc(int board, struct can_frame *f)
 
 void getAccAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+
+    global_imu_valid[TILT_R] = 0;
+    global_imu_valid[TILT_L] = 0;
+
     hGetAcc(h->sensor[HUBO_FT_R_FOOT].boardNo, f);
     nop_decodeFrame(s, h, f);
 
@@ -1521,6 +1452,9 @@ void hGetIMU(int board, struct can_frame *f)
 
 void getIMUAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+
+    global_imu_valid[IMU] = 0;
+
     hGetIMU(h->sensor[HUBO_IMU0].boardNo, f);
     nop_decodeFrame(s, h, f);
 
@@ -3768,6 +3702,8 @@ double doubleFromBytePair(uint8_t data0, uint8_t data1){
 
 void decodeFTFrame(int num, struct hubo_state *s, struct hubo_param *h, struct can_frame *f){
 
+    global_ft_valid[num] = 1;
+
     double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
     double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
     double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
@@ -3914,6 +3850,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         
         if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
+
+            global_imu_valid[TILT_R] = 1;
+
             val = (f->data[1]<<8) | f->data[0];
             s->imu[TILT_R].a_x = ((double)(val))/100.0 * M_PI/180.0;
             
@@ -3925,6 +3864,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         }
         else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
         {
+
+            global_imu_valid[TILT_L] = 1;
+
             val = (f->data[1]<<8) | f->data[0];
             s->imu[TILT_L].a_x = ((double)(val))/100.0 * M_PI/180.0;
             
@@ -3938,6 +3880,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 num==h->sensor[HUBO_IMU1].boardNo ||
                 num==h->sensor[HUBO_IMU2].boardNo)
         {
+
+            global_imu_valid[IMU] = 1;
+
             val = (f->data[1]<<8) | f->data[0];
             s->imu[IMU].a_x = ((double)(val))/100.0 * M_PI/180.0;
 
