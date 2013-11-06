@@ -90,6 +90,9 @@ const int print_enc_errs = 0;
 const int print_imu_errs = 1;
 const int print_ft_errs = 1;
 
+const int print_err_summary = 1;
+const int err_summary_loop_count = 1000;
+
 const char* imuNames[3] = { 
     "TILT_R", "TILT_L", "IMU"
 };
@@ -97,12 +100,6 @@ const char* imuNames[3] = {
 const char* ftNames[4] = {
     "R_HAND", "L_HAND", "R_FOOT", "L_FOOT"
 };
-
-int global_imu_ready = 0;
-
-int global_enc_valid[HUBO_JOINT_COUNT];
-int global_imu_valid[HUBO_IMU_COUNT];
-int global_ft_valid[4];
 
 typedef struct channel_info {
 
@@ -123,6 +120,15 @@ typedef struct channel_info {
 
 channel_info_t global_cinfo[2];
 
+int global_imu_ready = 0;
+int global_enc_valid[HUBO_JOINT_COUNT];
+int global_imu_valid[HUBO_IMU_COUNT];
+int global_ft_valid[4];
+
+int global_loop_count = 0;
+int global_enc_total_misses = 0;
+int global_imu_total_misses = 0;
+int global_ft_total_misses = 0;
 
 int can_to_channel_idx(hubo_can_t can) {
     return can == global_cinfo[0].fd ? 0 : 1;
@@ -360,7 +366,7 @@ int pump_message_loop(hubo_state_t* H_state_ptr,
     }
     
     /* desired time to wait before retrying write on a channel */
-    const int64_t write_min_timeout_nsec = 100 * 1000; 
+    const int64_t write_min_timeout_nsec = 50 * 1000; 
 
     /* absolute timeout for this loop, before deciding to quit hubo-daemon */
     const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; 
@@ -1082,6 +1088,48 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                     successful_imus = 0;
                 } else {
                     ++successful_imus;
+                }
+
+            }
+
+            if (print_err_summary) {
+
+                
+                for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+                    if (H_state.joint[i].active && !global_enc_valid[i]) {
+                        ++global_enc_total_misses;
+                    }
+                }
+
+                for (i=0; i<4; ++i) {
+                    if (!global_ft_valid[i]) {
+                        ++global_ft_total_misses;
+                    }
+                }
+
+                for (i=0; i<HUBO_IMU_COUNT; ++i) {
+                    if (!global_imu_valid[i]) {
+                        ++global_imu_total_misses;
+                    }
+                }
+
+                ++global_loop_count;
+                
+                if (global_loop_count % err_summary_loop_count == 0) {
+
+                    fprintf(stderr, 
+                            "after %d loop iterations:\n"
+                            "  missed %8d encoder readings (%3.4f%%)\n"
+                            "  missed %8d FT readings      (%3.4f%%)\n"
+                            "  missed %8d IMU readings     (%3.4f%%)\n",
+                            global_loop_count,
+                            global_enc_total_misses,
+                            (100.0*global_enc_total_misses)/global_loop_count,
+                            global_ft_total_misses, 
+                            (100.0*global_ft_total_misses)/global_loop_count,
+                            global_imu_total_misses, 
+                            (100.0*global_imu_total_misses)/global_loop_count);
+
                 }
 
             }
