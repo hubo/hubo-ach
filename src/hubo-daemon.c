@@ -1475,6 +1475,10 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
             jmc = h->joint[i].jmc;
             if((0 == c[jmc]) && // check to see if already asked that motor controller
                (canChan == h->joint[i].can)) {
+
+                hGetCurrentValue(i, h, f);
+                meta_readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+
                 hGetEncValue(i, 0x00, h, f);
                 meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
                 nop_decodeFrame(s, h, f);
