@@ -93,8 +93,10 @@ hubo_state_t* global_state = 0;
 hubo_param_t* global_param = 0;
 
 const int print_enc_errs = 0;
-const int print_imu_errs = 0;
-const int print_ft_errs = 0;
+const int print_imu_errs = 1;
+const int print_ft_errs = 1;
+
+int global_imu_ready = 0;
 
 const char* imuNames[3] = { 
     "TILT_R", "TILT_L", "IMU"
@@ -1057,7 +1059,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
             int imu_all_valid = 1;
 
-            for (i=0; i<4; ++i) {
+            for (i=0; i<HUBO_IMU_COUNT; ++i) {
                 if (!global_imu_valid[i]) {
                     if (imu_all_valid) {
                         fprintf(stderr, "warning: no IMU reading for ");
@@ -1067,7 +1069,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
                 }
             }
             if (!imu_all_valid) {
-                fprintf(stderr, " (aimuer %d successful loops)\n", successful_imus);
+                fprintf(stderr, " (after %d successful loops)\n", successful_imus);
                 successful_imus = 0;
             } else {
                 ++successful_imus;
@@ -1453,7 +1455,9 @@ void hGetIMU(int board, struct can_frame *f)
 void getIMUAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
 
-    global_imu_valid[IMU] = 0;
+    if (global_imu_ready) {
+        global_imu_valid[IMU] = 0;
+    }
 
     hGetIMU(h->sensor[HUBO_IMU0].boardNo, f);
     nop_decodeFrame(s, h, f);
@@ -3012,6 +3016,7 @@ void hNullIMUSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *f 
 
 void hNullAllIMUSensors( hubo_param_t *h, struct can_frame *f )
 {
+    global_imu_ready = 1;
     hNullIMUSensor( D_IMU_SENSOR_0, h, f );
     hNullIMUSensor( D_IMU_SENSOR_1, h, f );
     hNullIMUSensor( D_IMU_SENSOR_2, h, f );
@@ -3882,6 +3887,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         {
 
             global_imu_valid[IMU] = 1;
+            global_imu_ready = 1;
 
             val = (f->data[1]<<8) | f->data[0];
             s->imu[IMU].a_x = ((double)(val))/100.0 * M_PI/180.0;
