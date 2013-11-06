@@ -354,15 +354,15 @@ int pump_message_loop(const struct timespec* deadline_time) {
         
     }
     
-    const int64_t write_wait_timeout_nsec = 50 * 1000; // 100 usec
+    const int64_t write_wait_timeout_nsec = 0 * 1000; 
     const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; // 1sec
     const int     debug_pump = 0;
     const int     write_always_wait = 0;
-    const int     read_unblocks_write = 1;
+    const int     write_never_wait = 1;
+    const int     read_unblocks_write = 0;
 
     struct timespec ultimate_time;
     tsadd(deadline_time, ultimate_timeout_nsec, &ultimate_time);
-
 
     int overrun = 0;
 
@@ -698,8 +698,10 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
                     if (bytes_written != sizeof(tf->frame)) {
 
-                        errno = write_errno;
-                        perror("write in pump_message_loop");
+                        if (errno != ENOBUFS) {
+                            errno = write_errno;
+                            perror("write in pump_message_loop");
+                        }
                         break;
 
                     } else {
@@ -712,7 +714,8 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
                         clock_gettime(CLOCK_MONOTONIC, &cinfo->last_write_time);
                             
-                        if (tf->expect_reply || write_always_wait) {
+
+                        if (!write_never_wait && (tf->expect_reply || write_always_wait)) {
                             cinfo->ready_to_write = 0;
                             if (debug_pump) {
                                 fprintf(stderr, "setting channel %d to not ready\n",
