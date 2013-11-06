@@ -366,7 +366,10 @@ int pump_message_loop(hubo_state_t* H_state_ptr,
     }
     
     /* desired time to wait before retrying write on a channel */
-    const int64_t write_min_timeout_nsec = 50 * 1000; 
+    const int64_t write_min_timeout_nsec = 800 * 1000;
+
+    /* 0 = disable batching, n>0 mandatory pause after n writes */
+    const int write_batch_size = 8; 
 
     /* absolute timeout for this loop, before deciding to quit hubo-daemon */
     const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; 
@@ -526,6 +529,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr,
                 }
             }
 
+            int num_writes = 0;
+
             while (write_ready[cidx] && !can_buf_isempty(&cinfo->buf)) {
 
                 can_tagged_frame_t* tf = can_buf_head(&cinfo->buf);
@@ -604,6 +609,12 @@ int pump_message_loop(hubo_state_t* H_state_ptr,
                     ++cinfo->head_sequence_no;
 
                     clock_gettime(CLOCK_MONOTONIC, &last_write_time[cidx]);
+
+                    ++num_writes;
+
+                    if (num_writes == write_batch_size) {
+                        write_ready[cidx] = 0;
+                    }
 
                 } // if write ok
 
