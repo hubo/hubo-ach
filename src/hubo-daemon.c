@@ -89,9 +89,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Somewhere in your app */
 
-hubo_state_t* global_loop_state = 0;
-hubo_param_t* global_loop_param = 0;
-int global_loop_enc_valid[HUBO_JOINT_COUNT];
+hubo_state_t* global_state = 0;
+hubo_param_t* global_param = 0;
+int global_enc_valid[HUBO_JOINT_COUNT];
 
 typedef struct channel_info {
 
@@ -100,11 +100,11 @@ typedef struct channel_info {
 
     can_buf_t buf;
 
-    int loop_writes;
-    int loop_max_writes;
+    int writes;
+    int max_writes;
 
-    int loop_reads;
-    int loop_max_reads;
+    int reads;
+    int max_reads;
     
     int head_sequence_no;
     int tail_sequence_no;
@@ -335,18 +335,18 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
     int cidx;
 
-    int last_pending_writes = ( global_cinfo[0].loop_writes + 
-                                global_cinfo[1].loop_writes );
+    int last_pending_writes = ( global_cinfo[0].writes + 
+                                global_cinfo[1].writes );
 
     for (cidx=0; cidx<2; ++cidx) {
 
         const channel_info_t* cinfo = &global_cinfo[cidx];
 
-        if (cinfo->buf.size != cinfo->loop_writes) {
+        if (cinfo->buf.size != cinfo->writes) {
             fprintf(stderr,
                     "warning: can buf %d failed sanity check: "
                     "buf size=%d, write count=%d\n",
-                    cidx, (int)cinfo->buf.size, cinfo->loop_writes);
+                    cidx, (int)cinfo->buf.size, cinfo->writes);
             hubo_sig_quit = 1;
             return 0;
         }
@@ -560,8 +560,8 @@ int pump_message_loop(const struct timespec* deadline_time) {
                         perror("read in pump_message_loop");
                         break;
                     } else {
-                        decodeFrame(global_loop_state,
-                                    global_loop_param,
+                        decodeFrame(global_state,
+                                    global_param,
                                     &frame);
                     }
 
@@ -750,8 +750,8 @@ int pump_message_loop(const struct timespec* deadline_time) {
                         perror("read in pump_message_loop");
                     } else {
                         did_read = 1;
-                        decodeFrame(global_loop_state,
-                                    global_loop_param,
+                        decodeFrame(global_state,
+                                    global_param,
                                     &frame);
                     }
 
@@ -820,15 +820,7 @@ void meta_readCan(hubo_can_t skt,
                   double timeoutD) {
 
     int cidx = can_to_channel_idx(skt);
-    
-    can_tagged_frame_t* tf = can_buf_tail(&global_cinfo[cidx].buf);
-    if (!tf) {
-        fprintf(stderr, "can buffer %d is unexpectedly empty!\n", cidx);
-    } else {
-        tf->expect_reply = 1;
-    }
-
-    ++global_cinfo[cidx].loop_reads;
+    ++global_cinfo[cidx].reads;
     
 }
 
@@ -837,12 +829,12 @@ void meta_sendCan(hubo_can_t skt,
 
     int cidx = can_to_channel_idx(skt);
     
-    if (!can_buf_push(&global_cinfo[cidx].buf, f, 0, global_cinfo[cidx].tail_sequence_no)) {
+    if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
         fprintf(stderr, "can buffer %d: push failed, will quit\n", cidx);
         hubo_sig_quit = 1;
     }
 
-    ++global_cinfo[cidx].loop_writes;
+    ++global_cinfo[cidx].writes;
 
     can_tagged_frame_t* tf = can_buf_tail(&global_cinfo[cidx].buf);
     if (!tf) {
@@ -858,9 +850,9 @@ void meta_sendCan(hubo_can_t skt,
 
     ++global_cinfo[cidx].tail_sequence_no;
 
-    if (global_cinfo[cidx].loop_writes != global_cinfo[cidx].buf.size) {
+    if (global_cinfo[cidx].writes != global_cinfo[cidx].buf.size) {
         fprintf(stderr, "warning: for buffer %d, loop writes=%d, but buf size=%d\n",
-                cidx, global_cinfo[cidx].loop_writes, (int)global_cinfo[cidx].buf.size);
+                cidx, global_cinfo[cidx].writes, (int)global_cinfo[cidx].buf.size);
     }
 
 }
@@ -913,8 +905,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     memset( &H_virtual, 0, sizeof(H_virtual));
     memset( &H_gains, 0, sizeof(H_gains) );
 
-    global_loop_param = H_param;
-    global_loop_state = &H_state;
+    global_param = H_param;
+    global_state = &H_state;
 
     for (i=0; i<2; ++i) {
         memset(&global_cinfo[i], 0, sizeof(channel_info_t));
@@ -1140,7 +1132,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         const int print_enc_errs = 0;
 
         for (i=0; i<HUBO_JOINT_COUNT; ++i) {
-            if (H_state.joint[i].active && !global_loop_enc_valid[i]) {
+            if (H_state.joint[i].active && !global_enc_valid[i]) {
                 if (all_valid) {
                     if (print_enc_errs) {
                         fprintf(stderr, "warning: no encoder reading for ");
@@ -1163,8 +1155,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         int b;
         for (b=0; b<2; ++b) {
-            global_cinfo[b].loop_writes = 0;
-            global_cinfo[b].loop_reads  = 0;
+            global_cinfo[b].writes = 0;
+            global_cinfo[b].reads  = 0;
         }
 
         fflush(stdout);
@@ -1395,9 +1387,9 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 
     for (i=0; i<HUBO_JOINT_COUNT; ++i) {
         if (s->joint[i].active) {
-            global_loop_enc_valid[i] = 0;
+            global_enc_valid[i] = 0;
         } else {
-            global_loop_enc_valid[i] = 1;
+            global_enc_valid[i] = 1;
         }
     }
     
@@ -4051,7 +4043,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
-                global_loop_enc_valid[jnt] = 1;
+                global_enc_valid[jnt] = 1;
             }
         }
         /* DRC Fingers and Writst Yaw 2 */
@@ -4067,7 +4059,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, jntInt, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
-                global_loop_enc_valid[jnt] = 1;
+                global_enc_valid[jnt] = 1;
             }
         }
 
@@ -4082,7 +4074,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
-                global_loop_enc_valid[jnt] = 1;
+                global_enc_valid[jnt] = 1;
             }
         }
             
@@ -4096,7 +4088,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
-                global_loop_enc_valid[jnt] = 1;
+                global_enc_valid[jnt] = 1;
              }
         }
 
@@ -4109,7 +4101,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
-                global_loop_enc_valid[jnt] = 1;
+                global_enc_valid[jnt] = 1;
             }
         }
 

@@ -23,12 +23,6 @@ enum {
 
 };
 
-/* two different priorities for messages */
-typedef enum can_chan_buf_priority {
-  CAN_PRIORITY_HI = 0,
-  CAN_PRIORITY_LO = 1,
-  CAN_NUM_PRIORITY = 2,
-} can_chan_buf_priority_t;
 
 /******************************************************************************/
 
@@ -37,9 +31,6 @@ typedef struct can_tagged_frame {
 
     /* the actual frame */
     struct can_frame frame;
-
-    /* non-zero means we expect a reply. */
-    int              expect_reply;
 
     /* for debugging */
     int              sequence_no;
@@ -64,21 +55,6 @@ typedef struct can_buf {
 
 /******************************************************************************/
 
-/* all the information we need to manage a single can channel */
-
-typedef struct can_chan_buf {
-
-    /* file descriptor */
-    int fd;
-
-    /* two buffers */
-    can_buf_t buffers[CAN_NUM_PRIORITY];
-  
-} can_chan_buf_t;
-
-
-/******************************************************************************/
-
 /* clear buffer */
 void can_buf_clear(can_buf_t* buf);
 
@@ -88,10 +64,9 @@ int can_buf_isempty(const can_buf_t* buf);
 /* return true if full */
 int can_buf_isfull(const can_buf_t* buf);
 
-/* push a message into the buffer and return 1 on success. */
+/* push a message to the tail of the buffer and return 1 on success. */
 int can_buf_push(can_buf_t* buf, 
                  const struct can_frame* frame, 
-                 int expect_reply,
                  int sequence_no);
 
 /* get the message at the head (least recently inserted) return NULL if empty */
@@ -100,29 +75,11 @@ can_tagged_frame_t* can_buf_head(can_buf_t* buf);
 /* get the message at the tail (most recently inserted) return NULL if empty */
 can_tagged_frame_t* can_buf_tail(can_buf_t* buf);
 
-/* pop a can buf and return 1 on success */
+/* pop a can buf from the head and return 1 on success */
 int can_buf_pop(can_buf_t* buf);
 
 /******************************************************************************/
 
-/*
-void can_chan_buf_clear(can_chan_buf_t* cbuf);
-
-int can_chan_buf_isempty(const can_chan_buf_t* cbuf);
-
-int can_chan_buf_isfull(const can_chan_buf_t* cbuf,
-                        can_chan_buf_priority_t priority);
-
-int can_chan_buf_push(can_chan_buf_t* cbuf,
-                      can_chan_buf_priority_t priority,
-                      const struct can_frame* frame,
-                      int expect_reply);
-
-can_tagged_frame_t* can_chan_buf_head(can_chan_buf_t* buf);
-
-can_tagged_frame_t* can_chan_buf_tail(can_chan_buf_t* buf,
-                                      can_chan_buf_priority_t priority);
-*/
 
 #ifdef __cplusplus
 }
