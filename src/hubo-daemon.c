@@ -106,6 +106,9 @@ typedef struct channel_info {
 
     int loop_reads;
     int loop_max_reads;
+    
+    int head_sequence_no;
+    int tail_sequence_no;
 
 } channel_info_t;
 
@@ -648,6 +651,13 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
                     } 
 
+                    if (tf->sequence_no != cinfo->head_sequence_no) {
+                        fprintf(stderr, "error: can buf %d sequence no mismatch. "
+                                "global: %d, buf %d. quitting.\n",
+                                cidx, cinfo->head_sequence_no, tf->sequence_no);
+                        hubo_sig_quit = 1;
+                        return overrun;
+                    }
 
                     errno = 0;
                     ssize_t bytes_written = send(cinfo->fd,
@@ -717,6 +727,8 @@ int pump_message_loop(const struct timespec* deadline_time) {
                             hubo_sig_quit = 1;
                             return overrun;
                         }
+
+                        ++cinfo->head_sequence_no;
 
                     }
 
@@ -890,12 +902,26 @@ void meta_sendCan(hubo_can_t skt,
 
     int cidx = can_to_channel_idx(skt);
     
-    if (!can_buf_push(&global_cinfo[cidx].buf, f, 0)) {
+    if (!can_buf_push(&global_cinfo[cidx].buf, f, 0, global_cinfo[cidx].tail_sequence_no)) {
         fprintf(stderr, "can buffer %d: push failed, will quit\n", cidx);
         hubo_sig_quit = 1;
     }
 
     ++global_cinfo[cidx].loop_writes;
+
+    can_tagged_frame_t* tf = can_buf_tail(&global_cinfo[cidx].buf);
+    if (!tf) {
+        fprintf(stderr, "error getting tail for %d in meta_sendCan, quitting!\n",
+                cidx);
+        hubo_sig_quit = 1;
+    } else if (tf->sequence_no != global_cinfo[cidx].tail_sequence_no) {
+        fprintf(stderr, "sequence no mismatch after push to %d: buf %d, global: %d, quitting\n",
+                cidx, tf->sequence_no, global_cinfo[cidx].tail_sequence_no);
+        hubo_sig_quit = 1;
+    }
+
+
+    ++global_cinfo[cidx].tail_sequence_no;
 
     if (global_cinfo[cidx].loop_writes != global_cinfo[cidx].buf.size) {
         fprintf(stderr, "warning: for buffer %d, loop writes=%d, but buf size=%d\n",

@@ -41,6 +41,9 @@ typedef struct can_tagged_frame {
     /* non-zero means we expect a reply. */
     int              expect_reply;
 
+    /* for debugging */
+    int              sequence_no;
+
 } can_tagged_frame_t;
 
 /******************************************************************************/
@@ -88,7 +91,8 @@ int can_buf_isfull(const can_buf_t* buf);
 /* push a message into the buffer and return 1 on success. */
 int can_buf_push(can_buf_t* buf, 
                  const struct can_frame* frame, 
-                 int expect_reply);
+                 int expect_reply,
+                 int sequence_no);
 
 /* get the message at the head (least recently inserted) return NULL if empty */
 can_tagged_frame_t* can_buf_head(can_buf_t* buf);

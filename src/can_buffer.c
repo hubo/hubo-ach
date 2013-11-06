@@ -19,7 +19,8 @@ int can_buf_isfull(const can_buf_t* buf) {
 /* push a message into the buffer and return 1 on success */
 int can_buf_push(can_buf_t* buf, 
                  const struct can_frame* frame, 
-                 int expect_reply) {
+                 int expect_reply,
+                 int sequence_no) {
 
   if (buf->size >= CAN_BUFFER_MAX_SIZE) { 
 
@@ -29,8 +30,11 @@ int can_buf_push(can_buf_t* buf,
 
     ++buf->size;
 
-    can_buf_head(buf)->frame = *frame;
-    can_buf_head(buf)->expect_reply = expect_reply;
+    can_tagged_frame_t* tf = can_buf_tail(buf);
+
+    tf->frame = *frame;
+    tf->expect_reply = expect_reply;
+    tf->sequence_no = sequence_no;
 
     return 1;
     
@@ -62,7 +66,7 @@ can_tagged_frame_t* can_buf_tail(can_buf_t* buf) {
 
   } else {
 
-    return buf->data + ( (buf->head + buf->size) & CAN_BUFFER_MOD_MASK );
+    return buf->data + ( (buf->head + buf->size - (size_t)1) & (size_t)CAN_BUFFER_MOD_MASK );
 
   }
 
@@ -77,7 +81,7 @@ int can_buf_pop(can_buf_t* buf) {
 
   } else {
 
-    buf->head = ( (buf->head + 1) & CAN_BUFFER_MOD_MASK );
+    buf->head = ( (buf->head + (size_t)1) & (size_t)CAN_BUFFER_MOD_MASK );
     --buf->size;
 
     return 1;
