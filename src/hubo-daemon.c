@@ -355,11 +355,14 @@ int pump_message_loop(const struct timespec* deadline_time) {
     }
     
     const int64_t write_wait_timeout_nsec = 0 * 1000; 
+    const int64_t write_min_timeout_nsec = 50 * 1000; 
+
     const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; // 1sec
     const int     debug_pump = 0;
     const int     write_always_wait = 0;
     const int     write_never_wait = 1;
     const int     read_unblocks_write = 0;
+
 
     struct timespec ultimate_time;
     tsadd(deadline_time, ultimate_timeout_nsec, &ultimate_time);
@@ -388,15 +391,15 @@ int pump_message_loop(const struct timespec* deadline_time) {
         }
 
         int have_pending_writes = 0;
+        int writes_ready = 0;
         int cidx;
 
-        fd_set read_fds, write_fds;
+        fd_set read_fds;
 
         int nfds = 1 + (hubo_socket[0] > hubo_socket[1] ?
                         hubo_socket[0] : hubo_socket[1]);
         
         FD_ZERO(&read_fds);
-        FD_ZERO(&write_fds);
 
         for (cidx=0; cidx<2; ++cidx) {
 
@@ -458,7 +461,8 @@ int pump_message_loop(const struct timespec* deadline_time) {
                     }
 
                     // put it into write set
-                    FD_SET(cinfo->fd, &write_fds);
+                    writes_ready = 1;
+                    write_timeout_nsec = write_min_timeout_nsec;
 
                 }
                 
@@ -516,7 +520,7 @@ int pump_message_loop(const struct timespec* deadline_time) {
         }
 
         errno = 0;
-        int result = pselect(nfds, &read_fds, &write_fds, NULL, &timeout, NULL);
+        int result = pselect(nfds, &read_fds, NULL, NULL, &timeout, NULL);
         int pselect_errno = errno;
 
         if (debug_pump) {
@@ -534,12 +538,10 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
             }
 
+            continue;
+
         }
 
-        
-        if (result <= 0) { 
-            continue;
-        }
 
         // result > 0
 
@@ -553,7 +555,7 @@ int pump_message_loop(const struct timespec* deadline_time) {
                     fprintf(stderr, "channel %d is NOT ready to read\n", cidx);
                 }
 
-            } else {
+            } else { // FD_ISSET for read
 
                 if (debug_pump) {
                     fprintf(stderr, "channel %d is ready to read\n", cidx);
@@ -611,25 +613,11 @@ int pump_message_loop(const struct timespec* deadline_time) {
 
                 }
 
-            }
+            } // ready to read
 
-            if (debug_pump) {
-                fprintf(stderr, "%s:%d you are here\n", __FILE__, __LINE__);
-            }
 
-            if (!FD_ISSET(cinfo->fd, &write_fds)) {
-
-                if (debug_pump) {
-                    fprintf(stderr, "channel %d is NOT ready to write\n", cidx);
-                }
-
-            } else {
-
-                if (can_buf_isempty(&cinfo->buf)) {
-                    fprintf(stderr, "warning: can buf %d is empty "
-                            "but write bit set\n", cidx);
-                    continue;
-                }
+            if (!can_buf_isempty(&cinfo->buf) &&
+                cinfo->ready_to_write) {
 
                 if (debug_pump) {
                     fprintf(stderr, "channel %d is ready to wite\n", cidx);
@@ -1475,9 +1463,6 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
             jmc = h->joint[i].jmc;
             if((0 == c[jmc]) && // check to see if already asked that motor controller
                (canChan == h->joint[i].can)) {
-
-                hGetCurrentValue(i, h, f);
-                meta_readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
 
                 hGetEncValue(i, 0x00, h, f);
                 meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
