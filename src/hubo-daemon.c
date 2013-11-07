@@ -94,7 +94,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define slowLoopSplit   5		// slow loop is X times slower then
 
-#define hubo_home_noRef_delay 3.0	// delay before trajectories can be sent while homeing in sec
+#define hubo_home_noRef_delay 8.0	// delay before trajectories can be sent while homeing in sec
 
 double HUBO_BOARD_PARAM_CHECK_TIMEOUT = 1000;  // param check timeout in ms
 
