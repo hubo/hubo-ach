@@ -1031,6 +1031,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         } else {
 
+            clock_gettime(CLOCK_MONOTONIC, &time);
             tsadd(&time, loop_interval_nsec, &loop_time);
 
         }
