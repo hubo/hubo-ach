@@ -130,9 +130,7 @@ int global_enc_total_misses = 0;
 int global_imu_total_misses = 0;
 int global_ft_total_misses = 0;
 
-int can_to_channel_idx(hubo_can_t can) {
-    return can == global_cinfo[0].fd ? 0 : 1;
-}
+int can_to_channel_idx(hubo_can_t can) { return can == global_cinfo[0].fd ? 0 : 1;}
 
 
 // Timing info
@@ -295,6 +293,10 @@ void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 /* return 1 if overrun */
 int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, const struct timespec* deadline_time);
 
+void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD);
+void meta_sendCan(hubo_can_t skt, const struct can_frame* f);
+void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag);
+
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -347,47 +349,6 @@ extern ach_channel_t iotrace_chan;
 
                    
 
-void meta_readCan(hubo_can_t skt,
-                  struct can_frame* f,
-                  double timeoutD) {
-
-    int cidx = can_to_channel_idx(skt);
-    ++global_cinfo[cidx].reads;
-    
-}
-
-void meta_sendCan(hubo_can_t skt,
-                  const struct can_frame* f) {
-
-    int cidx = can_to_channel_idx(skt);
-    
-    if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
-        fprintf(stderr, "can buffer %d: push failed, will quit\n", cidx);
-        hubo_sig_quit = 1;
-    }
-
-    ++global_cinfo[cidx].writes;
-
-    can_tagged_frame_t* tf = can_buf_tail(&global_cinfo[cidx].buf);
-    if (!tf) {
-        fprintf(stderr, "error getting tail for %d in meta_sendCan, quitting!\n",
-                cidx);
-        hubo_sig_quit = 1;
-    } else if (tf->sequence_no != global_cinfo[cidx].tail_sequence_no) {
-        fprintf(stderr, "sequence no mismatch after push to %d: buf %d, global: %d, quitting\n",
-                cidx, tf->sequence_no, global_cinfo[cidx].tail_sequence_no);
-        hubo_sig_quit = 1;
-    }
-
-
-    ++global_cinfo[cidx].tail_sequence_no;
-
-    if (global_cinfo[cidx].writes != global_cinfo[cidx].buf.size) {
-        fprintf(stderr, "warning: for buffer %d, loop writes=%d, but buf size=%d\n",
-                cidx, global_cinfo[cidx].writes, (int)global_cinfo[cidx].buf.size);
-    }
-
-}
 
 
 /* Flags */
@@ -539,7 +500,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 //	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
 	double T = (double)HUBO_LOOP_PERIOD;
-        int loop_interval_nsec = (int)((double)NSEC_PER_SEC*T);
+    int loop_interval_nsec = (int)((double)NSEC_PER_SEC*T);
 	printf("T = %1.3f sec\n",T);
 
 
@@ -695,7 +656,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {
             /* added time */
-//            H_state.time = H_state.time + T; // add time baesd on period
             H_state.time = H_virtual.time; // add time baesd on period
         }
         else {
@@ -726,14 +686,32 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         }
 
-        if(HUBO_VIRTUAL_MODE_NONE == vflag) {
+        checkReadWriteErrors(&H_state, vflag);
+
+        for (cidx=0; cidx<2; ++cidx) {
+            global_cinfo[cidx].writes = 0;
+            global_cinfo[cidx].reads  = 0;
+        }
+
+        fflush(stdout);
+        fflush(stderr);
+
+
+    }
+
+    fprintf(stderr, "exiting\n\n");
+
+}
+
+void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag) {
+    if(HUBO_VIRTUAL_MODE_NONE == vflag) {
 
             if (print_enc_errs) {
 
                 int enc_all_valid = 1;
 
                 for (i=0; i<HUBO_JOINT_COUNT; ++i) {
-                    if (H_state.joint[i].active && !global_enc_valid[i]) {
+                    if (H_state_ptr->joint[i].active && !global_enc_valid[i]) {
                         if (enc_all_valid) {
                             fprintf(stderr, "warning: no encoder reading for ");
                             enc_all_valid = 0;
@@ -798,7 +776,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
                 
                 for (i=0; i<HUBO_JOINT_COUNT; ++i) {
-                    if (H_state.joint[i].active && !global_enc_valid[i]) {
+                    if (H_state_ptr->joint[i].active && !global_enc_valid[i]) {
                         ++global_enc_total_misses;
                     }
                 }
@@ -843,21 +821,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             }
 
         }
-
-        for (cidx=0; cidx<2; ++cidx) {
-            global_cinfo[cidx].writes = 0;
-            global_cinfo[cidx].reads  = 0;
-        }
-
-        fflush(stdout);
-        fflush(stderr);
-
-
-    }
-
-    fprintf(stderr, "exiting\n\n");
-
 }
+
 
 /* return 1 if overrun */
 int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, const struct timespec* deadline_time) {
@@ -1228,7 +1193,45 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
     }
     return overrun;             
 }
+  
+void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD) {
+    int cidx = can_to_channel_idx(skt);
+    ++global_cinfo[cidx].reads;
     
+}
+
+void meta_sendCan(hubo_can_t skt, const struct can_frame* f) {
+
+    int cidx = can_to_channel_idx(skt);
+    
+    if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
+        fprintf(stderr, "can buffer %d: push failed, will quit\n", cidx);
+        hubo_sig_quit = 1;
+    }
+
+    ++global_cinfo[cidx].writes;
+
+    can_tagged_frame_t* tf = can_buf_tail(&global_cinfo[cidx].buf);
+    if (!tf) {
+        fprintf(stderr, "error getting tail for %d in meta_sendCan, quitting!\n",
+                cidx);
+        hubo_sig_quit = 1;
+    } else if (tf->sequence_no != global_cinfo[cidx].tail_sequence_no) {
+        fprintf(stderr, "sequence no mismatch after push to %d: buf %d, global: %d, quitting\n",
+                cidx, tf->sequence_no, global_cinfo[cidx].tail_sequence_no);
+        hubo_sig_quit = 1;
+    }
+
+
+    ++global_cinfo[cidx].tail_sequence_no;
+
+    if (global_cinfo[cidx].writes != global_cinfo[cidx].buf.size) {
+        fprintf(stderr, "warning: for buffer %d, loop writes=%d, but buf size=%d\n",
+                cidx, global_cinfo[cidx].writes, (int)global_cinfo[cidx].buf.size);
+    }
+
+}
+  
 
 void getStatusIterate( hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
