@@ -705,6 +705,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 }
 
 void checkReadWriteErrors(hubo_state_t* H_state_ptr, int* successful_encs, int* successful_fts, int* successful_imus, int vflag) {
+    int i = 0;
     if(HUBO_VIRTUAL_MODE_NONE == vflag) {
 
             if (print_enc_errs) {
