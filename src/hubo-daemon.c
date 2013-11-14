@@ -292,6 +292,8 @@ void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 
+/* return 1 if overrun */
+int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, const struct timespec* deadline_time);
 
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -320,10 +322,6 @@ void nop_decodeFrame(hubo_state_t* state,
     // NOP
 
 }
-
-#define NSEC_PER_SEC 1000000000
-
-
 void tsadd(const struct timespec* src,
            int64_t delta,
            struct timespec* dst) {
@@ -333,395 +331,21 @@ void tsadd(const struct timespec* src,
     tsnorm(dst);
     
 }
-
 int64_t ts2i64(const struct timespec* t) {
     return (int64_t)t->tv_sec * (int64_t)NSEC_PER_SEC + (int64_t)t->tv_nsec;
 }
-
 int64_t tsdiff(const struct timespec* b,
                const struct timespec* a) {
     return ts2i64(b) - ts2i64(a);
 }
+
+
+#define NSEC_PER_SEC 1000000000
                
 extern int have_iotrace_chan;
 extern ach_channel_t iotrace_chan;
 
-/* return 1 if overrun */
-int pump_message_loop(hubo_state_t* H_state_ptr,
-                      hubo_param_t* H_param_ptr,
-                      const struct timespec* deadline_time) {
-
-    int cidx;
-
-    /* sanity check FIFO's for each channel to make sure
-       buffer size agrees with global counter */
-    for (cidx=0; cidx<2; ++cidx) {
-
-        const channel_info_t* cinfo = &global_cinfo[cidx];
-
-        if (cinfo->buf.size != cinfo->writes) {
-            fprintf(stderr,
-                    "warning: can buf %d failed sanity check: "
-                    "buf size=%d, write count=%d. quitting.\n",
-                    cidx, (int)cinfo->buf.size, cinfo->writes);
-            hubo_sig_quit = 1;
-            return 0;
-        }
-        
-    }
-    
-    /* desired time to wait before retrying write on a channel */
-    const int64_t write_min_timeout_nsec = 800 * 1000;
-
-    /* 0 = disable batching, n>0 mandatory pause after n writes */
-    const int write_batch_size = 8; 
-
-    /* absolute timeout for this loop, before deciding to quit hubo-daemon */
-    const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; 
-
-    /* print debug info in this loop? */
-    const int     debug_pump = 0;
-
-    /* do we have pending writes on any channel? did we in the past? */
-    int have_pending_writes = 1;
-    int last_pending_writes = 1;
-
-    int overrun = 0;
-
-    struct timespec current_time;
-
-    /* initialize timing info */
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-    int64_t nominal_remaining_nsec = tsdiff(deadline_time, &current_time);
-
-    int write_ready[2] = { 1, 1 };
-    struct timespec last_write_time[2] = { { 0, 0 }, { 0, 0 } };
-    
-    do {
-
-        if (debug_pump) {
-            fprintf(stderr, "at top of pump_message_loop, "
-                    "time remaining = %5.6fs\n",
-                    nominal_remaining_nsec*1e-9);
-        }
-
-        have_pending_writes = 0;
-
-        fd_set read_fds;
-
-        int nfds = 1 + (hubo_socket[0] > hubo_socket[1] ?
-                        hubo_socket[0] : hubo_socket[1]);
-        
-        FD_ZERO(&read_fds);
-
-        int64_t select_timeout_nsec = nominal_remaining_nsec;
-        if (select_timeout_nsec < 0) {
-            select_timeout_nsec = write_min_timeout_nsec;
-        }
-
-        for (cidx=0; cidx<2; ++cidx) {
-
-            channel_info_t* cinfo = &global_cinfo[cidx];
-
-            // place fd into read_fds
-            FD_SET(cinfo->fd, &read_fds);
-
-            int64_t time_since_last_write = tsdiff(&current_time, &last_write_time[cidx]);
-
-            // see if we should become ready to write 
-            if (!write_ready[cidx]) {
-                if (time_since_last_write >= write_min_timeout_nsec) {
-                    if (debug_pump) {
-                        fprintf(stderr, "channel %d has become ready to write\n", cidx);
-                    }
-                    write_ready[cidx] = 1;
-                }
-            }
-
-            // see if we want to write
-            if (!can_buf_isempty(&cinfo->buf)) {
-
-                have_pending_writes = 1;
-                if (debug_pump) {
-                    fprintf(stderr, "channel %d has pending writes\n", cidx);
-                }
-
-                if (write_ready[cidx]) {
-                    if (debug_pump) {
-                        fprintf(stderr, "...and channel %d is ready.\n", cidx);
-                    }
-                    select_timeout_nsec = 0;
-                } else {
-                    int64_t wait_time_nsec = write_min_timeout_nsec - time_since_last_write;
-                    if (wait_time_nsec < select_timeout_nsec) {
-                        select_timeout_nsec = wait_time_nsec;
-                    }
-                    if (debug_pump) {
-                        fprintf(stderr, "...but channel %d will not be ready for %5.6fs\n",
-                                cidx, wait_time_nsec*1e-9);
-                    }
-                }
-                
-            }
-
-        }
-
-        if (debug_pump) {
-            if (last_pending_writes && !have_pending_writes) {
-                fprintf(stderr, "finished writes with %5.6fs remaining\n",
-                        nominal_remaining_nsec*1e-9);
-            }
-            last_pending_writes = have_pending_writes;
-        }
-
-        if (nominal_remaining_nsec <= 0 && have_pending_writes) {
-            if (debug_pump && !overrun) {
-                fprintf(stderr, "we have overrun our deadline!\n");
-            }
-            overrun = 1;
-        }
-
-
-        struct timespec timeout;
-        timeout.tv_sec = 0;
-        timeout.tv_nsec = select_timeout_nsec;
-        tsnorm(&timeout);
-        
-        if (debug_pump) {
-            fprintf(stderr, "selecting for %5.6f sec\n", select_timeout_nsec*1e-9);
-        }
-
-        errno = 0;
-        int result = pselect(nfds, &read_fds, NULL, NULL, &timeout, NULL);
-        int pselect_errno = errno;
-
-        if (debug_pump) {
-            fprintf(stderr, "pselect returned %d (%s)\n", 
-                    result, strerror(pselect_errno));
-        }
-
-        if (result < 0) {
-
-            if (pselect_errno != EINTR) {
-                errno = pselect_errno;
-                perror("pselect in pump_message_loop");
-                hubo_sig_quit = 1;
-                break;
-            } else {
-                // don't do reads, just writes
-                FD_ZERO(&read_fds);
-            }
-
-        }
-
-        /* do all writes */
-        for (cidx=0; cidx<2; ++cidx) {
-
-            channel_info_t* cinfo = &global_cinfo[cidx];
-
-            if (can_buf_isempty(&cinfo->buf)) {
-                continue;
-            }
-            
-            if (!write_ready[cidx]) {
-                clock_gettime(CLOCK_MONOTONIC, &current_time);
-                int64_t time_since_last_write = tsdiff(&current_time, &last_write_time[cidx]);
-                if (time_since_last_write >= write_min_timeout_nsec) {
-                    if (debug_pump) {
-                        fprintf(stderr, "channel %d has become ready to write\n", cidx);
-                    }
-                    write_ready[cidx] = 1;
-                }
-            }
-
-            int num_writes = 0;
-
-            while (write_ready[cidx] && !can_buf_isempty(&cinfo->buf)) {
-
-                can_tagged_frame_t* tf = can_buf_head(&cinfo->buf);
-                        
-                if (!tf) {
-
-                    fprintf(stderr, "error: can buf head %d failed, quitting\n",
-                            cidx);
-                    hubo_sig_quit = 1;
-                    return overrun;
-
-                } 
-
-                if (tf->sequence_no != cinfo->head_sequence_no) {
-
-                    fprintf(stderr, "error: can buf %d sequence no mismatch. "
-                            "global: %d, buf %d. quitting.\n",
-                            cidx, cinfo->head_sequence_no, tf->sequence_no);
-                    hubo_sig_quit = 1;
-                    return overrun;
-
-                }
-
-                errno = 0;
-                ssize_t bytes_written = send(cinfo->fd,
-                                             &tf->frame,
-                                             sizeof(tf->frame),
-                                             MSG_DONTWAIT);
-                int write_errno = errno;
-
-                if (debug_pump) {
-                    fprintf(stderr, "write %d returned %d (%s)\n",
-                            cidx, (int)bytes_written, strerror(write_errno));
-                }
-
-
-                if (have_iotrace_chan) {
-                    io_trace_t trace;
-                    trace.timestamp = iotrace_gettime();
-                    trace.is_read = 0;
-                    trace.fd = cinfo->fd;
-                    trace.result_errno = write_errno;
-                    trace.transmitted = bytes_written;
-                    trace.frame = tf->frame;
-                    ach_put(&iotrace_chan, &trace, sizeof(trace));
-                }
-
-                if (bytes_written != sizeof(tf->frame)) {
-
-                    if (errno != ENOBUFS && 
-                        errno != EAGAIN) {
-
-                        errno = write_errno;
-                        perror("write in pump_message_loop");
-
-                    }
-
-                    write_ready[cidx] = 0;
-
-                } else {
-
-                    // successful write
-                    if (debug_pump) {
-                        fprintf(stderr, "successfully wrote to channel %d\n",
-                                cidx);
-                    }
-
-                    if (!can_buf_pop(&cinfo->buf)) {
-                        fprintf(stderr,
-                                "error: pop can buf %d failed, quitting\n",
-                                cidx);
-                        hubo_sig_quit = 1;
-                        return overrun;
-                    }
-
-                    ++cinfo->head_sequence_no;
-
-                    clock_gettime(CLOCK_MONOTONIC, &last_write_time[cidx]);
-
-                    ++num_writes;
-
-                    if (num_writes == write_batch_size) {
-                        write_ready[cidx] = 0;
-                    }
-
-                } // if write ok
-
-            } // while trying to write
-
-        } // for each channel
-
-        /* do all reads */
-        for (cidx=0; cidx<2; ++cidx) {
-                
-            channel_info_t* cinfo = &global_cinfo[cidx];
-
-            if (!FD_ISSET(cinfo->fd, &read_fds)) {
-
-                if (debug_pump) {
-                    fprintf(stderr, "channel %d is NOT ready to read\n", cidx);
-                }
-
-            } else { // FD_ISSET for read
-
-                if (debug_pump) {
-                    fprintf(stderr, "channel %d is ready to read\n", cidx);
-                }
-
-                int read_errno;
-
-                do {
-
-                    struct can_frame frame;
-
-                    errno = 0;
-                    ssize_t bytes_read = recv(cinfo->fd, &frame, 
-                                              sizeof(frame), MSG_DONTWAIT);
-                    read_errno = errno;
-
-                    if (debug_pump) {
-                        fprintf(stderr, "read %d returned %d (%s)\n",
-                                cidx, (int)read_errno, strerror(read_errno));
-                    }
-
-                    if (have_iotrace_chan) {
-                        io_trace_t trace;
-                        trace.timestamp = iotrace_gettime();
-                        trace.is_read = 1;
-                        trace.fd = cinfo->fd;
-                        trace.result_errno = read_errno;
-                        trace.transmitted = bytes_read;
-                        trace.frame = frame;
-                        ach_put(&iotrace_chan, &trace, sizeof(trace));
-                    }
-                    
-          
-                    if (bytes_read != sizeof(frame)) {
-
-                        if (read_errno != EAGAIN && 
-                            read_errno != EWOULDBLOCK) {
-
-                            errno = read_errno;
-                            perror("read in pump_message_loop");
-
-                        }
-
-                    } else {
-
-                        decodeFrame(H_state_ptr, H_param_ptr, &frame);
-
-                    }
-
-                } while (read_errno == 0);
-
-            } // ready to read
-
-        } // for each channel
-        
-        /* update timing info */
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        nominal_remaining_nsec = tsdiff(deadline_time, &current_time);
-
-    } while ( (have_pending_writes || nominal_remaining_nsec > 0) &&
-              (nominal_remaining_nsec > -ultimate_timeout_nsec) &&
-              !hubo_sig_quit );
-    
-
-    if (nominal_remaining_nsec <= -ultimate_timeout_nsec) {
-        fprintf(stderr, "pump_message_loop took longer than %5.6fs, qutting\n",
-                ultimate_timeout_nsec*1e-9);
-        hubo_sig_quit = 1;
-    } else if (overrun) { 
-        fprintf(stderr, "missed loop deadline by %5.6fs\n",
-                -nominal_remaining_nsec*1e-9);
-    }
-
-    if (debug_pump) {
-        fprintf(stderr, "returning with overrun=%d\n", overrun);
-    }
-    return overrun;
-
-                       
-                 
-
-}
-                       
+                   
 
 void meta_readCan(hubo_can_t skt,
                   struct can_frame* f,
@@ -1235,6 +859,376 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 }
 
+/* return 1 if overrun */
+int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, const struct timespec* deadline_time) {
+
+    int cidx;
+
+    /* sanity check FIFO's for each channel to make sure
+       buffer size agrees with global counter */
+    for (cidx=0; cidx<2; ++cidx) {
+
+        const channel_info_t* cinfo = &global_cinfo[cidx];
+
+        if (cinfo->buf.size != cinfo->writes) {
+            fprintf(stderr,
+                    "warning: can buf %d failed sanity check: "
+                    "buf size=%d, write count=%d. quitting.\n",
+                    cidx, (int)cinfo->buf.size, cinfo->writes);
+            hubo_sig_quit = 1;
+            return 0;
+        }
+        
+    }
+    
+    /* desired time to wait before retrying write on a channel */
+    const int64_t write_min_timeout_nsec = 800 * 1000;
+
+    /* 0 = disable batching, n>0 mandatory pause after n writes */
+    const int write_batch_size = 8; 
+
+    /* absolute timeout for this loop, before deciding to quit hubo-daemon */
+    const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; 
+
+    /* print debug info in this loop? */
+    const int     debug_pump = 0;
+
+    /* do we have pending writes on any channel? did we in the past? */
+    int have_pending_writes = 1;
+    int last_pending_writes = 1;
+
+    int overrun = 0;
+
+    struct timespec current_time;
+
+    /* initialize timing info */
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    int64_t nominal_remaining_nsec = tsdiff(deadline_time, &current_time);
+
+    int write_ready[2] = { 1, 1 };
+    struct timespec last_write_time[2] = { { 0, 0 }, { 0, 0 } };
+    
+    do {
+
+        if (debug_pump) {
+            fprintf(stderr, "at top of pump_message_loop, "
+                    "time remaining = %5.6fs\n",
+                    nominal_remaining_nsec*1e-9);
+        }
+
+        have_pending_writes = 0;
+
+        fd_set read_fds;
+
+        int nfds = 1 + (hubo_socket[0] > hubo_socket[1] ?
+                        hubo_socket[0] : hubo_socket[1]);
+        
+        FD_ZERO(&read_fds);
+
+        int64_t select_timeout_nsec = nominal_remaining_nsec;
+        if (select_timeout_nsec < 0) {
+            select_timeout_nsec = write_min_timeout_nsec;
+        }
+
+        for (cidx=0; cidx<2; ++cidx) {
+
+            channel_info_t* cinfo = &global_cinfo[cidx];
+
+            // place fd into read_fds
+            FD_SET(cinfo->fd, &read_fds);
+
+            int64_t time_since_last_write = tsdiff(&current_time, &last_write_time[cidx]);
+
+            // see if we should become ready to write 
+            if (!write_ready[cidx]) {
+                if (time_since_last_write >= write_min_timeout_nsec) {
+                    if (debug_pump) {
+                        fprintf(stderr, "channel %d has become ready to write\n", cidx);
+                    }
+                    write_ready[cidx] = 1;
+                }
+            }
+
+            // see if we want to write
+            if (!can_buf_isempty(&cinfo->buf)) {
+
+                have_pending_writes = 1;
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d has pending writes\n", cidx);
+                }
+
+                if (write_ready[cidx]) {
+                    if (debug_pump) {
+                        fprintf(stderr, "...and channel %d is ready.\n", cidx);
+                    }
+                    select_timeout_nsec = 0;
+                } else {
+                    int64_t wait_time_nsec = write_min_timeout_nsec - time_since_last_write;
+                    if (wait_time_nsec < select_timeout_nsec) {
+                        select_timeout_nsec = wait_time_nsec;
+                    }
+                    if (debug_pump) {
+                        fprintf(stderr, "...but channel %d will not be ready for %5.6fs\n",
+                                cidx, wait_time_nsec*1e-9);
+                    }
+                }
+                
+            }
+
+        }
+
+        if (debug_pump) {
+            if (last_pending_writes && !have_pending_writes) {
+                fprintf(stderr, "finished writes with %5.6fs remaining\n",
+                        nominal_remaining_nsec*1e-9);
+            }
+            last_pending_writes = have_pending_writes;
+        }
+
+        if (nominal_remaining_nsec <= 0 && have_pending_writes) {
+            if (debug_pump && !overrun) {
+                fprintf(stderr, "we have overrun our deadline!\n");
+            }
+            overrun = 1;
+        }
+
+
+        struct timespec timeout;
+        timeout.tv_sec = 0;
+        timeout.tv_nsec = select_timeout_nsec;
+        tsnorm(&timeout);
+        
+        if (debug_pump) {
+            fprintf(stderr, "selecting for %5.6f sec\n", select_timeout_nsec*1e-9);
+        }
+
+        errno = 0;
+        int result = pselect(nfds, &read_fds, NULL, NULL, &timeout, NULL);
+        int pselect_errno = errno;
+
+        if (debug_pump) {
+            fprintf(stderr, "pselect returned %d (%s)\n", 
+                    result, strerror(pselect_errno));
+        }
+
+        if (result < 0) {
+
+            if (pselect_errno != EINTR) {
+                errno = pselect_errno;
+                perror("pselect in pump_message_loop");
+                hubo_sig_quit = 1;
+                break;
+            } else {
+                // don't do reads, just writes
+                FD_ZERO(&read_fds);
+            }
+
+        }
+
+        /* do all writes */
+        for (cidx=0; cidx<2; ++cidx) {
+
+            channel_info_t* cinfo = &global_cinfo[cidx];
+
+            if (can_buf_isempty(&cinfo->buf)) {
+                continue;
+            }
+            
+            if (!write_ready[cidx]) {
+                clock_gettime(CLOCK_MONOTONIC, &current_time);
+                int64_t time_since_last_write = tsdiff(&current_time, &last_write_time[cidx]);
+                if (time_since_last_write >= write_min_timeout_nsec) {
+                    if (debug_pump) {
+                        fprintf(stderr, "channel %d has become ready to write\n", cidx);
+                    }
+                    write_ready[cidx] = 1;
+                }
+            }
+
+            int num_writes = 0;
+
+            while (write_ready[cidx] && !can_buf_isempty(&cinfo->buf)) {
+
+                can_tagged_frame_t* tf = can_buf_head(&cinfo->buf);
+                        
+                if (!tf) {
+
+                    fprintf(stderr, "error: can buf head %d failed, quitting\n",
+                            cidx);
+                    hubo_sig_quit = 1;
+                    return overrun;
+
+                } 
+
+                if (tf->sequence_no != cinfo->head_sequence_no) {
+
+                    fprintf(stderr, "error: can buf %d sequence no mismatch. "
+                            "global: %d, buf %d. quitting.\n",
+                            cidx, cinfo->head_sequence_no, tf->sequence_no);
+                    hubo_sig_quit = 1;
+                    return overrun;
+
+                }
+
+                errno = 0;
+                ssize_t bytes_written = send(cinfo->fd,
+                                             &tf->frame,
+                                             sizeof(tf->frame),
+                                             MSG_DONTWAIT);
+                int write_errno = errno;
+
+                if (debug_pump) {
+                    fprintf(stderr, "write %d returned %d (%s)\n",
+                            cidx, (int)bytes_written, strerror(write_errno));
+                }
+
+
+                if (have_iotrace_chan) {
+                    io_trace_t trace;
+                    trace.timestamp = iotrace_gettime();
+                    trace.is_read = 0;
+                    trace.fd = cinfo->fd;
+                    trace.result_errno = write_errno;
+                    trace.transmitted = bytes_written;
+                    trace.frame = tf->frame;
+                    ach_put(&iotrace_chan, &trace, sizeof(trace));
+                }
+
+                if (bytes_written != sizeof(tf->frame)) {
+
+                    if (errno != ENOBUFS && 
+                        errno != EAGAIN) {
+
+                        errno = write_errno;
+                        perror("write in pump_message_loop");
+
+                    }
+
+                    write_ready[cidx] = 0;
+
+                } else {
+
+                    // successful write
+                    if (debug_pump) {
+                        fprintf(stderr, "successfully wrote to channel %d\n",
+                                cidx);
+                    }
+
+                    if (!can_buf_pop(&cinfo->buf)) {
+                        fprintf(stderr,
+                                "error: pop can buf %d failed, quitting\n",
+                                cidx);
+                        hubo_sig_quit = 1;
+                        return overrun;
+                    }
+
+                    ++cinfo->head_sequence_no;
+
+                    clock_gettime(CLOCK_MONOTONIC, &last_write_time[cidx]);
+
+                    ++num_writes;
+
+                    if (num_writes == write_batch_size) {
+                        write_ready[cidx] = 0;
+                    }
+
+                } // if write ok
+
+            } // while trying to write
+
+        } // for each channel
+
+        /* do all reads */
+        for (cidx=0; cidx<2; ++cidx) {
+                
+            channel_info_t* cinfo = &global_cinfo[cidx];
+
+            if (!FD_ISSET(cinfo->fd, &read_fds)) {
+
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d is NOT ready to read\n", cidx);
+                }
+
+            } else { // FD_ISSET for read
+
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d is ready to read\n", cidx);
+                }
+
+                int read_errno;
+
+                do {
+
+                    struct can_frame frame;
+
+                    errno = 0;
+                    ssize_t bytes_read = recv(cinfo->fd, &frame, 
+                                              sizeof(frame), MSG_DONTWAIT);
+                    read_errno = errno;
+
+                    if (debug_pump) {
+                        fprintf(stderr, "read %d returned %d (%s)\n",
+                                cidx, (int)read_errno, strerror(read_errno));
+                    }
+
+                    if (have_iotrace_chan) {
+                        io_trace_t trace;
+                        trace.timestamp = iotrace_gettime();
+                        trace.is_read = 1;
+                        trace.fd = cinfo->fd;
+                        trace.result_errno = read_errno;
+                        trace.transmitted = bytes_read;
+                        trace.frame = frame;
+                        ach_put(&iotrace_chan, &trace, sizeof(trace));
+                    }
+                    
+          
+                    if (bytes_read != sizeof(frame)) {
+
+                        if (read_errno != EAGAIN && 
+                            read_errno != EWOULDBLOCK) {
+
+                            errno = read_errno;
+                            perror("read in pump_message_loop");
+
+                        }
+
+                    } else {
+
+                        decodeFrame(H_state_ptr, H_param_ptr, &frame);
+
+                    }
+
+                } while (read_errno == 0);
+
+            } // ready to read
+
+        } // for each channel
+        
+        /* update timing info */
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        nominal_remaining_nsec = tsdiff(deadline_time, &current_time);
+
+    } while ( (have_pending_writes || nominal_remaining_nsec > 0) &&
+              (nominal_remaining_nsec > -ultimate_timeout_nsec) &&
+              !hubo_sig_quit );
+    
+
+    if (nominal_remaining_nsec <= -ultimate_timeout_nsec) {
+        fprintf(stderr, "pump_message_loop took longer than %5.6fs, qutting\n",
+                ultimate_timeout_nsec*1e-9);
+        hubo_sig_quit = 1;
+    } else if (overrun) { 
+        fprintf(stderr, "missed loop deadline by %5.6fs\n",
+                -nominal_remaining_nsec*1e-9);
+    }
+
+    if (debug_pump) {
+        fprintf(stderr, "returning with overrun=%d\n", overrun);
+    }
+    return overrun;             
+}
+    
 
 void getStatusIterate( hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
