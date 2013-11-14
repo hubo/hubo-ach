@@ -686,7 +686,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         }
 
-        checkReadWriteErrors(&H_state, vflag);
+        checkReadWriteErrors(&H_state, &successful_encs, &successful_fts, &successful_imus, vflag);
 
         for (cidx=0; cidx<2; ++cidx) {
             global_cinfo[cidx].writes = 0;
@@ -703,7 +703,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 }
 
-void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag) {
+void checkReadWriteErrors(hubo_state_t* H_state_ptr, int* successful_encs, int* successful_fts, int* successful_imus, int vflag) {
     if(HUBO_VIRTUAL_MODE_NONE == vflag) {
 
             if (print_enc_errs) {
@@ -720,10 +720,10 @@ void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag) {
                     }
                 }
                 if (!enc_all_valid) {
-                    fprintf(stderr, "(after %d successful loops)\n", successful_encs);
-                    successful_encs = 0;
+                    fprintf(stderr, "(after %d successful loops)\n", *successful_encs);
+                    *successful_encs = 0;
                 } else {
-                    ++successful_encs;
+                    ++*successful_encs;
                 }
 
             }
@@ -742,10 +742,10 @@ void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag) {
                     }
                 }
                 if (!ft_all_valid) {
-                    fprintf(stderr, "(after %d successful loops)\n", successful_fts);
-                    successful_fts = 0;
+                    fprintf(stderr, "(after %d successful loops)\n", *successful_fts);
+                    *successful_fts = 0;
                 } else {
-                    ++successful_fts;
+                    ++*successful_fts;
                 }
 
             }
@@ -764,10 +764,10 @@ void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag) {
                     }
                 }
                 if (!imu_all_valid) {
-                    fprintf(stderr, "(after %d successful loops)\n", successful_imus);
-                    successful_imus = 0;
+                    fprintf(stderr, "(after %d successful loops)\n", *successful_imus);
+                    *successful_imus = 0;
                 } else {
-                    ++successful_imus;
+                    ++*successful_imus;
                 }
 
             }
