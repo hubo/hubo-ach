@@ -1029,7 +1029,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             getBoardStatusAllSlow( &H_state, H_param, &frame);
             for( i = 0; i < HUBO_JOINT_COUNT; i++ ){
                 if(H_state.status[i].homeFlag == HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
-                if(H_state.status[LWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[LWR].zeroed = 1;
+                // Wrist is not 100% 
+		if(H_state.status[LWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[LWR].zeroed = 1;
                 if(H_state.status[RWR].homeFlag == HUBO_HOME_OK_WRIST) H_state.joint[RWR].zeroed = 1;
             }
             startFlag = 0;
@@ -1046,9 +1047,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         /* Get IMU data */
         getIMUAllSlow(&H_state, H_param, &frame);
-
-        /* Get Power data */
-        getPower(&H_state, H_param, &frame);
 
         /* Get Power data */
         getPower(&H_state, H_param, &frame);
