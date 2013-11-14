@@ -1,4 +1,3 @@
-/* -*-	indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
 /*
 Copyright (c) 2012, Daniel M. Lofaro
 All rights reserved.
@@ -61,6 +60,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hubo/hubo-socketcan.h"
 #endif
 
+#include "hubo-io-trace.h"
+
 // for ach
 #include <errno.h>
 #include <fcntl.h>
@@ -73,6 +74,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include "ach.h"
 
+#include "can_buffer.h"
 
 /* At time of writing, these constants are not defined in the headers */
 #ifndef PF_CAN
@@ -83,10 +85,54 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AF_CAN PF_CAN
 #endif
 
-/* ... */
 
-/* Somewhere in your app */
+const int print_enc_errs = 0;
+const int print_imu_errs = 0;
+const int print_ft_errs = 0;
 
+const int print_err_summary = 1;
+const int err_summary_loop_count = 1000;
+
+const char* imuNames[3] = { 
+    "TILT_R", "TILT_L", "IMU"
+};
+
+const char* ftNames[4] = {
+    "R_HAND", "L_HAND", "R_FOOT", "L_FOOT"
+};
+
+typedef struct channel_info {
+
+    int fd;
+
+    can_buf_t buf;
+
+    int writes;
+    int max_writes;
+
+    int reads;
+    int max_reads;
+    
+    int head_sequence_no;
+    int tail_sequence_no;
+
+} channel_info_t;
+
+channel_info_t global_cinfo[2];
+
+int global_imu_ready = 0;
+int global_enc_valid[HUBO_JOINT_COUNT];
+int global_imu_valid[HUBO_IMU_COUNT];
+int global_ft_valid[4];
+
+int global_loop_count = 0;
+int global_enc_total_misses = 0;
+int global_imu_total_misses = 0;
+int global_ft_total_misses = 0;
+
+int can_to_channel_idx(hubo_can_t can) {
+    return can == global_cinfo[0].fd ? 0 : 1;
+}
 
 
 // Timing info
@@ -94,7 +140,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define slowLoopSplit   5		// slow loop is X times slower then
 
-#define hubo_home_noRef_delay 3.0	// delay before trajectories can be sent while homeing in sec
+#define hubo_home_noRef_delay 8.0	// delay before trajectories can be sent while homeing in sec
 
 double HUBO_BOARD_PARAM_CHECK_TIMEOUT = 1000;  // param check timeout in ms
 
@@ -267,6 +313,459 @@ unsigned short DrcFingerSignConvention(short h_input,unsigned char h_type);
 unsigned long DrcSignConvention(long h_input);
 
 
+void nop_decodeFrame(hubo_state_t* state,
+                     hubo_param_t* param,
+                     struct can_frame* f) {
+
+    // NOP
+
+}
+
+#define NSEC_PER_SEC 1000000000
+
+
+void tsadd(const struct timespec* src,
+           int64_t delta,
+           struct timespec* dst) {
+    
+    dst->tv_sec = src->tv_sec;
+    dst->tv_nsec = src->tv_nsec + delta;
+    tsnorm(dst);
+    
+}
+
+int64_t ts2i64(const struct timespec* t) {
+    return (int64_t)t->tv_sec * (int64_t)NSEC_PER_SEC + (int64_t)t->tv_nsec;
+}
+
+int64_t tsdiff(const struct timespec* b,
+               const struct timespec* a) {
+    return ts2i64(b) - ts2i64(a);
+}
+               
+extern int have_iotrace_chan;
+extern ach_channel_t iotrace_chan;
+
+/* return 1 if overrun */
+int pump_message_loop(hubo_state_t* H_state_ptr,
+                      hubo_param_t* H_param_ptr,
+                      const struct timespec* deadline_time) {
+
+    int cidx;
+
+    /* sanity check FIFO's for each channel to make sure
+       buffer size agrees with global counter */
+    for (cidx=0; cidx<2; ++cidx) {
+
+        const channel_info_t* cinfo = &global_cinfo[cidx];
+
+        if (cinfo->buf.size != cinfo->writes) {
+            fprintf(stderr,
+                    "warning: can buf %d failed sanity check: "
+                    "buf size=%d, write count=%d. quitting.\n",
+                    cidx, (int)cinfo->buf.size, cinfo->writes);
+            hubo_sig_quit = 1;
+            return 0;
+        }
+        
+    }
+    
+    /* desired time to wait before retrying write on a channel */
+    const int64_t write_min_timeout_nsec = 800 * 1000;
+
+    /* 0 = disable batching, n>0 mandatory pause after n writes */
+    const int write_batch_size = 8; 
+
+    /* absolute timeout for this loop, before deciding to quit hubo-daemon */
+    const int64_t ultimate_timeout_nsec = 1 * (int64_t)NSEC_PER_SEC; 
+
+    /* print debug info in this loop? */
+    const int     debug_pump = 0;
+
+    /* do we have pending writes on any channel? did we in the past? */
+    int have_pending_writes = 1;
+    int last_pending_writes = 1;
+
+    int overrun = 0;
+
+    struct timespec current_time;
+
+    /* initialize timing info */
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    int64_t nominal_remaining_nsec = tsdiff(deadline_time, &current_time);
+
+    int write_ready[2] = { 1, 1 };
+    struct timespec last_write_time[2] = { { 0, 0 }, { 0, 0 } };
+    
+    do {
+
+        if (debug_pump) {
+            fprintf(stderr, "at top of pump_message_loop, "
+                    "time remaining = %5.6fs\n",
+                    nominal_remaining_nsec*1e-9);
+        }
+
+        have_pending_writes = 0;
+
+        fd_set read_fds;
+
+        int nfds = 1 + (hubo_socket[0] > hubo_socket[1] ?
+                        hubo_socket[0] : hubo_socket[1]);
+        
+        FD_ZERO(&read_fds);
+
+        int64_t select_timeout_nsec = nominal_remaining_nsec;
+        if (select_timeout_nsec < 0) {
+            select_timeout_nsec = write_min_timeout_nsec;
+        }
+
+        for (cidx=0; cidx<2; ++cidx) {
+
+            channel_info_t* cinfo = &global_cinfo[cidx];
+
+            // place fd into read_fds
+            FD_SET(cinfo->fd, &read_fds);
+
+            int64_t time_since_last_write = tsdiff(&current_time, &last_write_time[cidx]);
+
+            // see if we should become ready to write 
+            if (!write_ready[cidx]) {
+                if (time_since_last_write >= write_min_timeout_nsec) {
+                    if (debug_pump) {
+                        fprintf(stderr, "channel %d has become ready to write\n", cidx);
+                    }
+                    write_ready[cidx] = 1;
+                }
+            }
+
+            // see if we want to write
+            if (!can_buf_isempty(&cinfo->buf)) {
+
+                have_pending_writes = 1;
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d has pending writes\n", cidx);
+                }
+
+                if (write_ready[cidx]) {
+                    if (debug_pump) {
+                        fprintf(stderr, "...and channel %d is ready.\n", cidx);
+                    }
+                    select_timeout_nsec = 0;
+                } else {
+                    int64_t wait_time_nsec = write_min_timeout_nsec - time_since_last_write;
+                    if (wait_time_nsec < select_timeout_nsec) {
+                        select_timeout_nsec = wait_time_nsec;
+                    }
+                    if (debug_pump) {
+                        fprintf(stderr, "...but channel %d will not be ready for %5.6fs\n",
+                                cidx, wait_time_nsec*1e-9);
+                    }
+                }
+                
+            }
+
+        }
+
+        if (debug_pump) {
+            if (last_pending_writes && !have_pending_writes) {
+                fprintf(stderr, "finished writes with %5.6fs remaining\n",
+                        nominal_remaining_nsec*1e-9);
+            }
+            last_pending_writes = have_pending_writes;
+        }
+
+        if (nominal_remaining_nsec <= 0 && have_pending_writes) {
+            if (debug_pump && !overrun) {
+                fprintf(stderr, "we have overrun our deadline!\n");
+            }
+            overrun = 1;
+        }
+
+
+        struct timespec timeout;
+        timeout.tv_sec = 0;
+        timeout.tv_nsec = select_timeout_nsec;
+        tsnorm(&timeout);
+        
+        if (debug_pump) {
+            fprintf(stderr, "selecting for %5.6f sec\n", select_timeout_nsec*1e-9);
+        }
+
+        errno = 0;
+        int result = pselect(nfds, &read_fds, NULL, NULL, &timeout, NULL);
+        int pselect_errno = errno;
+
+        if (debug_pump) {
+            fprintf(stderr, "pselect returned %d (%s)\n", 
+                    result, strerror(pselect_errno));
+        }
+
+        if (result < 0) {
+
+            if (pselect_errno != EINTR) {
+                errno = pselect_errno;
+                perror("pselect in pump_message_loop");
+                hubo_sig_quit = 1;
+                break;
+            } else {
+                // don't do reads, just writes
+                FD_ZERO(&read_fds);
+            }
+
+        }
+
+        /* do all writes */
+        for (cidx=0; cidx<2; ++cidx) {
+
+            channel_info_t* cinfo = &global_cinfo[cidx];
+
+            if (can_buf_isempty(&cinfo->buf)) {
+                continue;
+            }
+            
+            if (!write_ready[cidx]) {
+                clock_gettime(CLOCK_MONOTONIC, &current_time);
+                int64_t time_since_last_write = tsdiff(&current_time, &last_write_time[cidx]);
+                if (time_since_last_write >= write_min_timeout_nsec) {
+                    if (debug_pump) {
+                        fprintf(stderr, "channel %d has become ready to write\n", cidx);
+                    }
+                    write_ready[cidx] = 1;
+                }
+            }
+
+            int num_writes = 0;
+
+            while (write_ready[cidx] && !can_buf_isempty(&cinfo->buf)) {
+
+                can_tagged_frame_t* tf = can_buf_head(&cinfo->buf);
+                        
+                if (!tf) {
+
+                    fprintf(stderr, "error: can buf head %d failed, quitting\n",
+                            cidx);
+                    hubo_sig_quit = 1;
+                    return overrun;
+
+                } 
+
+                if (tf->sequence_no != cinfo->head_sequence_no) {
+
+                    fprintf(stderr, "error: can buf %d sequence no mismatch. "
+                            "global: %d, buf %d. quitting.\n",
+                            cidx, cinfo->head_sequence_no, tf->sequence_no);
+                    hubo_sig_quit = 1;
+                    return overrun;
+
+                }
+
+                errno = 0;
+                ssize_t bytes_written = send(cinfo->fd,
+                                             &tf->frame,
+                                             sizeof(tf->frame),
+                                             MSG_DONTWAIT);
+                int write_errno = errno;
+
+                if (debug_pump) {
+                    fprintf(stderr, "write %d returned %d (%s)\n",
+                            cidx, (int)bytes_written, strerror(write_errno));
+                }
+
+
+                if (have_iotrace_chan) {
+                    io_trace_t trace;
+                    trace.timestamp = iotrace_gettime();
+                    trace.is_read = 0;
+                    trace.fd = cinfo->fd;
+                    trace.result_errno = write_errno;
+                    trace.transmitted = bytes_written;
+                    trace.frame = tf->frame;
+                    ach_put(&iotrace_chan, &trace, sizeof(trace));
+                }
+
+                if (bytes_written != sizeof(tf->frame)) {
+
+                    if (errno != ENOBUFS && 
+                        errno != EAGAIN) {
+
+                        errno = write_errno;
+                        perror("write in pump_message_loop");
+
+                    }
+
+                    write_ready[cidx] = 0;
+
+                } else {
+
+                    // successful write
+                    if (debug_pump) {
+                        fprintf(stderr, "successfully wrote to channel %d\n",
+                                cidx);
+                    }
+
+                    if (!can_buf_pop(&cinfo->buf)) {
+                        fprintf(stderr,
+                                "error: pop can buf %d failed, quitting\n",
+                                cidx);
+                        hubo_sig_quit = 1;
+                        return overrun;
+                    }
+
+                    ++cinfo->head_sequence_no;
+
+                    clock_gettime(CLOCK_MONOTONIC, &last_write_time[cidx]);
+
+                    ++num_writes;
+
+                    if (num_writes == write_batch_size) {
+                        write_ready[cidx] = 0;
+                    }
+
+                } // if write ok
+
+            } // while trying to write
+
+        } // for each channel
+
+        /* do all reads */
+        for (cidx=0; cidx<2; ++cidx) {
+                
+            channel_info_t* cinfo = &global_cinfo[cidx];
+
+            if (!FD_ISSET(cinfo->fd, &read_fds)) {
+
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d is NOT ready to read\n", cidx);
+                }
+
+            } else { // FD_ISSET for read
+
+                if (debug_pump) {
+                    fprintf(stderr, "channel %d is ready to read\n", cidx);
+                }
+
+                int read_errno;
+
+                do {
+
+                    struct can_frame frame;
+
+                    errno = 0;
+                    ssize_t bytes_read = recv(cinfo->fd, &frame, 
+                                              sizeof(frame), MSG_DONTWAIT);
+                    read_errno = errno;
+
+                    if (debug_pump) {
+                        fprintf(stderr, "read %d returned %d (%s)\n",
+                                cidx, (int)read_errno, strerror(read_errno));
+                    }
+
+                    if (have_iotrace_chan) {
+                        io_trace_t trace;
+                        trace.timestamp = iotrace_gettime();
+                        trace.is_read = 1;
+                        trace.fd = cinfo->fd;
+                        trace.result_errno = read_errno;
+                        trace.transmitted = bytes_read;
+                        trace.frame = frame;
+                        ach_put(&iotrace_chan, &trace, sizeof(trace));
+                    }
+                    
+          
+                    if (bytes_read != sizeof(frame)) {
+
+                        if (read_errno != EAGAIN && 
+                            read_errno != EWOULDBLOCK) {
+
+                            errno = read_errno;
+                            perror("read in pump_message_loop");
+
+                        }
+
+                    } else {
+
+                        decodeFrame(H_state_ptr, H_param_ptr, &frame);
+
+                    }
+
+                } while (read_errno == 0);
+
+            } // ready to read
+
+        } // for each channel
+        
+        /* update timing info */
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        nominal_remaining_nsec = tsdiff(deadline_time, &current_time);
+
+    } while ( (have_pending_writes || nominal_remaining_nsec > 0) &&
+              (nominal_remaining_nsec > -ultimate_timeout_nsec) &&
+              !hubo_sig_quit );
+    
+
+    if (nominal_remaining_nsec <= -ultimate_timeout_nsec) {
+        fprintf(stderr, "pump_message_loop took longer than %5.6fs, qutting\n",
+                ultimate_timeout_nsec*1e-9);
+        hubo_sig_quit = 1;
+    } else if (overrun) { 
+        fprintf(stderr, "missed loop deadline by %5.6fs\n",
+                -nominal_remaining_nsec*1e-9);
+    }
+
+    if (debug_pump) {
+        fprintf(stderr, "returning with overrun=%d\n", overrun);
+    }
+    return overrun;
+
+                       
+                 
+
+}
+                       
+
+void meta_readCan(hubo_can_t skt,
+                  struct can_frame* f,
+                  double timeoutD) {
+
+    int cidx = can_to_channel_idx(skt);
+    ++global_cinfo[cidx].reads;
+    
+}
+
+void meta_sendCan(hubo_can_t skt,
+                  const struct can_frame* f) {
+
+    int cidx = can_to_channel_idx(skt);
+    
+    if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
+        fprintf(stderr, "can buffer %d: push failed, will quit\n", cidx);
+        hubo_sig_quit = 1;
+    }
+
+    ++global_cinfo[cidx].writes;
+
+    can_tagged_frame_t* tf = can_buf_tail(&global_cinfo[cidx].buf);
+    if (!tf) {
+        fprintf(stderr, "error getting tail for %d in meta_sendCan, quitting!\n",
+                cidx);
+        hubo_sig_quit = 1;
+    } else if (tf->sequence_no != global_cinfo[cidx].tail_sequence_no) {
+        fprintf(stderr, "sequence no mismatch after push to %d: buf %d, global: %d, quitting\n",
+                cidx, tf->sequence_no, global_cinfo[cidx].tail_sequence_no);
+        hubo_sig_quit = 1;
+    }
+
+
+    ++global_cinfo[cidx].tail_sequence_no;
+
+    if (global_cinfo[cidx].writes != global_cinfo[cidx].buf.size) {
+        fprintf(stderr, "warning: for buffer %d, loop writes=%d, but buf size=%d\n",
+                cidx, global_cinfo[cidx].writes, (int)global_cinfo[cidx].buf.size);
+    }
+
+}
+
+
 /* Flags */
 int verbose;
 int debug;
@@ -325,6 +824,13 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     memset( &H_virtual, 0, sizeof(H_virtual));
     memset( &H_gains, 0, sizeof(H_gains) );
 
+    int cidx;
+
+    for (cidx=0; cidx<2; ++cidx) {
+        memset(&global_cinfo[cidx], 0, sizeof(channel_info_t));
+        global_cinfo[cidx].fd = hubo_socket[cidx];
+    }
+
     size_t fs;
     int r = ach_get( &chan_hubo_ref, &H_ref, sizeof(H_ref), &fs, NULL, ACH_O_LAST );
     if(ACH_OK != r) {fprintf(stderr, "Ref r = %s\n",ach_result_to_string(r));}
@@ -378,15 +884,14 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 /*
         if(true == H_state.joint[i].active) {
             hGetBoardStatus(i, &H_state, &H_param, &frame);
-            readCan(getSocket(&H_param,i), &frame, HUBO_CAN_TIMEOUT_DEFAULT*100.0);
-            decodeFrame(&H_state, &H_param, &frame);
+            meta_readCan(getSocket(&H_param,i), &frame, HUBO_CAN_TIMEOUT_DEFAULT*100.0);
+            nop_decodeFrame(&H_state, &H_param, &frame);
             if(((int)H_state.status[i].homeFlag) == (int)HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
         }
 */
     }
 
 
-    
 
 
 
@@ -410,26 +915,31 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
 //	double T = (double)interval/(double)NSEC_PER_SEC; // 100 hz (0.01 sec)
 	double T = (double)HUBO_LOOP_PERIOD;
-        int interval = (int)((double)NSEC_PER_SEC*T);
+        int loop_interval_nsec = (int)((double)NSEC_PER_SEC*T);
 	printf("T = %1.3f sec\n",T);
 
 
     // time info
-    struct timespec t, time;
+    struct timespec loop_time, time;
     double tsec;
 
     // get current time
     //clock_gettime( CLOCK_MONOTONIC,&t);
-    clock_gettime( 0,&t);
+    clock_gettime(CLOCK_MONOTONIC, &loop_time);
+    tsadd(&loop_time, loop_interval_nsec, &loop_time);
 
 
     int startFlag = 1;
+    int successful_encs = 0;
+    int successful_fts = 0;
+    int successful_imus = 0;
 
     printf("Start Hubo Loop\n");
     while(!hubo_sig_quit) {
 
-        // wait until next shot
-        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+        for (i=0; i<HUBO_IMU_COUNT; ++i) {
+            global_imu_valid[i] = 1;
+        }
 
         fs = 0;
 
@@ -580,31 +1090,160 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /*if(HUBO_VIRTUAL_MODE_OPENHUBO == vflag) {*/
         ach_put( &chan_hubo_to_sim, &H_virtual, sizeof(H_virtual));
         /*}*/
+        
+        int overrun = pump_message_loop(&H_state, H_param, &loop_time);
 
-        t.tv_nsec+=interval;
-        tsnorm(&t);
+        if (overrun == 0) {
+
+            tsadd(&loop_time, loop_interval_nsec, &loop_time);
+
+        } else {
+
+            clock_gettime(CLOCK_MONOTONIC, &time);
+            tsadd(&time, loop_interval_nsec, &loop_time);
+
+        }
+
+        if(HUBO_VIRTUAL_MODE_NONE == vflag) {
+
+            if (print_enc_errs) {
+
+                int enc_all_valid = 1;
+
+                for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+                    if (H_state.joint[i].active && !global_enc_valid[i]) {
+                        if (enc_all_valid) {
+                            fprintf(stderr, "warning: no encoder reading for ");
+                            enc_all_valid = 0;
+                        }
+                        fprintf(stderr, "%s ", jointNames[i]);
+                    }
+                }
+                if (!enc_all_valid) {
+                    fprintf(stderr, "(after %d successful loops)\n", successful_encs);
+                    successful_encs = 0;
+                } else {
+                    ++successful_encs;
+                }
+
+            }
+
+            if (print_ft_errs) {
+
+                int ft_all_valid = 1;
+
+                for (i=0; i<4; ++i) {
+                    if (!global_ft_valid[i]) {
+                        if (ft_all_valid) {
+                            fprintf(stderr, "warning: no FT reading for ");
+                            ft_all_valid = 0;
+                        }
+                        fprintf(stderr, "%s ", ftNames[i]);
+                    }
+                }
+                if (!ft_all_valid) {
+                    fprintf(stderr, "(after %d successful loops)\n", successful_fts);
+                    successful_fts = 0;
+                } else {
+                    ++successful_fts;
+                }
+
+            }
+
+            if (print_imu_errs) {
+
+                int imu_all_valid = 1;
+
+                for (i=0; i<HUBO_IMU_COUNT; ++i) {
+                    if (!global_imu_valid[i]) {
+                        if (imu_all_valid) {
+                            fprintf(stderr, "warning: no IMU reading for ");
+                            imu_all_valid = 0;
+                        }
+                        fprintf(stderr, "%s ", imuNames[i]);
+                    }
+                }
+                if (!imu_all_valid) {
+                    fprintf(stderr, "(after %d successful loops)\n", successful_imus);
+                    successful_imus = 0;
+                } else {
+                    ++successful_imus;
+                }
+
+            }
+
+            if (print_err_summary) {
+
+                
+                for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+                    if (H_state.joint[i].active && !global_enc_valid[i]) {
+                        ++global_enc_total_misses;
+                    }
+                }
+
+                for (i=0; i<4; ++i) {
+                    if (!global_ft_valid[i]) {
+                        ++global_ft_total_misses;
+                    }
+                }
+
+                for (i=0; i<HUBO_IMU_COUNT; ++i) {
+                    if (!global_imu_valid[i]) {
+                        ++global_imu_total_misses;
+                    }
+                }
+
+                ++global_loop_count;
+                
+                if ( (global_loop_count % err_summary_loop_count == 0) ||
+                     hubo_sig_quit ) {
+
+                    fprintf(stderr, 
+                            "after %d loop iterations:\n"
+                            "  missed %6d encoder readings (%2.2f per iteration)\n"
+                            "  missed %6d FT readings      (%2.2f per iteration)\n"
+                            "  missed %6d IMU readings     (%2.2f per iteration)\n",
+                            global_loop_count,
+                            global_enc_total_misses,
+                            ((double)global_enc_total_misses)/global_loop_count,
+                            global_ft_total_misses, 
+                            ((double)global_ft_total_misses)/global_loop_count,
+                            global_imu_total_misses, 
+                            ((double)global_imu_total_misses)/global_loop_count);
+
+                    global_loop_count = 0;
+                    global_enc_total_misses = 0;
+                    global_ft_total_misses = 0;
+                    global_imu_total_misses = 0;
+
+                }
+
+            }
+
+        }
+
+        for (cidx=0; cidx<2; ++cidx) {
+            global_cinfo[cidx].writes = 0;
+            global_cinfo[cidx].reads  = 0;
+        }
+
         fflush(stdout);
         fflush(stderr);
+
+
     }
+
+    fprintf(stderr, "exiting\n\n");
 
 }
 
-void clearCanBuff(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
-    int i = 0;
-    for(i = 0; i < readBuffi; i++) {
-        readCan(0, f, 0);
-        decodeFrame(s, h, f);
-        readCan(1, f, 0);
-        decodeFrame(s, h, f);
-    }
-}
 
 void getStatusIterate( hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
 
 int statusJntItt = 5;
 int statusJnti = 0;
-    if(statusJnti == 0) {
-        if(1 == s->joint[statusJnt].active ) {
+    if(statusJnti == 0) { // if true
+        if(1 == s->joint[statusJnt].active ) { 
             hGetBoardStatus(statusJnt, s, h, f);
         }
         statusJnt = statusJnt + 1;
@@ -633,7 +1272,7 @@ static inline void tsnorm(struct timespec *ts){
 void hSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 {
     fSetNonComplementaryMode(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
@@ -650,7 +1289,7 @@ void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 {
     fSetNonComplementaryMode(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
@@ -815,18 +1454,29 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
     int i = 0;
 //	c[h->joint[REB].jmc] = 0;
     int canChan = 0;
+
+    for (i=0; i<HUBO_JOINT_COUNT; ++i) {
+        if (s->joint[i].active) {
+            global_enc_valid[i] = 0;
+        } else {
+            global_enc_valid[i] = 1;
+        }
+    }
+    
     for( canChan = 0; canChan < HUBO_CAN_CHAN_NUM; canChan++) {
         for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
             jmc = h->joint[i].jmc;
-            if((0 == c[jmc]) & (canChan == h->joint[i].can)){	// check to see if already asked that motor controller
+            if((0 == c[jmc]) && // check to see if already asked that motor controller
+               (canChan == h->joint[i].can)) {
+
                 hGetEncValue(i, 0x00, h, f);
-                readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-                decodeFrame(s, h, f);
+                meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                nop_decodeFrame(s, h, f);
                 if(RF1 == i | RF2 == i | RF3 == i | RF4 == i | RF5 == i | 
                    LF1 == i | LF2 == i | LF3 == i | LF4 == i | LF5 == i) { 	
                         hGetEncValue(i, 0x01, h, f);
-                        readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-                        decodeFrame(s, h, f);
+                        meta_readCan(hubo_socket[h->joint[i].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+                        nop_decodeFrame(s, h, f);
                 }
                 c[jmc] = 1;
             }
@@ -875,8 +1525,6 @@ void getBoardStatusAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f
             if((0 == c[jmc]) && (canChan == h->joint[i].can)) 
             {
                 hGetBoardStatus(i, s, h, f);
-                readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
-                decodeFrame(s, h, f);
                 c[jmc] = 1;
             }
         }
@@ -886,8 +1534,8 @@ void getBoardStatusAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f
 void hGetFT(int board, struct can_frame *f, int can)
 {
     fGetFT(board,f);
-    sendCan(hubo_socket[can],f);
-    readCan(hubo_socket[can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    meta_sendCan(hubo_socket[can],f);
+    meta_readCan(hubo_socket[can], f, HUBO_CAN_TIMEOUT_DEFAULT);
 }
 
 void fGetFT(int board, struct can_frame *f)
@@ -903,17 +1551,21 @@ void fGetFT(int board, struct can_frame *f)
 
 void getFTAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+
+    memset(global_ft_valid, 0, sizeof(global_ft_valid));
+
     hGetFT(h->sensor[HUBO_FT_R_FOOT].boardNo, f, h->sensor[HUBO_FT_R_FOOT].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetFT(h->sensor[HUBO_FT_L_FOOT].boardNo, f, h->sensor[HUBO_FT_L_FOOT].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetFT(h->sensor[HUBO_FT_R_HAND].boardNo, f, h->sensor[HUBO_FT_R_HAND].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetFT(h->sensor[HUBO_FT_L_HAND].boardNo, f, h->sensor[HUBO_FT_L_HAND].can);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
+
 }
 
 void fGetAcc(int board, struct can_frame *f)
@@ -929,17 +1581,21 @@ void fGetAcc(int board, struct can_frame *f)
 void hGetAcc(int board, struct can_frame *f)
 {
     fGetAcc(board,f);
-    sendCan(hubo_socket[LOWER_CAN],f);
-    readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    meta_sendCan(hubo_socket[LOWER_CAN],f);
+    meta_readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 }
 
 void getAccAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+
+    global_imu_valid[TILT_R] = 0;
+    global_imu_valid[TILT_L] = 0;
+
     hGetAcc(h->sensor[HUBO_FT_R_FOOT].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetAcc(h->sensor[HUBO_FT_L_FOOT].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 }
 
 void fGetIMU(int board, struct can_frame *f)
@@ -956,23 +1612,28 @@ void fGetIMU(int board, struct can_frame *f)
 void hGetIMU(int board, struct can_frame *f)
 {
     fGetIMU(board,f);
-    sendCan(hubo_socket[LOWER_CAN],f);
-    readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    meta_sendCan(hubo_socket[LOWER_CAN],f);
+    meta_readCan(hubo_socket[LOWER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 }
 
 void getIMUAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
+
+    if (global_imu_ready) {
+        global_imu_valid[IMU] = 0;
+    }
+
     hGetIMU(h->sensor[HUBO_IMU0].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     // I have been told that there is only one IMU,
     // so the rest of these are probably worthless.
 /*
     hGetIMU(h->sensor[HUBO_IMU1].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 
     hGetIMU(h->sensor[HUBO_IMU2].boardNo, f);
-    decodeFrame(s, h, f);
+    nop_decodeFrame(s, h, f);
 */
 }
 
@@ -993,8 +1654,8 @@ void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
             if(0 == c[jmc])    // check to see if already asked that motor controller
             {
                 hGetCurrentValue(i, h, f);
-                readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
-                decodeFrame(s, h, f);
+                meta_readCan(getSocket(h,i), f, HUBO_CAN_TIMEOUT_DEFAULT);
+                nop_decodeFrame(s, h, f);
                 c[jmc] = 1;
             }
         }
@@ -1222,6 +1883,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
                 int duty0 = -(kP_err - kD_err + g->joint[m0].pwmCommand*10);
 
+                s->joint[m0].duty = (double)(duty0)/10.0;
+
                 int dir0;
                 if(duty0 >= 0)
                     dir0 = 0x00; // Counter-Clockwise
@@ -1253,6 +1916,8 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 // Multiplying by 10 makes the gains equal:
                 // Kp -- duty% per radian
                 // Kd -- duty% reduction per radian/sec
+
+                s->joint[m1].duty = (double)(duty1)/10.0;
 
                 int dir1;
                 if(duty1 >= 0)
@@ -1288,7 +1953,7 @@ void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                 struct can_frame frame; 
                 memset(&frame, 0, sizeof(frame)); 
                 fEnableFeedbackController(m0, h, &frame); 
-                sendCan(getSocket(h,m0), &frame); 
+                meta_sendCan(getSocket(h,m0), &frame); 
 
                 s->joint[m0].comply = 2; 
                 s->joint[m1].comply = 2; 
@@ -1345,7 +2010,7 @@ void hSetPosGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     else if(h->joint[jnt].motNo == 1)
         fSetPosGain1(jnt, h, f, c->iValues[0], c->iValues[1], c->iValues[2]);
     
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     fprintf(stdout, "Joint number %d has changed position gain values to:\n\tKp:%d\tKi:%d\tKd:%d\n",
             jnt, c->iValues[0], c->iValues[1], c->iValues[2] );
 }
@@ -1389,7 +2054,7 @@ void hSetCurGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     else if(h->joint[jnt].motNo == 1)
         fSetCurGain1(jnt, h, f, c->iValues[0], c->iValues[1], c->iValues[2]);
     
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     fprintf(stdout, "Joint number %d has changed current gain values to:\n\tKp:%d\tKi:%d\tKd:%d\n",
             jnt, c->iValues[0], c->iValues[1], c->iValues[2] );
 }
@@ -1515,7 +2180,7 @@ void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int th
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode) {
 
     fSetComplementaryMode(jnt, h, f, the_mode);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 */
 // 4
@@ -1551,7 +2216,7 @@ void hSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param_t sou
             break;
     }
     fSetAlarm(jnt, h, f, h_sound);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetAlarm(int jnt, hubo_param_t *h, struct can_frame *f, int sound)
@@ -1592,7 +2257,7 @@ void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
 
             fOpenLoopPWM_2CH(jnt, h, f, dir1, c->iValues[0], dir2, c->iValues[1]);
             
-            sendCan(getSocket(h,jnt), f);
+            meta_sendCan(getSocket(h,jnt), f);
         }
     }
     else if(h->joint[jnt].numMot == 3)
@@ -1623,7 +2288,7 @@ void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
             fOpenLoopPWM_3CH(jnt, h, f, dir1, c->iValues[0], dir2, c->iValues[1],
                          dir3, c->iValues[2] );
             
-            sendCan(getSocket(h,jnt), f);
+            meta_sendCan(getSocket(h,jnt), f);
         }
     }
     else if(h->joint[jnt].numMot == 5)
@@ -1661,7 +2326,7 @@ void hOpenLoopPWM(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
                         dir3, c->iValues[2], dir4, c->iValues[3],
                         dir5, c->iValues[4] );
 
-            sendCan(getSocket(h,jnt), f);
+            meta_sendCan(getSocket(h,jnt), f);
         }
     }
 } 
@@ -1729,17 +2394,17 @@ void hSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_param
     {
         case D_POSITION:
             fSetControlMode(jnt, h, f, 0); // 0 > Position control
-            sendCan(getSocket(h,jnt),f);
+            meta_sendCan(getSocket(h,jnt),f);
 //            s->driver[h->joint[jnt].jmc].ctrlMode = D_POSITION;
             break;
         case D_CURRENT:
             fSetControlMode(jnt, h, f, 1); // 1 > Current control
-            sendCan(getSocket(h,jnt),f);
+            meta_sendCan(getSocket(h,jnt),f);
 //            s->driver[h->joint[jnt].jmc].ctrlMode = D_CURRENT;
             break;
         case D_HYBRID:
             fSetControlMode(jnt, h, f, 2);
-            sendCan(getSocket(h,jnt),f);
+            meta_sendCan(getSocket(h,jnt),f);
             break;
         default:
             fprintf(stderr,"Invalid Control Mode: %d\n\t"
@@ -1764,7 +2429,7 @@ void fSetControlMode(int jnt, hubo_param_t *h, struct can_frame *f, int mode)
 
 void hGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
     fGetEncValue( jnt, encChoice, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f) { ///> make can frame for getting the value of the Encoder
     f->can_id       = CMD_TXDF;     // Set ID
@@ -1786,21 +2451,21 @@ void fGetBoardStatusAndErrorFlags(int jnt, hubo_param_t *h, struct can_frame *f)
 void hGetBoardStatus(int jnt, hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 {
     fGetBoardStatusAndErrorFlags( jnt, h, f );
-    sendCan(getSocket(h,jnt), f);
-    readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
-    decodeFrame(s, h, f);
+    meta_sendCan(getSocket(h,jnt), f);
+    meta_readCan(hubo_socket[h->joint[jnt].can], f, HUBO_CAN_TIMEOUT_DEFAULT);
+    nop_decodeFrame(s, h, f);
 }
 
 void hGetCurrentValue(int jnt, hubo_param_t *h, struct can_frame *f) { ///> make can frame for getting the motor current in amps (10mA resolution)
     fGetCurrentValue( jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 
 void hSetBeep(int jnt, hubo_param_t *h, struct can_frame *f, double beepTime)
 {
     fSetBeep(jnt, h, f, beepTime);
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fSetBeep(int jnt, hubo_param_t *h, struct can_frame *f, double beepTime)
@@ -1838,7 +2503,7 @@ void hSetDeadZone(int jnt, hubo_param_t *h, struct can_frame *f, int deadzone)
     if(deadzone>=0&&deadzone<=255)
     {
         fSetDeadZone(jnt, h, f, deadzone);
-        sendCan(getSocket(h,jnt),f);
+        meta_sendCan(getSocket(h,jnt),f);
     }
     else
         fprintf(stderr,"Invalid value for deadzone: %d\n\t"
@@ -1876,7 +2541,7 @@ void hSetHomeSearchParams( hubo_board_cmd_t *c, hubo_param_t *h, struct can_fram
     offset = (int32_t)ref2enc(c->joint, c->dValues[0], h);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
     
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f )
@@ -1901,7 +2566,7 @@ void hSetHomeSearchParamsRaw( hubo_board_cmd_t *c, hubo_param_t *h, struct can_f
                     " -- Joint:%s\tOffset:%d\tDir:%d\tLim:%d\n", jointNames[c->joint], offset, dir, c->iValues[0]);
     fSetHomeSearchParams(c->joint, h, f, c->iValues[0], dir, offset);
 
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetHomeSearchParams(int jnt, hubo_param_t *h, struct can_frame *f, int limit,
@@ -1958,7 +2623,7 @@ void hSetEncoderResolution(hubo_board_cmd_t *c, hubo_param_t *h, struct can_fram
         res = res | c->iValues[0];
 
     fSetEncoderResolution(c->joint, h, f, res);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetEncoderResolution(int jnt, hubo_param_t *h, struct can_frame *f, int res)
@@ -1981,7 +2646,7 @@ void hSetMaxAccVel(int jnt, hubo_param_t *h, struct can_frame *f, int maxAcc, in
     else if( maxVel < 65536 && maxVel > 0 )
     {
         fSetMaxAccVel(jnt, h, f, maxAcc, maxVel);
-        sendCan(getSocket(h,jnt),f);
+        meta_sendCan(getSocket(h,jnt),f);
     }
     else
         fprintf(stderr, "Max Velocity value is out of bounds: %d\n\t"
@@ -2029,7 +2694,7 @@ void hSetLowerPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
     }
 
     fSetLowerPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void hSetLowerPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
@@ -2037,7 +2702,7 @@ void hSetLowerPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame
     fprintf(stdout, "Setting lower position limit:\n"
                     " -- Joint:%s\tLimit:%d\tEnabled:%d\tUpdate:%d\n", jointNames[c->joint], c->iValues[0], c->iValues[2], c->iValues[1]);
     fSetLowerPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetLowerPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit)
@@ -2084,7 +2749,7 @@ void hSetUpperPosLimit(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f
     }
 
     fSetUpperPosLimit(c->joint, h, f, enable, update, c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
@@ -2092,7 +2757,7 @@ void hSetUpperPosLimitRaw(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame
     fprintf(stdout, "Setting upper position limit:\n"
                     " -- Joint:%s\tLimit:%d\tEnabled:%d\tUpdate:%d\n", jointNames[c->joint], c->iValues[0], c->iValues[2], c->iValues[1]);
     fSetUpperPosLimit(c->joint, h, f, c->iValues[2], c->iValues[1], c->iValues[0]);
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetUpperPosLimit(int jnt, hubo_param_t *h, struct can_frame *f, int enable, int update, int limit)
@@ -2133,7 +2798,7 @@ void hSetHomeAccVel(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     fSetHomeAccVel(c->joint, h, f, (float)c->dValues[0], c->iValues[0], c->iValues[1],
             mode, c->iValues[2]);
 
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetHomeAccVel(int jnt, hubo_param_t *h, struct can_frame *f, float mAcc, int mVelS,
@@ -2158,7 +2823,7 @@ void fSetHomeAccVel(int jnt, hubo_param_t *h, struct can_frame *f, float mAcc, i
 void hSetGainOverride(int jnt, hubo_param_t *h, struct can_frame *f, int gain0, int gain1, double dur)
 {
     fSetGainOverride(jnt, h, f, gain0, gain1, (int)(dur*1000));
-    sendCan(getSocket(h,jnt),f);
+    meta_sendCan(getSocket(h,jnt),f);
 }
 
 
@@ -2181,7 +2846,7 @@ void hSetBoardNumber(int jnt, hubo_param_t *h, struct can_frame *f, int boardNum
     fprintf(stdout, "WARNING: Changing board number %d to %d with baud rate %d\n\t",
             getJMC(h,jnt), boardNum, rate);
     fSetBoardNumber(jnt, h, f, boardNum, rate);
-    sendCan(getSocket(h,jnt),f);
+    meta_sendCan(getSocket(h,jnt),f);
 }
 
 
@@ -2206,7 +2871,7 @@ void hSetJamPwmLimits(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f)
     fSetJamPwmLimits(c->joint, h, f, (int)(c->dValues[0]*1000), (int)(c->dValues[1]*1000),
                 c->iValues[0], c->iValues[1] );
 
-    sendCan(getSocket(h,c->joint),f);
+    meta_sendCan(getSocket(h,c->joint),f);
 }
 
 void fSetJamPwmLimits(int jnt, hubo_param_t *h, struct can_frame *f, int jamLimit, int pwmLimit,
@@ -2235,7 +2900,7 @@ void hSetErrorBound(int jnt, hubo_param_t *h, struct can_frame *f, int inputDiff
             "Max temperature: %d\n", jnt, inputDiffErr, maxError, tempError);
 
     fSetErrorBound(jnt, h, f, inputDiffErr, maxError, tempError);
-    sendCan(getSocket(h,jnt),f);
+    meta_sendCan(getSocket(h,jnt),f);
 }
 
 void fSetErrorBound(int jnt, hubo_param_t *h, struct can_frame *f, int inputDiffErr, int maxError,
@@ -2262,7 +2927,7 @@ void hGotoLimitAndGoOffset(int jnt, hubo_ref_t *r, hubo_ref_t *r_filt, hubo_para
         hubo_state_t *s, struct can_frame *f, int send)
 {
     fGotoLimitAndGoOffset(jnt, h, f);
-    sendCan( getSocket(h,jnt), f );
+    meta_sendCan( getSocket(h,jnt), f );
     fprintf(stdout," -- Homing Joint #%d\n\t",jnt);
     r->ref[jnt] = 0.0;
     r->mode[jnt] = HUBO_REF_MODE_REF_FILTER;
@@ -2300,10 +2965,7 @@ void hGotoLimitAndGoOffsetAll(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h
 
 void hInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
     fInitializeBoard(jnt, h, f);
-    sendCan(getSocket(h,jnt), f);
-    //readCan(hubo_socket[h->joint[jnt].can], f, 4);    // 8 bytes to read and 4 sec timeout
-    // TODO: Why is the readCan here??
-    readCan(getSocket(h,jnt), f, HUBO_CAN_TIMEOUT_DEFAULT*100);    // 8 bytes to read and 4 sec timeout
+    meta_sendCan(getSocket(h,jnt), f);
 }
 
 void fInitializeBoard(int jnt, hubo_param_t *h, struct can_frame *f) {
@@ -2366,13 +3028,13 @@ void hSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
 
     if(HUBO_ROBOT_TYPE_DRC_HUBO == hubo_type){
       fSetEncRef(jnt, s, r, h, g, f);
-      sendCan(getSocket(h,jnt), f);
+      meta_sendCan(getSocket(h,jnt), f);
     }
     else if(HUBO_ROBOT_TYPE_HUBO_PLUS == hubo_type & (jnt != RF2) & (jnt != RF3) & (jnt != RF4) & (jnt !=RF5) &
                                                      (jnt != LF2) & (jnt != LF3) & (jnt != LF4) & (jnt !=LF5)) 
     {
       fSetEncRef(jnt, s, r, h, g, f);
-      sendCan(getSocket(h,jnt), f);
+      meta_sendCan(getSocket(h,jnt), f);
     }
 
     memset(f, 0, sizeof(*f));
@@ -2395,12 +3057,12 @@ void hMotorDriverOnOff(int jnt, hubo_param_t *h, struct can_frame *f, hubo_d_par
 {
     if(onOff == D_ENABLE) { // turn on FET
         fEnableMotorDriver(jnt, h, f);
-        sendCan(getSocket(h,jnt), f); 
+        meta_sendCan(getSocket(h,jnt), f); 
         
     }
     else if(onOff == D_DISABLE) { // turn off FET
         fDisableMotorDriver(jnt, h, f);
-        sendCan(getSocket(h,jnt), f); }
+        meta_sendCan(getSocket(h,jnt), f); }
     else
         fprintf(stderr, "FET Switch Error: Invalid param[0]\n\t"
                 "Must be D_ENABLE (%d) or D_DISABLE (%d)",
@@ -2445,16 +3107,16 @@ if(isHands(jnt) == 0) {
         /* set new position reference */
 //        hSetEncRef(jnt, s, h, f);
 //        fSetEncRef(jnt, s, h, f);
-//        sendCan(getSocket(h,jnt), f);
+//        meta_sendCan(getSocket(h,jnt), f);
         fEnableFeedbackController(jnt, h, f);
-        sendCan(hubo_socket[h->joint[jnt].can], f); 
+        meta_sendCan(hubo_socket[h->joint[jnt].can], f); 
 //        hubo_noRefTimeAll = 0.01;
         }
     else if(onOff == D_DISABLE) { // turn ctrol off
         r->mode[jnt] = HUBO_REF_MODE_COMPLIANT;
         ach_put( &chan_hubo_ref, r, sizeof(*r));
         fDisableFeedbackController(jnt, h, f);
-        sendCan(hubo_socket[h->joint[jnt].can], f); }
+        meta_sendCan(hubo_socket[h->joint[jnt].can], f); }
 
     else
         fprintf(stderr, "Controller Switch Error: Invalid param[0] (%d)\n\t"
@@ -2497,7 +3159,7 @@ void hResetEncoderToZero(int jnt, hubo_ref_t *r, hubo_param_t *h, hubo_state_t *
         ach_put( &chan_hubo_ref, r, sizeof(*r) );
 //    ach_put( &chan_hubo_ref, r, sizeof(*r) );
 
-        sendCan(getSocket(h,jnt), f);
+        meta_sendCan(getSocket(h,jnt), f);
         s->joint[jnt].zeroed == 2;        // need to add a can read back to confirm it was zeroed
     }
 }
@@ -2538,15 +3200,15 @@ void hNullIMUSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *f 
     {
         case D_IMU_SENSOR_0:
             fNullIMUSensor( h->sensor[HUBO_IMU0].boardNo, f );
-            sendCan(sensorSocket(h, HUBO_IMU0), f);
+            meta_sendCan(sensorSocket(h, HUBO_IMU0), f);
             break;
         case D_IMU_SENSOR_1:
             fNullIMUSensor( h->sensor[HUBO_IMU1].boardNo, f );
-            sendCan(sensorSocket(h, HUBO_IMU1), f);
+            meta_sendCan(sensorSocket(h, HUBO_IMU1), f);
             break;
         case D_IMU_SENSOR_2:
             fNullIMUSensor( h->sensor[HUBO_IMU2].boardNo, f );
-            sendCan(sensorSocket(h, HUBO_IMU2), f);
+            meta_sendCan(sensorSocket(h, HUBO_IMU2), f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling IMU Sensor: %d\n\t"
@@ -2585,20 +3247,20 @@ void hInitAccFTSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *
         case D_R_FOOT_FT:
         case D_R_FOOT_ACC:
             fInitAccFTSensor( h->sensor[HUBO_FT_R_FOOT].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_R_FOOT].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_R_FOOT].can], f);
             break;
         case D_L_FOOT_FT:
         case D_L_FOOT_ACC:
             fInitAccFTSensor( h->sensor[HUBO_FT_L_FOOT].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_L_FOOT].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_L_FOOT].can], f);
             break;
         case D_R_HAND_FT:
             fInitAccFTSensor( h->sensor[HUBO_FT_R_HAND].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_R_HAND].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_R_HAND].can], f);
             break;
         case D_L_HAND_FT:
             fInitAccFTSensor( h->sensor[HUBO_FT_L_HAND].boardNo, f );
-            sendCan(hubo_socket[h->sensor[HUBO_FT_L_HAND].can], f);
+            meta_sendCan(hubo_socket[h->sensor[HUBO_FT_L_HAND].can], f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
@@ -2675,19 +3337,19 @@ void hNullFTSensor( hubo_d_param_t board, hubo_param_t *h, struct can_frame *f )
     {
         case D_R_FOOT_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_R_FOOT].boardNo, H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
             break;
         case D_L_FOOT_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_L_FOOT].boardNo,  H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
             break;
         case D_R_HAND_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_R_HAND].boardNo, H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_R_HAND), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_R_HAND), f);
             break;
         case D_L_HAND_FT:
             fNullAccFTSensor(h->sensor[HUBO_FT_L_HAND].boardNo,  H_NULL_FT, f);
-            sendCan(sensorSocket(h, HUBO_FT_L_HAND), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_L_HAND), f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling FT Sensor: %d\n\t"
@@ -2706,11 +3368,11 @@ void hNullAccSensor(hubo_d_param_t board, hubo_param_t *h, struct can_frame *f)
     {
         case D_R_FOOT_ACC:
             fNullAccFTSensor(h->sensor[HUBO_FT_R_FOOT].boardNo, H_NULL_ACC, f);
-            sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_R_FOOT), f);
             break;
         case D_L_FOOT_ACC:
             fNullAccFTSensor(h->sensor[HUBO_FT_L_FOOT].boardNo,  H_NULL_ACC, f);
-            sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
+            meta_sendCan(sensorSocket(h, HUBO_FT_L_FOOT), f);
             break;
         default:
             fprintf(stderr, "Invalid parameter for nulling Tilt Sensor: %d\n\t"
@@ -2862,7 +3524,7 @@ void hGetAllBoardParams( hubo_param_t *h, hubo_state_t *s, struct can_frame *f )
         t.tv_nsec+=NSEC_PER_SEC*0.01;
         tsnorm(&t);
 
-        clock_nanosleep(0,TIMER_ABSTIME,&t, NULL);
+        clock_nanosleep( CLOCK_MONOTONIC, TIMER_ABSTIME,&t, NULL);
     }
 
 
@@ -3256,6 +3918,8 @@ double doubleFromBytePair(uint8_t data0, uint8_t data1){
 
 void decodeFTFrame(int num, struct hubo_state *s, struct hubo_param *h, struct can_frame *f){
 
+    global_ft_valid[num] = 1;
+
     double Mx = doubleFromBytePair(f->data[1],f->data[0])/100.0;		// moment in Nm
     double My = doubleFromBytePair(f->data[3],f->data[2])/100.0;		// moment in Nm
     double Fz = doubleFromBytePair(f->data[5],f->data[4])/10.0;		// moment in Nm
@@ -3412,6 +4076,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         
         if(num==h->sensor[HUBO_FT_R_FOOT].boardNo)
         {
+
+            global_imu_valid[TILT_R] = 1;
+
             val = (f->data[1]<<8) | f->data[0];
             s->imu[TILT_R].a_x = ((double)(val))/100.0 * M_PI/180.0;
             
@@ -3423,6 +4090,9 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         }
         else if(num==h->sensor[HUBO_FT_L_FOOT].boardNo)
         {
+
+            global_imu_valid[TILT_L] = 1;
+
             val = (f->data[1]<<8) | f->data[0];
             s->imu[TILT_L].a_x = ((double)(val))/100.0 * M_PI/180.0;
             
@@ -3436,6 +4106,14 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 num==h->sensor[HUBO_IMU1].boardNo ||
                 num==h->sensor[HUBO_IMU2].boardNo)
         {
+
+            if (!global_imu_ready) {
+                fprintf(stderr, "got first frame from IMU!\n");
+            }
+
+            global_imu_valid[IMU] = 1;
+            global_imu_ready = 1;
+
             val = (f->data[1]<<8) | f->data[0];
             s->imu[IMU].a_x = ((double)(val))/100.0 * M_PI/180.0;
 
@@ -3541,6 +4219,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_enc_valid[jnt] = 1;
             }
         }        
         else if( (numMot == 3) & (hubo_type == HUBO_ROBOT_TYPE_DRC_HUBO) & (jmc == EJMC2) ) {
@@ -3570,6 +4249,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, jntInt, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_enc_valid[jnt] = 1;
             }
         }
 
@@ -3584,6 +4264,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_enc_valid[jnt] = 1;
             }
         }
             
@@ -3597,6 +4278,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)/HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_enc_valid[jnt] = 1;
              }
         }
 
@@ -3609,6 +4291,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
                 double newPos = enc2rad(jnt, enc16, h);
                 s->joint[jnt].vel = (newPos - s->joint[jnt].pos)*HUBO_LOOP_PERIOD;
                 s->joint[jnt].pos = newPos;
+                global_enc_valid[jnt] = 1;
             }
         }
 
@@ -3812,3 +4495,11 @@ uint8_t isHands(int jnt)
         return 0;
 }
 
+
+
+/* Local Variables:                          */
+/* mode: c                                   */
+/* c-basic-offset: 4                         */
+/* indent-tabs-mode:  nil                    */
+/* End:                                      */
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
