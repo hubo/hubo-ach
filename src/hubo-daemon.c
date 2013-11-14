@@ -295,7 +295,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
 
 void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD);
 void meta_sendCan(hubo_can_t skt, const struct can_frame* f);
-void checkReadWriteErrors(hubo_state_t* H_state_ptr, int vflag);
+
+void checkReadWriteErrors(hubo_state_t* H_state_ptr, int* successful_encs, int* successful_fts, int* successful_imus, int vflag);
 
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
