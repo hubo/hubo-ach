@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012, Daniel M. Lofaro
+Copyright (c) 2012,2013 Daniel M. Lofaro
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -311,6 +311,12 @@ uint8_t getJMC( hubo_param_t *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; 
 uint8_t getCAN( hubo_param_t *h, int jnt ) { return h->joint[jnt].can; }
 hubo_can_t getSocket( hubo_param_t *h, int jnt ) { return hubo_socket[h->joint[jnt].can]; }
 hubo_can_t sensorSocket( hubo_param_t *h, hubo_sensor_index_t board) {return hubo_socket[h->sensor[board].can];}
+
+
+/* Get frames and debug */
+
+double debugEnc2Rad(int jnt, int enc, hubo_param_t* h, int line);
+
 
 uint8_t int_to_bytes(int d, int index);
 uint8_t duty_to_byte(int dir, int duty);
@@ -3950,6 +3956,14 @@ void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
 }
 
 
+double debugEnc2Rad(int jnt, int enc, hubo_param_t* h, int line) {
+    double rval = enc2rad(jnt, enc, h);
+    fprintf(stderr, "enc2rad for joint %s returned %f on line %d\n",
+            jointNames[jnt], rval, line);
+    return rval;
+}
+
+
 
 
 
@@ -4203,7 +4217,15 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         int numMot = h->joint[jnt0].numMot;    // motor number   
         int32_t enc = 0;
         int16_t enc16 = 0;            // encoder value for neck and fingers
-        if( numMot == 1 || numMot == 2 )
+
+        if (h->joint[jnt0].jmc != jmc) {
+            fprintf(stderr, "sanity check failed: "
+                    "jmc id %d deduced from can id %d, "
+                    "but motor 0 on that jmc claims to be on jmc %d\n", 
+                    jmc, (int)f->can_id, h->joint[jnt0].jmc);
+        } 
+
+        else if( numMot == 1 || numMot == 2 )
         {
             for( i = 0; i < numMot; i++ )
             {
