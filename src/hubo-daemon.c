@@ -455,7 +455,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     frame.can_dlc = strlen( frame.data );
 
 
-    if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
+   if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
 
@@ -465,7 +465,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
    
 
 
-
+/
 state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
  
     /* get encoder values */
