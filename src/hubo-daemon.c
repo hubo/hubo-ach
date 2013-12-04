@@ -297,7 +297,7 @@ void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD);
 void meta_sendCan(hubo_can_t skt, const struct can_frame* f);
 
 void checkReadWriteErrors(hubo_state_t* H_state_ptr, int* successful_encs, int* successful_fts, int* successful_imus, int vflag);
-void toggleCanOnOff(int param); 
+void toggleCanOnOff(int param, hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f);
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -311,7 +311,7 @@ uint8_t getJMC( hubo_param_t *h, int jnt ) { return (uint8_t)h->joint[jnt].jmc; 
 uint8_t getCAN( hubo_param_t *h, int jnt ) { return h->joint[jnt].can; }
 hubo_can_t getSocket( hubo_param_t *h, int jnt ) { return hubo_socket[h->joint[jnt].can]; }
 hubo_can_t sensorSocket( hubo_param_t *h, hubo_sensor_index_t board) {return hubo_socket[h->sensor[board].can];}
-
+void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f);
 
 /* Get frames and debug */
 
@@ -462,17 +462,23 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     
 
     /* initilization process */
-    
+   
+
+
+
+state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
+ 
     /* get encoder values */
-    getEncAllSlow(&H_state, H_param, &frame);
+////    getEncAllSlow(&H_state, H_param, &frame);
 
     /* set encoder values to ref and state */
-    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-        H_ref.ref[i] = H_state.joint[i].pos;
-        H_ref_neck.ref[i] = H_ref.ref[i];
-        H_ref.mode[i] = HUBO_REF_MODE_REF_FILTER;
-        H_ref_filter.ref[i] = H_state.joint[i].pos;
-        H_state.joint[i].ref = H_state.joint[i].pos;
+
+////    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+////        H_ref.ref[i] = H_state.joint[i].pos;
+////        H_ref_neck.ref[i] = H_ref.ref[i];
+////        H_ref.mode[i] = HUBO_REF_MODE_REF_FILTER;
+////        H_ref_filter.ref[i] = H_state.joint[i].pos;
+////        H_state.joint[i].ref = H_state.joint[i].pos;
 /*
         if(true == H_state.joint[i].active) {
             hGetBoardStatus(i, &H_state, &H_param, &frame);
@@ -481,7 +487,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             if(((int)H_state.status[i].homeFlag) == (int)HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
         }
 */
-    }
+////    }
 
 
 
@@ -1724,6 +1730,34 @@ unsigned long signConvention(long _input) {
     if (_input < 0) return (unsigned long)( ((-_input)&0x007FFFFF) | (1<<23) );
     else return (unsigned long)_input;
 }
+
+
+
+
+void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f) {
+/* updates reference to the state, checks multiple times*/
+
+    /* get encoder values */
+  getEncAllSlow(s, h, f);
+  int i=0;
+  int ii=0;
+  
+  /* Check encoder values 100 times */
+  for(ii = 0; i < 100 ; i++) {
+    /* set encoder values to ref and state */
+    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+      if( (s->joint[i].pos > -2*M_PI) & (s->joint[i].pos < 2*M_PI)){
+        r->ref[i] = s->joint[i].pos;
+//        H_ref_neck.ref[i] = H_ref.ref[i];   // no neck
+        r->mode[i] = HUBO_REF_MODE_REF_FILTER;
+        rf->ref[i] = s->joint[i].pos;
+        s->joint[i].ref = s->joint[i].pos;
+      }
+    }
+  }
+
+}
+
 
 void fSetEncRef(int jnt, hubo_state_t *s, hubo_ref_t *r, hubo_param_t *h,
                     hubo_pwm_gains_t *g, struct can_frame *f)
@@ -3891,7 +3925,7 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //                    break;
                 case D_TOGGLE_CAN_ON_OFF:
-                    toggleCanOnOff(c->param[0]);
+                    toggleCanOnOff(c->param[0], r, r_filt, h, s, f);
                 case 0:
                     break;
                 default:
@@ -3902,14 +3936,16 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
     }
 }
 
-void toggleCanOnOff(int param) {
+void toggleCanOnOff(int param, hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f) {
     if(D_DISABLE == param) {
         /* turn CAN off */
         HUBO_FLAG_CAN_SEND=OFF;
     }
     else if(D_ENABLE == param) {
-        /* turn CAN off */
+        /* turn CAN on */
         HUBO_FLAG_CAN_SEND=ON;
+        /* set reference to state */
+        state2refSlow(s, r, rf, h, f);
     }
 }
 
