@@ -1210,6 +1210,9 @@ void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD) {
 
 void meta_sendCan(hubo_can_t skt, const struct can_frame* f) {
 
+  if (1==HUBO_FLAG_NO_CAN_SEND) {  }
+  else
+  {
     int cidx = can_to_channel_idx(skt);
     
     if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
@@ -1237,6 +1240,7 @@ void meta_sendCan(hubo_can_t skt, const struct can_frame* f) {
         fprintf(stderr, "warning: for buffer %d, loop writes=%d, but buf size=%d\n",
                 cidx, global_cinfo[cidx].writes, (int)global_cinfo[cidx].buf.size);
     }
+  }
 
 }
   
