@@ -396,8 +396,9 @@ typedef enum {
 
 	D_IMU_SENSOR_0		,	///> Parameter to indicate IMU sensor 0
 	D_IMU_SENSOR_1		,	///> Parameter to indicate IMU sensor 1
-	D_IMU_SENSOR_2			///> Parameter to indicate IMU sensor 2
+	D_IMU_SENSOR_2		,	///> Parameter to indicate IMU sensor 2
 
+        D_TOGGLE_CAN_ON_OFF             ///> Toggle can ON OFF
 
 
 } hubo_d_param_t;

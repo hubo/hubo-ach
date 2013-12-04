@@ -297,7 +297,7 @@ void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD);
 void meta_sendCan(hubo_can_t skt, const struct can_frame* f);
 
 void checkReadWriteErrors(hubo_state_t* H_state_ptr, int* successful_encs, int* successful_fts, int* successful_imus, int vflag);
-
+void toggleCanOnOff(int param); 
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -362,7 +362,7 @@ extern ach_channel_t iotrace_chan;
 int verbose;
 int debug;
 uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
-uint8_t HUBO_FLAG_NO_CAN_SEND=0;             // disables all outbound CAN send
+uint8_t HUBO_FLAG_CAN_SEND=ON;             // disables all outbound CAN send
 
 // ach message type
 //typedef struct hubo h[1];
@@ -1210,9 +1210,7 @@ void meta_readCan(hubo_can_t skt, struct can_frame* f, double timeoutD) {
 
 void meta_sendCan(hubo_can_t skt, const struct can_frame* f) {
 
-  if (1==HUBO_FLAG_NO_CAN_SEND) {  }
-  else
-  {
+  if (ON==HUBO_FLAG_CAN_SEND) {  
     int cidx = can_to_channel_idx(skt);
     
     if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
@@ -3892,6 +3890,8 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 //                case D_GET_BOARD_PARAMS:
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //                    break;
+                case D_TOGGLE_CAN_ON_OFF;
+                    toggleCanOnOff(c->param[0]);
                 case 0:
                     break;
                 default:
@@ -3902,6 +3902,16 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
     }
 }
 
+void toggleCanOnOff(int param) {
+    if(0 == param) {
+        /* turn CAN off */
+        HUBO_FLAG_CAN_SEND=OFF;
+    }
+    else if(1 == param) {
+        /* turn CAN off */
+        HUBO_FLAG_CAN_SEND=ON;
+    }
+}
 
 double enc2rad(int jnt, int enc, hubo_param_t *h) {
     hubo_joint_param_t *p = &h->joint[jnt];
@@ -4427,7 +4437,7 @@ int main(int argc, char **argv) {
             printf("DRC-Hubo Type \n");
         }
         if(strcmp(argv[i], "-nocansend") == 0){
-            HUBO_FLAG_NO_CAN_SEND = 1;
+            HUBO_FLAG_CAN_SEND = OFF;
             printf("No CAN Send \n");
         }
         i++;

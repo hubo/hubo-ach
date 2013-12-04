@@ -88,7 +88,7 @@ int name2sensor(char* name, hubo_param_t *h);
 double hubo_set(char*s, hubo_param_t *p);
 char* cmd [] ={ "initialize","fet","initializeAll","homeAll","zero","zeroacc","iniSensors","reset",
                 "ctrl","ctrlAll","enczero", "goto","get","test","update", "quit","beep", "home"," ",
-                "resetAll","status","statusAll","comp","kp","kd","maxPWM","grav"}; //,
+                "resetAll","status","statusAll","comp","kp","kd","maxPWM","grav","canSend"}; //,
 
 
 int main() {
@@ -415,6 +415,22 @@ int main() {
                     printf("%s - Turning Off CTRL\n",getArg(buf,1));}
                 else {
                     printf("%s - Turning On CTRL\n",getArg(buf,1));}
+            }
+        }
+        else if (strcmp(buf0,"canSend")==0) {
+            int onOrOff = atof(getArg(buf,2));
+            if(onOrOff == 0 | onOrOff == 1) {
+                H_cmd.type = D_TOGGLE_CAN_ON_OFF;
+                H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
+                if(onOrOff==1)			// 1 = on, 0 = 0ff
+                    H_cmd.param[0] = D_ENABLE;
+                else if(onOrOff==0)
+                    H_cmd.param[0] = D_DISABLE;	
+                r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+                if(onOrOff == 0) {
+                    printf("%s - Turning Off CAN Send\n",getArg(buf,1));}
+                else {
+                    printf("%s - Turning On CAN Send\n",getArg(buf,1));}
             }
         }
         else if (strcmp(buf0,"fet")==0) {
