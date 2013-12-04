@@ -3903,11 +3903,11 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 }
 
 void toggleCanOnOff(int param) {
-    if(0 == param) {
+    if(D_DISABLE == param) {
         /* turn CAN off */
         HUBO_FLAG_CAN_SEND=OFF;
     }
-    else if(1 == param) {
+    else if(D_ENABLE == param) {
         /* turn CAN off */
         HUBO_FLAG_CAN_SEND=ON;
     }
