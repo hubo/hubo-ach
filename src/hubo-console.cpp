@@ -418,7 +418,7 @@ int main() {
             }
         }
         else if (strcmp(buf0,"canSend")==0) {
-            int onOrOff = atof(getArg(buf,2));
+            int onOrOff = atof(getArg(buf,1));
             if(onOrOff == 0 | onOrOff == 1) {
                 H_cmd.type = D_TOGGLE_CAN_ON_OFF;
                 H_cmd.joint = name2mot(getArg(buf,1),&H_param);  // set motor num
