@@ -3890,7 +3890,7 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 //                case D_GET_BOARD_PARAMS:
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //                    break;
-                case D_TOGGLE_CAN_ON_OFF;
+                case D_TOGGLE_CAN_ON_OFF:
                     toggleCanOnOff(c->param[0]);
                 case 0:
                     break;
