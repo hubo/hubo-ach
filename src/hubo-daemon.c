@@ -362,7 +362,7 @@ extern ach_channel_t iotrace_chan;
 int verbose;
 int debug;
 uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
-
+uint8_t HUBO_FLAG_NO_CAN_SEND=0;             // disables all outbound CAN send
 
 // ach message type
 //typedef struct hubo h[1];
@@ -1490,7 +1490,7 @@ void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f)
 
 void hgetPowerVals(hubo_param_t *h, struct can_frame *f){
     fgetPowerVals(h, f);
-    sendCan(hubo_socket[UPPER_CAN], f);
+    meta_sendCan(hubo_socket[UPPER_CAN], f);
 }
 
 void fgetPowerVals(hubo_param_t *h, struct can_frame *f){
@@ -3558,32 +3558,32 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
 
     // TODO: Make a loop here instead of this stupidity
     fGetBoardParamA( jnt, offset, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 1);
 
     fGetBoardParamB( jnt, offset, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 2);
 
     fGetBoardParamC( jnt, offset, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 3);
 
     fGetBoardParamD( jnt, offset, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 4);
 
     fGetBoardParamE( jnt, offset, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 5);
 
     fGetBoardParamF( jnt, offset, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 6);
 
@@ -3595,17 +3595,17 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     // Note: These next three are redundant because they are params that are
     // shared among all the joints on a board
     fGetBoardParamG( jnt, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 7);
 
     fGetBoardParamH( jnt, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 8);
 
     fGetBoardParamI( jnt, h, f );
-    sendCan(getSocket(h,jnt), f);
+    meta_sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 9);
 
@@ -4421,6 +4421,10 @@ int main(int argc, char **argv) {
         if(strcmp(argv[i], "-drc") == 0){
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
             printf("DRC-Hubo Type \n");
+        }
+        if(strcmp(argv[i], "-nocansend") == 0){
+            HUBO_FLAG_NO_CAN_SEND = 1;
+            printf("No CAN Send \n");
         }
         i++;
     }
