@@ -848,7 +848,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
                     "warning: can buf %d failed sanity check: "
                     "buf size=%d, write count=%d. quitting.\n",
                     cidx, (int)cinfo->buf.size, cinfo->writes);
-            hubo_sig_quit = 1;
+// Dan remove 2013-12-04
+//            hubo_sig_quit = 1;
             return 0;
         }
         
@@ -989,7 +990,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
             if (pselect_errno != EINTR) {
                 errno = pselect_errno;
                 perror("pselect in pump_message_loop");
-                hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//                hubo_sig_quit = 1;
                 break;
             } else {
                 // don't do reads, just writes
@@ -1028,7 +1030,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
 
                     fprintf(stderr, "error: can buf head %d failed, quitting\n",
                             cidx);
-                    hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//                    hubo_sig_quit = 1;
                     return overrun;
 
                 } 
@@ -1038,7 +1041,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
                     fprintf(stderr, "error: can buf %d sequence no mismatch. "
                             "global: %d, buf %d. quitting.\n",
                             cidx, cinfo->head_sequence_no, tf->sequence_no);
-                    hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//                    hubo_sig_quit = 1;
                     return overrun;
 
                 }
@@ -1091,7 +1095,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
                         fprintf(stderr,
                                 "error: pop can buf %d failed, quitting\n",
                                 cidx);
-                        hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//                        hubo_sig_quit = 1;
                         return overrun;
                     }
 
@@ -1190,7 +1195,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
     if (nominal_remaining_nsec <= -ultimate_timeout_nsec) {
         fprintf(stderr, "pump_message_loop took longer than %5.6fs, qutting\n",
                 ultimate_timeout_nsec*1e-9);
-        hubo_sig_quit = 1;
+// dan remote 2013-12-04
+//        hubo_sig_quit = 1;
     } else if (overrun) { 
         fprintf(stderr, "missed loop deadline by %5.6fs\n",
                 -nominal_remaining_nsec*1e-9);
@@ -1214,7 +1220,8 @@ void meta_sendCan(hubo_can_t skt, const struct can_frame* f) {
     
     if (!can_buf_push(&global_cinfo[cidx].buf, f, global_cinfo[cidx].tail_sequence_no)) {
         fprintf(stderr, "can buffer %d: push failed, will quit\n", cidx);
-        hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//        hubo_sig_quit = 1;
     }
 
     ++global_cinfo[cidx].writes;
@@ -1223,11 +1230,13 @@ void meta_sendCan(hubo_can_t skt, const struct can_frame* f) {
     if (!tf) {
         fprintf(stderr, "error getting tail for %d in meta_sendCan, quitting!\n",
                 cidx);
-        hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//        hubo_sig_quit = 1;
     } else if (tf->sequence_no != global_cinfo[cidx].tail_sequence_no) {
         fprintf(stderr, "sequence no mismatch after push to %d: buf %d, global: %d, quitting\n",
                 cidx, tf->sequence_no, global_cinfo[cidx].tail_sequence_no);
-        hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//        hubo_sig_quit = 1;
     }
 
 
