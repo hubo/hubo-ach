@@ -385,7 +385,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         }
 */
 ////    }
-    state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
+
+    /* only get encoder values if CAN is on */
+    if(ON==HUBO_FLAG_CAN_SEND)  state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
 
     
 
@@ -501,6 +503,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         // Note: I moved the encoder reading to be ahead of the filter and send ref.
         // That way the filter is working off of the latest encoder data.
         // Hopefully there aren't unforeseen timing issues with this.
+
+
         
         /* Set all Ref */
         if(hubo_noRefTimeAll < T ) {
@@ -513,6 +517,11 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             hubo_noRefTimeAll = hubo_noRefTimeAll - T;
             H_state.refWait = 1;
         }
+
+
+
+
+
 
         /* Only on startup */
         // TODO: Investigate a more meaningful way to initialize
@@ -865,7 +874,7 @@ void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t 
   int ii=0;
   
   /* Check encoder values 100 times */
-  for(ii = 0; i < 10 ; ii++) {
+  for(ii = 0; i < 20 ; ii++) {
     /* get encoder values */
     getEncAllSlow(s, h, f);
     /* set encoder values to ref and state */
@@ -878,6 +887,8 @@ void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t 
         s->joint[i].ref = s->joint[i].pos;
       }
     }
+    usleep(100000);
+
   }
   /* put back on channels */
   ach_put(&chan_hubo_ref, r, sizeof(*r));
@@ -3767,11 +3778,13 @@ int main(int argc, char **argv) {
             HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
         }
         if(strcmp(argv[i], "-drc") == 0){
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
             printf("DRC-Hubo Type \n");
         }
 
         if(strcmp(argv[i], "-nocansend") == 0){
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
             HUBO_FLAG_CAN_SEND = OFF;
             printf("No CAN Send \n");
         }

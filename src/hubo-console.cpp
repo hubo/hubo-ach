@@ -427,6 +427,7 @@ int main() {
                 else if(onOrOff==0)
                     H_cmd.param[0] = D_DISABLE;	
                 r = ach_put( &chan_hubo_board_cmd, &H_cmd, sizeof(H_cmd) );
+                sleep(4);
                 if(onOrOff == 0) {
                     printf("%s - Turning Off CAN Send\n",getArg(buf,1));}
                 else {
