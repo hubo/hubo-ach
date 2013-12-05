@@ -96,6 +96,8 @@ void openAllCAN(int vCan) {
  *	CAN frame to send
  */
 int sendCan(hubo_can_t skt, struct can_frame *f) {
+    if (ON==HUBO_FLAG_CAN_SEND)  
+    {
 	//int bytes_sent = write( skt, f, sizeof(*f) );
 	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( (bytes_sent < 0) & (1 == hubo_ver_can) ) {
@@ -112,6 +114,11 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	}*/ //TODO: Come up with better debug system
 
 	return bytes_sent;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 int flushCan(hubo_can_t skt, int timeOut, double giveUp)

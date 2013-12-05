@@ -48,6 +48,7 @@ FLAG_DRC_HUBO=0
 FLAG_DRC_HUBO_SIM='drc'
 FLAG_OPENHUBO_SIM='openhubo'
 FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
+FLAG_NO_CAN_SEND=0
 
 HUBO_REMOTE_ADDRESS='0.0.0.0'
 
@@ -449,8 +450,15 @@ RunDaemon()
                         then
                           DAEMON_ARGS+=" -drc"
                         fi
+
+                        if [[ $FLAG_NO_CAN_SEND -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -nocansend"
+                          DAEMON_ARGS+=" -nogetparam"
+                        fi
        	             	sudo hubo-daemon $DAEMON_ARGS 
 #                fi
+
 	;;
 	esac
 }
@@ -893,6 +901,7 @@ ShowUsage()
         echo '              :Options:'
         echo '                     (no-arg)      : loads Hubo Plus joint table'
         echo '                     drc           : loads drc-hubo joint table'
+        echo '              :      nocansend     : disable sending can on start'
 	echo 'daemon        : Same as "start" but does not run hubo-ach console'
 	echo 'run           : Start all channels and processes and NO consle'
 	echo 'stop          : Close all channels and processes'
@@ -975,6 +984,9 @@ do
           FLAG_DRC_HUBO=1
           FLAG_OPENHUBO=$FLAG_DRC_HUBO_SIM
           SetHuboType $var
+      ;;
+      'nocansend' )
+          FLAG_NO_CAN_SEND=1
       ;;
     esac
     HUBO_I=$(($HUBO_I+1))

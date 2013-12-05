@@ -347,7 +347,9 @@ typedef enum {
                             param: N/A
                             iValues: N/A
                             dValues: N/A */
-        D_COMP_MODE_ON_OFF              ///> turn on/off comp mode
+        D_COMP_MODE_ON_OFF,              ///> turn on/off comp mode
+
+        D_TOGGLE_CAN_ON_OFF             ///> Toggle can ON OFF
 	
 } hubo_d_cmd_t;
 

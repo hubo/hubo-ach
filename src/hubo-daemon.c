@@ -141,6 +141,7 @@ double enc2radNkDrc(int jnt, int enc, hubo_param_t *h);
 void hGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f);
 void fGetEncValue(int jnt, uint8_t encChoice, hubo_param_t *h, struct can_frame *f);
 void getEncAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
+void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f);
 void getCurrentAllSlow(hubo_state_t *s, hubo_param_t *h, struct can_frame *f);
 void getCurrentAllSlowMod(hubo_state_t *s, hubo_param_t *h, struct can_frame *f, int mod);
 void hgetPowerVals(hubo_param_t *h, struct can_frame *f);
@@ -266,12 +267,12 @@ uint8_t duty_to_byte(int dir, int duty);
 unsigned short DrcFingerSignConvention(short h_input,unsigned char h_type);
 unsigned long DrcSignConvention(long h_input);
 double debugEnc2Rad(int jnt, int enc, hubo_param_t* h, int line);
-
-
+void toggleCanOnOff(int param, hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f);
 /* Flags */
 int verbose;
 int debug;
 uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
+uint8_t HUBO_FLAG_CAN_SEND = ON;             // disables/enables all outbound CAN send
 
 
 // ach message type
@@ -367,15 +368,15 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     /* initilization process */
     
     /* get encoder values */
-    getEncAllSlow(&H_state, H_param, &frame);
+////    getEncAllSlow(&H_state, H_param, &frame);
 
     /* set encoder values to ref and state */
-    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
-        H_ref.ref[i] = H_state.joint[i].pos;
-        H_ref_neck.ref[i] = H_ref.ref[i];
-        H_ref.mode[i] = HUBO_REF_MODE_REF_FILTER;
-        H_ref_filter.ref[i] = H_state.joint[i].pos;
-        H_state.joint[i].ref = H_state.joint[i].pos;
+////    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+////        H_ref.ref[i] = H_state.joint[i].pos;
+////        H_ref_neck.ref[i] = H_ref.ref[i];
+////        H_ref.mode[i] = HUBO_REF_MODE_REF_FILTER;
+////        H_ref_filter.ref[i] = H_state.joint[i].pos;
+////        H_state.joint[i].ref = H_state.joint[i].pos;
 /*
         if(true == H_state.joint[i].active) {
             hGetBoardStatus(i, &H_state, &H_param, &frame);
@@ -384,7 +385,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             if(((int)H_state.status[i].homeFlag) == (int)HUBO_HOME_OK) H_state.joint[i].zeroed = 1;
         }
 */
-    }
+////    }
 
 
     
@@ -854,6 +855,38 @@ void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f){
 	readCan(hubo_socket[UPPER_CAN], f, HUBO_CAN_TIMEOUT_DEFAULT);
 	decodeFrame(s, h, f);	
 }
+
+
+
+
+void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f) {
+/* updates reference to the state, checks multiple times*/
+
+    /* get encoder values */
+  getEncAllSlow(s, h, f);
+  int i=0;
+  int ii=0;
+  
+  /* Check encoder values 100 times */
+  for(ii = 0; i < 100 ; i++) {
+    /* set encoder values to ref and state */
+    for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
+      if( (s->joint[i].pos > -2*M_PI) & (s->joint[i].pos < 2*M_PI)){
+        r->ref[i] = s->joint[i].pos;
+//        H_ref_neck.ref[i] = H_ref.ref[i];   // no neck
+        r->mode[i] = HUBO_REF_MODE_REF_FILTER;
+        rf->ref[i] = s->joint[i].pos;
+        s->joint[i].ref = s->joint[i].pos;
+      }
+    }
+  }
+
+}
+
+
+
+
+
 
 
 
@@ -3221,6 +3254,8 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
                 case D_GET_BOARD_PARAMS_ALL:
                     hGetAllBoardParams( h, s, f );
                     break;
+                case D_TOGGLE_CAN_ON_OFF:
+                      toggleCanOnOff(c->param[0], s, r, r_filt, h, f);
 //                case D_GET_BOARD_PARAMS:
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //                    break;
@@ -3735,6 +3770,15 @@ int main(int argc, char **argv) {
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
             printf("DRC-Hubo Type \n");
         }
+
+        if(strcmp(argv[i], "-nocansend") == 0){
+            HUBO_FLAG_CAN_SEND = OFF;
+            printf("No CAN Send \n");
+        }
+        if(strcmp(argv[i], "-nogetparam") == 0){
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
+            printf("No Get Motor Param \n");
+        }
         i++;
     }
     // Daemonize
@@ -3827,3 +3871,17 @@ uint8_t isHands(int jnt)
         return 0;
 }
 
+
+
+void toggleCanOnOff(int param, hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f) {
+    if(D_DISABLE == param) {
+        /* turn CAN off */
+        HUBO_FLAG_CAN_SEND=OFF;
+    }
+    else if(D_ENABLE == param) {
+        /* turn CAN on */
+          HUBO_FLAG_CAN_SEND=ON;
+        /* set reference to state */
+        state2refSlow(s, r, rf, h, f);
+    }
+}
