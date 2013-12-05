@@ -465,7 +465,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
    
 
 
-/
 state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
  
     /* get encoder values */
@@ -3594,32 +3593,32 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
 
     // TODO: Make a loop here instead of this stupidity
     fGetBoardParamA( jnt, offset, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 1);
 
     fGetBoardParamB( jnt, offset, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 2);
 
     fGetBoardParamC( jnt, offset, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 3);
 
     fGetBoardParamD( jnt, offset, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 4);
 
     fGetBoardParamE( jnt, offset, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 5);
 
     fGetBoardParamF( jnt, offset, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     bytes += decodeParamFrame(jnt, b, h, f, 6);
 
@@ -3631,17 +3630,17 @@ void hGetBoardParams( int jnt, hubo_d_param_t param, hubo_param_t *h, // TODO: R
     // Note: These next three are redundant because they are params that are
     // shared among all the joints on a board
     fGetBoardParamG( jnt, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 7);
 
     fGetBoardParamH( jnt, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 8);
 
     fGetBoardParamI( jnt, h, f );
-    meta_sendCan(getSocket(h,jnt), f);
+    sendCan(getSocket(h,jnt), f);
     readCan(hubo_socket[h->joint[jnt].can], f, timeoutScale*HUBO_CAN_TIMEOUT_DEFAULT);
     decodeParamFrame(jnt, b, h, f, 9);
 
@@ -3925,7 +3924,7 @@ void huboMessage(hubo_ref_t *r, hubo_ref_t *r_filt, hubo_param_t *h,
 //                    hGetBoardParams( c->joint, c->param[0], h, s, f ); // TODO: Do this.
 //                    break;
                 case D_TOGGLE_CAN_ON_OFF:
-                    toggleCanOnOff(c->param[0], r, r_filt, h, s, f);
+                    toggleCanOnOff(c->param[0], s, r, r_filt, h, f);
                 case 0:
                     break;
                 default:
