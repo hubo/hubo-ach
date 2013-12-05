@@ -49,6 +49,8 @@ FLAG_DRC_HUBO_SIM='drc'
 FLAG_OPENHUBO_SIM='openhubo'
 FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
 FLAG_NO_CAN_SEND=0
+FLAG_RAINBOW_WALKING_MODE_START=0
+
 
 HUBO_REMOTE_ADDRESS='0.0.0.0'
 
@@ -455,6 +457,11 @@ RunDaemon()
                         then
                           DAEMON_ARGS+=" -nocansend"
                           DAEMON_ARGS+=" -nogetparam"
+                        fi
+
+                        if [[ $FLAG_RAINBOW_WALKING_MODE_START -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -rainbowwalkingmode"
                         fi
        	             	sudo hubo-daemon $DAEMON_ARGS 
 #                fi
@@ -983,10 +990,14 @@ do
       'drc' )
           FLAG_DRC_HUBO=1
           FLAG_OPENHUBO=$FLAG_DRC_HUBO_SIM
+          FLAG_RAINBOW_WALKING_MODE_START=1
           SetHuboType $var
       ;;
       'nocansend' )
           FLAG_NO_CAN_SEND=1
+      ;;
+      'walking' )
+          FLAG_RAINBOW_WALKING_MODE_START=1
       ;;
     esac
     HUBO_I=$(($HUBO_I+1))

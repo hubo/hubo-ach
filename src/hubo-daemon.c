@@ -248,6 +248,9 @@ void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 
 
+/*Rainbow Walking Stance Start*/
+void setStartWalkReady(hubo_ref_t *r, hubo_state_t *s, hubo_ref_t *f);
+
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -273,6 +276,7 @@ int verbose;
 int debug;
 uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
 uint8_t HUBO_FLAG_CAN_SEND = ON;             // disables/enables all outbound CAN send
+uint8_t HUBO_FLAG_RAINBOW_WALKING_MODE = OFF; // enables/disables windows walking mode at start up (crouched)
 
 // ach message type
 //typedef struct hubo h[1];
@@ -386,8 +390,12 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 */
 ////    }
 
+
+    /* Check for windows walking mode */
+    if(ON==HUBO_FLAG_RAINBOW_WALKING_MODE) setStartWalkReady(&H_ref, &H_state, &H_ref_filter);
+
     /* only get encoder values if CAN is on */
-    if(ON==HUBO_FLAG_CAN_SEND)  state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
+    if(ON==HUBO_FLAG_CAN_SEND) state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
 
     
 
@@ -675,6 +683,55 @@ void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f)
 }
 
 
+void setStartWalkReady(hubo_ref_t *r, hubo_state_t *s, hubo_ref_t *f) {
+    r->ref[WST] = 0.000057;
+    r->ref[NKY]	= 0;
+    r->ref[NK1]	= 0;
+    r->ref[NK2]	= 0;
+    r->ref[LSP]	= 0.435205;
+    r->ref[LSR]	= 0.170997;
+    r->ref[LSY]	= -0.001728;
+    r->ref[LEB]	= -0.697599;
+    r->ref[LWY]	= 0.0011;
+    r->ref[LWR]	= 0;
+    r->ref[LWP]	= 0.000188;
+    r->ref[RSP]	= 0.436198;
+    r->ref[RSR]	= -0.173856;
+    r->ref[RSY]	= 0.001618;
+    r->ref[REB]	= -0.697237;
+    r->ref[RWY]	= -0.002215;
+    r->ref[RWR]	= 0;
+    r->ref[RWP]	= 0.000644;
+    r->ref[LHY]	= 0.000031;
+    r->ref[LHR]	= -0.000012;
+    r->ref[LHP]	= -0.383801;
+    r->ref[LKN]	= 0.767872;
+    r->ref[LAP]	= -0.383859;
+    r->ref[LAR]	= 0.00003;
+    r->ref[RHY]	= -0.000057;
+    r->ref[RHR]	= 0.000009;
+    r->ref[RHP]	= -0.383801;
+    r->ref[RKN]	= 0.767846;
+    r->ref[RAP]	= -0.383877;
+    r->ref[RAR]	= -0.00002;
+    r->ref[RF1]	= 0;
+    r->ref[RF2]	= 0;
+    r->ref[RF3]	= 0;
+    r->ref[RF4]	= 0;
+    r->ref[RF5]	= 0;
+    r->ref[LF1]	= 0;
+    r->ref[LF2]	= 0;
+    r->ref[LF3]	= 0;
+    r->ref[LF4]	= 0;
+    r->ref[LF5]	= 0;
+
+    int i = 0;
+    for(i = 0; i < HUBO_JOINT_COUNT; i++){
+      s->joint[i].ref = r->ref[i];
+      f->joint[i].ref = r->ref[i];
+    }
+
+}
 
 void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_ref_t *f) {
     int i = 0;
@@ -3791,6 +3848,11 @@ int main(int argc, char **argv) {
         if(strcmp(argv[i], "-nogetparam") == 0){
             HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
             printf("No Get Motor Param \n");
+        }
+        if(strcmp(argv[i], "-rainbowwalkingmode") == 0){
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
+            HUBO_FLAG_RAINBOW_WALKING_MODE = ON;
+            printf("Rainbow Walking Mode Start \n");
         }
         i++;
     }
