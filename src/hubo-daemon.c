@@ -274,7 +274,6 @@ int debug;
 uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
 uint8_t HUBO_FLAG_CAN_SEND = ON;             // disables/enables all outbound CAN send
 
-
 // ach message type
 //typedef struct hubo h[1];
 
@@ -386,7 +385,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         }
 */
 ////    }
-
+    state2refSlow(&H_state, &H_ref, &H_ref_filter, H_param, &frame);
 
     
 
@@ -862,13 +861,13 @@ void getPower(hubo_state_t *s, hubo_param_t *h, struct can_frame *f){
 void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t *h, struct can_frame *f) {
 /* updates reference to the state, checks multiple times*/
 
-    /* get encoder values */
-  getEncAllSlow(s, h, f);
   int i=0;
   int ii=0;
   
   /* Check encoder values 100 times */
-  for(ii = 0; i < 100 ; i++) {
+  for(ii = 0; i < 10 ; ii++) {
+    /* get encoder values */
+    getEncAllSlow(s, h, f);
     /* set encoder values to ref and state */
     for( i = 0; i < HUBO_JOINT_COUNT; i++ ) {
       if( (s->joint[i].pos > -2*M_PI) & (s->joint[i].pos < 2*M_PI)){
@@ -880,7 +879,8 @@ void state2refSlow(hubo_state_t *s, hubo_ref_t *r, hubo_ref_t *rf, hubo_param_t 
       }
     }
   }
-
+  /* put back on channels */
+  ach_put(&chan_hubo_ref, r, sizeof(*r));
 }
 
 

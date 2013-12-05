@@ -144,6 +144,7 @@ extern "C" {
 #define OFF 0 // off static
 #define ON  1 // on static
 
+
 // array of joint name strings (total of 42)
 static const char *jointNames[HUBO_JOINT_COUNT] =
 	{"WST", "NKY", "NK1", "NK2", // 0 1 2 3
@@ -443,7 +444,7 @@ typedef struct hubo_board_cmd {
 
 
 extern int hubo_debug;
-
+extern uint8_t HUBO_FLAG_CAN_SEND;             // disables/enables all outbound CAN send
 
 #ifdef __cplusplus
 }
