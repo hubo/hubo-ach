@@ -728,7 +728,8 @@ void setStartWalkReady(hubo_ref_t *r, hubo_state_t *s, hubo_ref_t *f) {
     int i = 0;
     for(i = 0; i < HUBO_JOINT_COUNT; i++){
       s->joint[i].ref = r->ref[i];
-      f->joint[i].ref = r->ref[i];
+      f->ref[i] = r->ref[i];
+      s->joint[i].pos = r->ref[i];
     }
 
 }
