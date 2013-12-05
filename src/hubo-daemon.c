@@ -1196,7 +1196,7 @@ int pump_message_loop(hubo_state_t* H_state_ptr, hubo_param_t* H_param_ptr, cons
     if (nominal_remaining_nsec <= -ultimate_timeout_nsec) {
         fprintf(stderr, "pump_message_loop took longer than %5.6fs, qutting\n",
                 ultimate_timeout_nsec*1e-9);
-        hubo_sig_quit = 1;
+//        hubo_sig_quit = 1;
     } else if (overrun) { 
         fprintf(stderr, "missed loop deadline by %5.6fs\n",
                 -nominal_remaining_nsec*1e-9);
@@ -4475,6 +4475,10 @@ int main(int argc, char **argv) {
         if(strcmp(argv[i], "-nocansend") == 0){
             HUBO_FLAG_CAN_SEND = OFF;
             printf("No CAN Send \n");
+        }
+        if(strcmp(argv[i], "-nogetparam") == 0){
+            HUBO_FLAG_GET_DRC_BOARD_PARAM = OFF;
+            printf("No Get Param \n");
         }
         i++;
     }

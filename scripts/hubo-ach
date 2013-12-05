@@ -454,6 +454,7 @@ RunDaemon()
                         if [[ $FLAG_NO_CAN_SEND -eq 1 ]]
                         then
                           DAEMON_ARGS+=" -nocansend"
+                          DAEMON_ARGS+=" -nogetparam"
                         fi
        	             	sudo hubo-daemon $DAEMON_ARGS 
 #                fi
