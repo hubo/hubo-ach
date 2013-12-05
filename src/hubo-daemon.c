@@ -701,7 +701,8 @@ int pump_message_loop(hubo_state_t* H_state_ptr,
     if (nominal_remaining_nsec <= -ultimate_timeout_nsec) {
         fprintf(stderr, "pump_message_loop took longer than %5.6fs, qutting\n",
                 ultimate_timeout_nsec*1e-9);
-        hubo_sig_quit = 1;
+// Dan Remove 2013-12-04
+//        hubo_sig_quit = 1;
     } else if (overrun) { 
         fprintf(stderr, "missed loop deadline by %5.6fs\n",
                 -nominal_remaining_nsec*1e-9);
@@ -838,7 +839,7 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     frame.can_dlc = strlen( frame.data );
 
 
-    if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
+//    if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
 
@@ -907,7 +908,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     int successful_imus = 0;
 
     printf("Start Hubo Loop\n");
-    while(!hubo_sig_quit) {
+// Dan Change 2013-12-04
+//    while(!hubo_sig_quit) {
+    while(1) {
 
         for (i=0; i<HUBO_IMU_COUNT; ++i) {
             global_imu_valid[i] = 1;
