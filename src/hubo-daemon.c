@@ -179,6 +179,7 @@ double doubleFromBytePair(uint8_t data0, uint8_t data1);
 uint8_t getFingerInt(double n);
 
 void refFilterMode(hubo_ref_t *r, int L, hubo_param_t *h, hubo_state_t *s, hubo_ref_t *f);
+void getReadOnly(hubo_state_t *s, hubo_ref_t *r,  hubo_param_t *h, struct can_frame *f);
 
 /*   ~~~~   Added by M.X. Grey. Auxiliary CAN functions   ~~~~   */
 void hSetPosGain(hubo_board_cmd_t *c, hubo_param_t *h, struct can_frame *f);
@@ -246,7 +247,6 @@ void fSetNonComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f);
 
-
 /*
 void fSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
 void hSetComplementaryMode(int jnt, hubo_param_t *h, struct can_frame *f, int the_mode);
@@ -272,6 +272,8 @@ int verbose;
 int debug;
 uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board params, else will not
 
+/* Read only flag*/
+int roflag = 0;
 
 // ach message type
 //typedef struct hubo h[1];
@@ -556,7 +558,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         // Get current timestamp to send out with the state struct
 
-
         clock_gettime( CLOCK_MONOTONIC, &time );
         tsec = (double)time.tv_sec;
         tsec += (double)(time.tv_nsec)/1.0e9;
@@ -569,11 +570,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         else {
             H_state.time = tsec; // add time based on system time
         }
-
-
-
-        
-
 
         /* put data back in ACH channel */
         ach_put( &chan_hubo_state, &H_state, sizeof(H_state));
@@ -3288,10 +3284,24 @@ void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
     s->imu[num].w_y = Pr;
 }
 
+int byte2Int(char* b, int L) 
+{
+    if (L == 4)
+      return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8
+          | (b[3] & 0xff);
+    else if (L == 2)
+      return 0x00 << 24 | 0x00 << 16 | (b[0] & 0xff) << 8 | (b[1] & 0xff);
 
+    return 0;
+  }
 
+double enc2ref(int ticks, int jnt, hubo_param_t *h)
+        {
+        hubo_joint_param_t *p = &h->joint[jnt];
+        double theOut = (double)(ticks / (((double)p->driven / (double)p->drive) * (double)p->harmonic * (double)p->enc) )*2.0*M_PI;
+            return theOut;// (double)(ticks / ((driven / drive) * harmonic * enc * quad) * 360.0);
 
-
+        }
 
 
 
@@ -3307,6 +3317,99 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         s->power.voltage = voltage;
         s->power.current = current;
         s->power.power = power;	
+    }
+    /* Read Motor Ref */
+    else if( (fs >= REF_BASE_TXDF) && (fs < H_SENSOR_FT_BASE_RXDF)){
+      uint16_t mNum = fs - 0x10;
+      int i = 0;
+      int i_hold = 0;
+      for (i = 0 ; i++; i < HUBO_JOINT_COUNT){
+          if( h->joint[i].motNo == mNum ){
+            i_hold = i;
+            i = HUBO_JOINT_COUNT;
+          }
+      }
+      int motor[h->joint[i_hold].motNo];
+      char tempDeg[4];   // temperary hold for degree
+      int mult = 1;                   // direction holder 
+      double finalDeg = 0;            // final degree
+
+      for (i = 0; i < h->joint[i_hold].motNo; i++)      // fill motor numbers
+      {
+        motor[i] = h->joint[i_hold].jntNo + i;
+      }
+
+      for (i = 0; i < h->joint[i_hold].motNo; i++)
+      {
+        if (h->joint[i_hold].numMot == 2)
+        {
+        //Console.Write("2 : ");
+        tempDeg[0] = f->data[0 + i * 3];
+        tempDeg[1] = f->data[1 + i * 3];
+        tempDeg[2] = (char)(f->data[2 + i * 3] & 0x7F);
+        tempDeg[3] = 0;
+
+        if (f->data[2 + i * 3] > 127)
+        {
+          mult = -1;
+        }
+        else
+       {
+          mult = 1;
+       }
+       
+       int32_t tempInt = byte2Int(tempDeg, 4);
+       tempInt = tempInt * mult;
+       finalDeg = enc2ref(tempInt,i_hold+i,h);
+       s->joint[h->joint[i_hold].jntNo+i].ref = finalDeg;
+       }
+       else if (h->joint[i_hold].numMot == 1)
+       {
+         tempDeg[0] = f->data[0 + i * 3];
+         tempDeg[1] = f->data[1 + i * 3];
+         tempDeg[2] = (char)(f->data[2 + i * 3] & 0x7F);
+         tempDeg[3] = 0;
+
+         if (f->data[2 + i * 3] > 127)
+         {
+           mult = -1;
+         }
+         else
+         {
+           mult = 1;
+         }
+
+         int32_t tempInt = byte2Int(tempDeg, 4);
+         tempInt = tempInt * mult;
+         finalDeg = enc2ref(tempInt,i_hold+i,h);
+         s->joint[h->joint[i_hold].jntNo+i].ref = finalDeg;
+      }
+      else if (h->joint[i_hold].numMot == 3)
+      {
+        tempDeg[0] = f->data[0 + i * 2];
+        tempDeg[1] = (char)(f->data[1 + i * 2] & 0x7F);
+        tempDeg[2] = 0;
+        tempDeg[3] = 0;
+
+        if (f->data[1 + i * 2] > 127)
+        {
+          mult = -1;
+        }
+        else
+        {
+          mult = 1;
+        }
+        int32_t tempInt = byte2Int(tempDeg, 4);
+        tempInt = tempInt * mult;
+        if (mult == -1)
+        {
+          tempInt = -(32768 + tempInt);
+        }
+         finalDeg = enc2ref(tempInt,i_hold+i,h);
+         s->joint[h->joint[i_hold].jntNo+i].ref = finalDeg;
+      }
+    }
+      
     }
     /* Force-Torque Readings */
     else if( (fs >= H_SENSOR_FT_BASE_RXDF) && (fs <= H_SENSOR_FT_MAX_RXDF) )
@@ -3720,6 +3823,11 @@ int main(int argc, char **argv) {
             hubo_type = HUBO_ROBOT_TYPE_DRC_HUBO;
             printf("DRC-Hubo Type \n");
         }
+        if(strcmp(argv[i], "-ro") == 0){
+            roflag = 1;
+            printf("Read Only Mode \n");
+        }
+        i++;
         i++;
     }
     // Daemonize
@@ -3778,6 +3886,7 @@ int main(int argc, char **argv) {
     hubo_assert( ACH_OK == r, __LINE__ );
 
     openAllCAN( vflag );
+    setReadOnly( roflag );
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
     ach_put(&chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck));
     ach_put(&chan_hubo_enc, &H_enc, sizeof(H_enc));

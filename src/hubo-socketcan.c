@@ -44,9 +44,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 hubo_can_t hubo_socket[4];
-
+int read_only_mode = 0;
 int hubo_ver_can = 0;
-
 static int openCAN(char* name) {
 
 	/* Create the socket */
@@ -87,6 +86,10 @@ void openAllCAN(int vCan) {
 
 }
 
+void setReadOnly(int roFlag) {
+  read_only_mode = roFlag;
+}
+
 /**
  * Sends CAN packet to desired channel
  *
@@ -97,6 +100,8 @@ void openAllCAN(int vCan) {
  */
 int sendCan(hubo_can_t skt, struct can_frame *f) {
 	//int bytes_sent = write( skt, f, sizeof(*f) );
+    if(1 == read_only_mode){ return 0; }
+    else {
 	int bytes_sent = write( skt, f, sizeof(*f) );
 	if( (bytes_sent < 0) & (1 == hubo_ver_can) ) {
 		perror("bad write");
@@ -112,6 +117,8 @@ int sendCan(hubo_can_t skt, struct can_frame *f) {
 	}*/ //TODO: Come up with better debug system
 
 	return bytes_sent;
+    }
+    return 0;
 }
 
 int flushCan(hubo_can_t skt, int timeOut, double giveUp)

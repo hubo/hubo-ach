@@ -155,9 +155,11 @@ static const char *jointNames[HUBO_JOINT_COUNT] =
 	 "LF1", "LF2", "LF3", "LF4", "LF5"}; // 37 38 39 40 41
 
 typedef enum {
-    HUBO_VIRTUAL_MODE_NONE        = 0, ///< not virtual mode
-    HUBO_VIRTUAL_MODE_VIRTUAL     = 1, ///< virtual mode just uses vcan
-    HUBO_VIRTUAL_MODE_OPENHUBO    = 2  ///< changes timing for use with openhubo
+    HUBO_VIRTUAL_MODE_NONE           = 0, ///< not virtual mode
+    HUBO_VIRTUAL_MODE_VIRTUAL        = 1, ///< virtual mode just uses vcan
+    HUBO_VIRTUAL_MODE_OPENHUBO       = 2, ///< changes timing for use with openhubo
+    HUBO_MONITOR_MODE_READONLY       = 3, ///< only listens and reads
+    HUBO_MONITOR_MODE_READONLY_JAEMI = 4  ///< uses Jaemi's motor config to unpack the ref channel
 }__attribute__((packed)) hubo_virtual_mode_index_t;
 
 typedef enum {
