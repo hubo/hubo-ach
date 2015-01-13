@@ -48,6 +48,7 @@ FLAG_DRC_HUBO=0
 FLAG_DRC_HUBO_SIM='drc'
 FLAG_OPENHUBO_SIM='openhubo'
 FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
+FLAG_READONLY=0
 
 HUBO_REMOTE_ADDRESS='0.0.0.0'
 
@@ -413,6 +414,10 @@ RunDaemon()
 
 			sudo echo "i $HUBO_BITRATE e" > /dev/pcan0
 			sudo echo "i $HUBO_BITRATE e" > /dev/pcan1
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcan32
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcan33
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcanusb0
+			sudo echo "i $HUBO_BITRATE e" > /dev/pcanusb1
 	    		sudo ifconfig can0 up &>/dev/null
 			sudo ifconfig can1 up &>/dev/null
 			sudo ifconfig can2 up &>/dev/null
@@ -448,6 +453,10 @@ RunDaemon()
                         if [[ $FLAG_DRC_MODE -eq 1 ]]
                         then
                           DAEMON_ARGS+=" -drc"
+                        fi
+                        if [[ $FLAG_READONLY -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -ro"
                         fi
        	             	sudo hubo-daemon $DAEMON_ARGS 
 #                fi
@@ -975,6 +984,9 @@ do
           FLAG_DRC_HUBO=1
           FLAG_OPENHUBO=$FLAG_DRC_HUBO_SIM
           SetHuboType $var
+      ;;
+      'ro' )
+          FLAG_READONLY=1
       ;;
     esac
     HUBO_I=$(($HUBO_I+1))

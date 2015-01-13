@@ -358,8 +358,9 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
     sprintf( frame.data, "1234578" );
     frame.can_dlc = strlen( frame.data );
 
-
-    if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
+    if(0 == roflag){
+      if(ON == HUBO_FLAG_GET_DRC_BOARD_PARAM) hGetAllBoardParams( H_param, &H_state, &frame );
+    }
 
     ach_put(&chan_hubo_gains, &H_gains, sizeof(H_gains));
 
@@ -3827,7 +3828,6 @@ int main(int argc, char **argv) {
             roflag = 1;
             printf("Read Only Mode \n");
         }
-        i++;
         i++;
     }
     // Daemonize
