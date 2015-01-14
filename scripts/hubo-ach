@@ -49,6 +49,7 @@ FLAG_DRC_HUBO_SIM='drc'
 FLAG_OPENHUBO_SIM='openhubo'
 FLAG_OPENHUBO=$FLAG_OPENHUBO_SIM
 FLAG_READONLY=0
+FLAG_JAEMI=0
 
 HUBO_REMOTE_ADDRESS='0.0.0.0'
 
@@ -457,6 +458,10 @@ RunDaemon()
                         if [[ $FLAG_READONLY -eq 1 ]]
                         then
                           DAEMON_ARGS+=" -ro"
+                        fi
+                        if [[ $FLAG_JAEMI -eq 1 ]]
+                        then
+                          DAEMON_ARGS+=" -jaemi"
                         fi
        	             	sudo hubo-daemon $DAEMON_ARGS 
 #                fi
@@ -987,6 +992,9 @@ do
       ;;
       'ro' )
           FLAG_READONLY=1
+      ;;
+      'jaemi' )
+          FLAG_JAEMI=1
       ;;
     esac
     HUBO_I=$(($HUBO_I+1))

@@ -54,6 +54,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hubo-daemon.h"
 #include "hubo-jointparams.h"
 
+// for jaemi hubo
+#include "jaemihubo.h"
+#include "jaemihubo_canid.h"
+
 // Check out which CAN API to use
 #ifdef HUBO_CONFIG_ESD
 #include "hubo/hubo-esdcan.h"
@@ -275,6 +279,9 @@ uint8_t HUBO_FLAG_GET_DRC_BOARD_PARAM = ON;  // if ON will check for board param
 /* Read only flag*/
 int roflag = 0;
 
+/* Jaemi flag */
+int jaemiflag = 0;
+
 // ach message type
 //typedef struct hubo h[1];
 
@@ -306,6 +313,8 @@ int hubo_type = HUBO_ROBOT_TYPE_HUBO_PLUS;
 int imod0_glob = 0;
 int imod1_glob = 1;
 
+/* Jaemi joint ref */
+hubo_jaemi_param_t H_jaemi_param;
 
 void huboLoop(hubo_param_t *H_param, int vflag) {
     int i = 0;  // iterator
@@ -549,9 +558,10 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /* Update next joint status (one each loop) */
         getStatusIterate( &H_state, H_param, &frame);
 
+    if(1 == roflag){
         /* Read any aditional data left on the buffer */
-//        clearCanBuff(&H_state, H_param, &frame);
-
+        clearCanBuff(&H_state, H_param, &frame);
+    }
 
         /* Get all Current data */
 //        getCurrentAllSlow(&H_state, H_param, &frame);
@@ -3288,8 +3298,8 @@ void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
 int byte2Int(char* b, int L) 
 {
     if (L == 4)
-      return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8
-          | (b[3] & 0xff);
+      return b[3] << 24 | (b[2] & 0xff) << 16 | (b[1] & 0xff) << 8
+          | (b[0] & 0xff);
     else if (L == 2)
       return 0x00 << 24 | 0x00 << 16 | (b[0] & 0xff) << 8 | (b[1] & 0xff);
 
@@ -3303,8 +3313,6 @@ double enc2ref(int ticks, int jnt, hubo_param_t *h)
             return theOut;// (double)(ticks / ((driven / drive) * harmonic * enc * quad) * 360.0);
 
         }
-
-
 
 int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
     int fs = (int)f->can_id;
@@ -3324,25 +3332,44 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
       uint16_t mNum = fs - 0x10;
       int i = 0;
       int i_hold = 0;
-      for (i = 0 ; i++; i < HUBO_JOINT_COUNT){
-          if( h->joint[i].motNo == mNum ){
-            i_hold = i;
-            i = HUBO_JOINT_COUNT;
-          }
+      int motor[5];
+      memset(&motor, 0, sizeof(motor));
+      int number_of_motors = 0;
+      if ( 1 == jaemiflag ) {
+        i_hold = H_jaemi_param.jmc[mNum].joint[0];
+        number_of_motors = H_jaemi_param.jmc[mNum].jointNum;
+        
+        /* fill number of motors */
+        for (i = 0; i < number_of_motors; i++) {
+          motor[i] = H_jaemi_param.jmc[mNum].joint[i];
+          motor[i] = H_jaemi_param.joint[motor[i]]; // switch to hubo2+
+        }
       }
-      int motor[h->joint[i_hold].motNo];
+      else {
+        i_hold = 0;
+        for (i = 0 ; i < HUBO_JOINT_COUNT; i++){
+            if( h->joint[i].motNo == mNum ){
+              i_hold = i;
+              number_of_motors = h->joint[i_hold].motNo;
+  
+      /* fill number of motors - this needs fixing */
+              for (i = 0; i < number_of_motors; i++)
+              {
+              motor[i] = h->joint[i_hold].jntNo + i;
+              }
+              i = HUBO_JOINT_COUNT;
+            }
+        }
+      }
+
       char tempDeg[4];   // temperary hold for degree
       int mult = 1;                   // direction holder 
       double finalDeg = 0;            // final degree
 
-      for (i = 0; i < h->joint[i_hold].motNo; i++)      // fill motor numbers
-      {
-        motor[i] = h->joint[i_hold].jntNo + i;
-      }
 
-      for (i = 0; i < h->joint[i_hold].motNo; i++)
+      for (i = 0; i < number_of_motors; i++)
       {
-        if (h->joint[i_hold].numMot == 2)
+        if (2 == number_of_motors)
         {
         //Console.Write("2 : ");
         tempDeg[0] = f->data[0 + i * 3];
@@ -3361,17 +3388,17 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
        
        int32_t tempInt = byte2Int(tempDeg, 4);
        tempInt = tempInt * mult;
-       finalDeg = enc2ref(tempInt,i_hold+i,h);
-       s->joint[h->joint[i_hold].jntNo+i].ref = finalDeg;
+       finalDeg = enc2ref(tempInt,motor[i],h);
+       s->joint[motor[i]].ref = finalDeg;
        }
-       else if (h->joint[i_hold].numMot == 1)
+       else if (1 == number_of_motors)
        {
-         tempDeg[0] = f->data[0 + i * 3];
-         tempDeg[1] = f->data[1 + i * 3];
-         tempDeg[2] = (char)(f->data[2 + i * 3] & 0x7F);
+         tempDeg[0] = (uint8_t)f->data[0 + i * 3];
+         tempDeg[1] = (uint8_t)f->data[1 + i * 3];
+         tempDeg[2] = (uint8_t)(f->data[2 + i * 3] & 0x7F);
          tempDeg[3] = 0;
 
-         if (f->data[2 + i * 3] > 127)
+         if ((uint8_t)f->data[2 + i * 3] > 127)
          {
            mult = -1;
          }
@@ -3381,11 +3408,12 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
          }
 
          int32_t tempInt = byte2Int(tempDeg, 4);
+         //tempInt = 0b000000001001110001000000;
          tempInt = tempInt * mult;
-         finalDeg = enc2ref(tempInt,i_hold+i,h);
-         s->joint[h->joint[i_hold].jntNo+i].ref = finalDeg;
+         finalDeg = enc2ref(tempInt,motor[i],h);
+         s->joint[motor[i]].ref = finalDeg;
       }
-      else if (h->joint[i_hold].numMot == 3)
+      else if (3 == number_of_motors)
       {
         tempDeg[0] = f->data[0 + i * 2];
         tempDeg[1] = (char)(f->data[1 + i * 2] & 0x7F);
@@ -3406,8 +3434,8 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         {
           tempInt = -(32768 + tempInt);
         }
-         finalDeg = enc2ref(tempInt,i_hold+i,h);
-         s->joint[h->joint[i_hold].jntNo+i].ref = finalDeg;
+         finalDeg = enc2ref(tempInt,motor[i],h);
+         s->joint[motor[i]].ref = finalDeg;
       }
     }
       
@@ -3795,12 +3823,135 @@ int isError( int jnt, hubo_state_t *s) {
 
 }
 
+
+void setJaemiParam(){
+  memset(&H_jaemi_param, 0, sizeof(H_jaemi_param));
+
+  H_jaemi_param.joint[jRHY] = RHY;
+  H_jaemi_param.joint[jRHR] = RHR;
+  H_jaemi_param.joint[jRHP] = RHP;
+  H_jaemi_param.joint[jRKN] = RKN;
+  H_jaemi_param.joint[jRAP] = RAP;
+  H_jaemi_param.joint[jRAR] = RAR;
+  H_jaemi_param.joint[jLHY] = LHY;
+  H_jaemi_param.joint[jLHR] = LHR;
+  H_jaemi_param.joint[jLHP] = LHP;
+  H_jaemi_param.joint[jLKN] = LKN;
+  H_jaemi_param.joint[jLAP] = LAP;
+  H_jaemi_param.joint[jLAR] = LAR;
+  H_jaemi_param.joint[jRSP] = RSP;
+  H_jaemi_param.joint[jRSR] = RSR;
+  H_jaemi_param.joint[jRSY] = RSY;
+  H_jaemi_param.joint[jREB] = REB;
+  H_jaemi_param.joint[jLSP] = LSP;
+  H_jaemi_param.joint[jLSR] = LSR;
+  H_jaemi_param.joint[jLSY] = LSY;
+  H_jaemi_param.joint[jLEB] = LEB;
+  H_jaemi_param.joint[jRWY] = RWY;
+  H_jaemi_param.joint[jRW1] = RWR;
+  H_jaemi_param.joint[jRW2] = RWP;
+  H_jaemi_param.joint[jLWY] = LWY;
+  H_jaemi_param.joint[jLW1] = LWR;
+  H_jaemi_param.joint[jLW2] = LWP;
+  H_jaemi_param.joint[jNKY] = NKY;
+  H_jaemi_param.joint[jNK1] = NK1;
+  H_jaemi_param.joint[jNK2] = NK2;
+  H_jaemi_param.joint[jWST] = WST;
+  H_jaemi_param.joint[jRF1] = RF1;
+  H_jaemi_param.joint[jRF2] = RF2;
+  H_jaemi_param.joint[jRF3] = RF3;
+  H_jaemi_param.joint[jRF4] = RF4;
+  H_jaemi_param.joint[jRF5] = RF5;
+  H_jaemi_param.joint[jLF1] = LF1;
+  H_jaemi_param.joint[jLF2] = LF2;
+  H_jaemi_param.joint[jLF3] = LF3;
+  H_jaemi_param.joint[jLF4] = LF4;
+  H_jaemi_param.joint[jLF5] = LF5;
+
+  /* JMCs */
+  H_jaemi_param.jmc[jaemi_JMC0].joint[0] = jRHY;
+  H_jaemi_param.jmc[jaemi_JMC0].joint[1] = jRHR;
+  H_jaemi_param.jmc[jaemi_JMC0].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC1].joint[0] = jRHP;
+  H_jaemi_param.jmc[jaemi_JMC1].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_JMC2].joint[0] = jRKN;
+  H_jaemi_param.jmc[jaemi_JMC2].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_JMC3].joint[0] = jRAP;
+  H_jaemi_param.jmc[jaemi_JMC3].joint[1] = jRAR;
+  H_jaemi_param.jmc[jaemi_JMC3].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC4].joint[0] = jLHY;
+  H_jaemi_param.jmc[jaemi_JMC4].joint[1] = jLHR;
+  H_jaemi_param.jmc[jaemi_JMC4].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC5].joint[0] = jLHP;
+  H_jaemi_param.jmc[jaemi_JMC5].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_JMC6].joint[0] = jLKN;
+  H_jaemi_param.jmc[jaemi_JMC6].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_JMC7].joint[0] = jLAP;
+  H_jaemi_param.jmc[jaemi_JMC7].joint[1] = jLAR;
+  H_jaemi_param.jmc[jaemi_JMC7].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC8].joint[0] = jRSP;
+  H_jaemi_param.jmc[jaemi_JMC8].joint[1] = jRSR;
+  H_jaemi_param.jmc[jaemi_JMC8].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC9].joint[0] = jRSY;
+  H_jaemi_param.jmc[jaemi_JMC9].joint[1] = jREB;
+  H_jaemi_param.jmc[jaemi_JMC9].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC10].joint[0] = jLSP;
+  H_jaemi_param.jmc[jaemi_JMC10].joint[1] = jLSR;
+  H_jaemi_param.jmc[jaemi_JMC10].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_JMC11].joint[0] = jLSY;
+  H_jaemi_param.jmc[jaemi_JMC11].joint[1] = jLEB;
+  H_jaemi_param.jmc[jaemi_JMC11].jointNum = 2;
+
+  H_jaemi_param.jmc[jaemi_EJMC0].joint[0] = jRWY;
+  H_jaemi_param.jmc[jaemi_EJMC0].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_EJMC1].joint[0] = jLWY;
+  H_jaemi_param.jmc[jaemi_EJMC1].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_EJMC2].joint[0] = jNKY;
+  H_jaemi_param.jmc[jaemi_EJMC2].joint[1] = jNK1;
+  H_jaemi_param.jmc[jaemi_EJMC2].joint[2] = jNK2;
+  H_jaemi_param.jmc[jaemi_EJMC2].jointNum = 3;
+
+  H_jaemi_param.jmc[jaemi_EJMC3].joint[0] = jWST;
+  H_jaemi_param.jmc[jaemi_EJMC3].jointNum = 1;
+
+  H_jaemi_param.jmc[jaemi_EJMC4].joint[0] = jRF1;
+  H_jaemi_param.jmc[jaemi_EJMC4].joint[1] = jRF2;
+  H_jaemi_param.jmc[jaemi_EJMC4].joint[2] = jRF3;
+  H_jaemi_param.jmc[jaemi_EJMC4].joint[3] = jRF4;
+  H_jaemi_param.jmc[jaemi_EJMC4].joint[4] = jRF5;
+  H_jaemi_param.jmc[jaemi_EJMC4].jointNum = 5;
+
+  H_jaemi_param.jmc[jaemi_EJMC5].joint[0] = jLF1;
+  H_jaemi_param.jmc[jaemi_EJMC5].joint[1] = jLF2;
+  H_jaemi_param.jmc[jaemi_EJMC5].joint[2] = jLF3;
+  H_jaemi_param.jmc[jaemi_EJMC5].joint[3] = jLF4;
+  H_jaemi_param.jmc[jaemi_EJMC5].joint[4] = jLF5;
+  H_jaemi_param.jmc[jaemi_EJMC5].jointNum = 5;
+
+}
+
+
+
 int main(int argc, char **argv) {
+
 
     // Parse user input
     int vflag = HUBO_VIRTUAL_MODE_NONE;
     debug = 0;
-
+    
 
 
     int i = 1;
@@ -3828,11 +3979,17 @@ int main(int argc, char **argv) {
             roflag = 1;
             printf("Read Only Mode \n");
         }
+        if(strcmp(argv[i], "-jaemi") == 0){
+            jaemiflag = 1;
+            /* set ini */
+            setJaemiParam();
+            printf("Jaemi Mode \n");
+        }
         i++;
     }
     // Daemonize
     hubo_daemonize();
-    
+     
 
     // Initialize Hubo Structs
     hubo_ref_t H_ref;
