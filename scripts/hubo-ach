@@ -961,6 +961,8 @@ ShowUsage()
 	echo 'config        : Do a first-time setup'
         echo 'takelog       : enables hubo-ach logging'
         echo 'clearlog      : deletes old log files'
+        echo 'ro            : starts in CAN read-only mode'
+        echo 'jaemi         : use jaemi hubo joint translation for read-only mode'
 	echo
 	echo 'Type help after any of the above commands for'
 	echo '   a more detailed description'
