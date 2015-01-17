@@ -524,13 +524,13 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
 
         if(1 == roflag){
             /* Read any aditional data left on the buffer */
-            clearCanBuff(&H_state, H_param, &frame);
-            clearCanBuff(&H_state, H_param, &frame);
-            clearCanBuff(&H_state, H_param, &frame);
+            for ( i = 0; i < 10; i++){
+                clearCanBuff(&H_state, H_param, &frame);
+            }
             for( i = 0; i < HUBO_JOINT_COUNT; i++)
             {
                 H_ref.ref[i] = H_state.joint[i].ref;
-                //H_ref.mode[i] = HUBO_REF_MODE_REF;
+                H_ref.mode[i] = HUBO_REF_MODE_REF;
             }
             ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
         }
@@ -3319,10 +3319,10 @@ void decodeIMUFrame(int num, struct hubo_state *s, struct can_frame *f){
 int byte2Int(char* b, int L) 
 {
     if (L == 4)
-      return b[3] << 24 | (b[2] & 0xff) << 16 | (b[1] & 0xff) << 8
-          | (b[0] & 0xff);
+      return b[3] << 24 | (b[2] & 0x7f) << 16 | (b[1] & 0xff) << 8 | (b[0] & 0xff);
+//      return b[3] << 24 | (b[2] & 0xff) << 16 | (b[1] & 0xff) << 8 | (b[0] & 0xff);
     else if (L == 2)
-      return 0x00 << 24 | 0x00 << 16 | (b[0] & 0xff) << 8 | (b[1] & 0xff);
+      return 0x00 << 24 | 0x00 << 16 | (b[1] & 0xff) << 8 | (b[0] & 0xff);
 
     return 0;
   }
@@ -3334,6 +3334,19 @@ double enc2ref(int ticks, int jnt, hubo_param_t *h)
             return theOut;// (double)(ticks / ((driven / drive) * harmonic * enc * quad) * 360.0);
 
         }
+
+int32_t signConventionInvert(uint32_t d, int sign){
+
+  int32_t theOut = 0;
+
+  if (sign < 0){
+    theOut = -1*(d & (1<<23) | (d &0x007FFFFF));
+  }
+  else theOut = d;
+
+  return theOut;
+
+}
 
 int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
     int fs = (int)f->can_id;
@@ -3349,7 +3362,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
         s->power.power = power;	
     }
     /* Read Motor Ref */
-    else if( (fs >= REF_BASE_TXDF) && (fs < H_SENSOR_FT_BASE_RXDF)){
+    else if( (fs >= REF_BASE_TXDF) && (fs < H_SENSOR_FT_BASE_RXDF) && (1 == roflag)){
       uint16_t mNum = fs - 0x10;
       int i = 0;
       int i_hold = 0;
@@ -4115,8 +4128,8 @@ int main(int argc, char **argv) {
     r = ach_open(&chan_hubo_from_sim, HUBO_CHAN_VIRTUAL_FROM_SIM_NAME, NULL);
     hubo_assert( ACH_OK == r, __LINE__ );
 
-    openAllCAN( vflag );
     setReadOnly( roflag );
+    openAllCAN( vflag );
     ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
     ach_put(&chan_hubo_ref_neck, &H_ref_neck, sizeof(H_ref_neck));
     ach_put(&chan_hubo_enc, &H_enc, sizeof(H_enc));
