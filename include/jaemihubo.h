@@ -89,6 +89,7 @@ typedef struct hubo_jaemi_jmc_param {
 typedef struct hubo_jaemi_param {
   int joint[JAEMI_HUBO_JOINT_COUNT];     ///< jaemi joint to hubo2+ joint
   hubo_jaemi_jmc_param_t jmc[JAEMI_HUBO_JOINT_COUNT];
+  double dir[HUBO_JOINT_COUNT];
 }__attribute__((packed)) hubo_jaemi_param_t;
 
 #ifdef __cplusplus

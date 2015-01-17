@@ -471,6 +471,13 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
             }
         else{    hubo_assert( sizeof(H_ref) == fs, __LINE__ ); }
 
+
+
+
+
+
+
+
         /* get neck enc */
         r = ach_get( &chan_hubo_enc, &H_enc, sizeof(H_enc), &fs, NULL, ACH_O_LAST );
         if(ACH_OK != r) {
@@ -512,6 +519,22 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         // Note: I moved the encoder reading to be ahead of the filter and send ref.
         // That way the filter is working off of the latest encoder data.
         // Hopefully there aren't unforeseen timing issues with this.
+
+
+
+        if(1 == roflag){
+            /* Read any aditional data left on the buffer */
+            clearCanBuff(&H_state, H_param, &frame);
+            for( i = 0; i < HUBO_JOINT_COUNT; i++)
+            {
+                H_ref.ref[i] = H_state.joint[i].ref;
+                //H_ref.mode[i] = HUBO_REF_MODE_REF;
+            }
+            ach_put(&chan_hubo_ref, &H_ref, sizeof(H_ref));
+        }
+
+
+
         
         /* Set all Ref */
         if(hubo_noRefTimeAll < T ) {
@@ -558,10 +581,6 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         /* Update next joint status (one each loop) */
         getStatusIterate( &H_state, H_param, &frame);
 
-    if(1 == roflag){
-        /* Read any aditional data left on the buffer */
-        clearCanBuff(&H_state, H_param, &frame);
-    }
 
         /* Get all Current data */
 //        getCurrentAllSlow(&H_state, H_param, &frame);
@@ -3389,6 +3408,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
        int32_t tempInt = byte2Int(tempDeg, 4);
        tempInt = tempInt * mult;
        finalDeg = enc2ref(tempInt,motor[i],h);
+       if ( 1 == jaemiflag ) finalDeg = finalDeg * H_jaemi_param.dir[motor[i]];
        s->joint[motor[i]].ref = finalDeg;
        }
        else if (1 == number_of_motors)
@@ -3411,6 +3431,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
          //tempInt = 0b000000001001110001000000;
          tempInt = tempInt * mult;
          finalDeg = enc2ref(tempInt,motor[i],h);
+         if ( 1 == jaemiflag ) finalDeg = finalDeg * H_jaemi_param.dir[motor[i]];
          s->joint[motor[i]].ref = finalDeg;
       }
       else if (3 == number_of_motors)
@@ -3435,6 +3456,7 @@ int decodeFrame(hubo_state_t *s, hubo_param_t *h, struct can_frame *f) {
           tempInt = -(32768 + tempInt);
         }
          finalDeg = enc2ref(tempInt,motor[i],h);
+         if ( 1 == jaemiflag ) finalDeg = finalDeg * H_jaemi_param.dir[motor[i]];
          s->joint[motor[i]].ref = finalDeg;
       }
     }
@@ -3914,10 +3936,14 @@ void setJaemiParam(){
   H_jaemi_param.jmc[jaemi_JMC11].jointNum = 2;
 
   H_jaemi_param.jmc[jaemi_EJMC0].joint[0] = jRWY;
-  H_jaemi_param.jmc[jaemi_EJMC0].jointNum = 1;
+  H_jaemi_param.jmc[jaemi_EJMC0].joint[1] = jRW1;
+  H_jaemi_param.jmc[jaemi_EJMC0].joint[2] = jRW2;
+  H_jaemi_param.jmc[jaemi_EJMC0].jointNum = 3;
 
   H_jaemi_param.jmc[jaemi_EJMC1].joint[0] = jLWY;
-  H_jaemi_param.jmc[jaemi_EJMC1].jointNum = 1;
+  H_jaemi_param.jmc[jaemi_EJMC1].joint[1] = jLW1;
+  H_jaemi_param.jmc[jaemi_EJMC1].joint[2] = jLW2;
+  H_jaemi_param.jmc[jaemi_EJMC1].jointNum = 3;
 
   H_jaemi_param.jmc[jaemi_EJMC2].joint[0] = jNKY;
   H_jaemi_param.jmc[jaemi_EJMC2].joint[1] = jNK1;
@@ -3940,6 +3966,51 @@ void setJaemiParam(){
   H_jaemi_param.jmc[jaemi_EJMC5].joint[3] = jLF4;
   H_jaemi_param.jmc[jaemi_EJMC5].joint[4] = jLF5;
   H_jaemi_param.jmc[jaemi_EJMC5].jointNum = 5;
+
+
+/* set direcitons */
+  H_jaemi_param.dir[RHY] = 1.0;
+  H_jaemi_param.dir[RHR] = 1.0;
+  H_jaemi_param.dir[RHP] = -1.0;
+  H_jaemi_param.dir[RKN] = 1.0;
+  H_jaemi_param.dir[RAP] = 1.0;
+  H_jaemi_param.dir[RAR] = 1.0;
+  H_jaemi_param.dir[LHY] = 1.0;
+  H_jaemi_param.dir[LHR] = 1.0;
+  H_jaemi_param.dir[LHP] = 1.0;
+  H_jaemi_param.dir[LKN] = -1.0;
+  H_jaemi_param.dir[LAP] = -1.0;
+  H_jaemi_param.dir[LAR] = 1.0;
+  H_jaemi_param.dir[RSP] = -1.0;
+  H_jaemi_param.dir[RSR] = -1.0;
+  H_jaemi_param.dir[RSY] = 1.0;
+  H_jaemi_param.dir[REB] = 1.0;
+  H_jaemi_param.dir[LSP] = 1.0;
+  H_jaemi_param.dir[LSR] = -1.0;
+  H_jaemi_param.dir[LSY] = 1.0;
+  H_jaemi_param.dir[LEB] = -1.0;
+  H_jaemi_param.dir[RWY] = 1.0;
+  H_jaemi_param.dir[RWR] = 1.0;
+  H_jaemi_param.dir[RWP] = 1.0;
+  H_jaemi_param.dir[LWY] = 1.0;
+  H_jaemi_param.dir[LWR] = 1.0;
+  H_jaemi_param.dir[LWP] = 1.0;
+  H_jaemi_param.dir[NKY] = 1.0;
+  H_jaemi_param.dir[NK1] = 1.0;
+  H_jaemi_param.dir[NK2] = 1.0;
+  H_jaemi_param.dir[WST] = 1.0;
+  H_jaemi_param.dir[RF1] = 1.0;
+  H_jaemi_param.dir[RF2] = 1.0;
+  H_jaemi_param.dir[RF3] = 1.0;
+  H_jaemi_param.dir[RF4] = 1.0;
+  H_jaemi_param.dir[RF5] = 1.0;
+  H_jaemi_param.dir[LF1] = 1.0;
+  H_jaemi_param.dir[LF2] = 1.0;
+  H_jaemi_param.dir[LF3] = 1.0;
+  H_jaemi_param.dir[LF4] = 1.0;
+  H_jaemi_param.dir[LF5] = 1.0;
+
+
 
 }
 
