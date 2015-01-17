@@ -525,6 +525,8 @@ void huboLoop(hubo_param_t *H_param, int vflag) {
         if(1 == roflag){
             /* Read any aditional data left on the buffer */
             clearCanBuff(&H_state, H_param, &frame);
+            clearCanBuff(&H_state, H_param, &frame);
+            clearCanBuff(&H_state, H_param, &frame);
             for( i = 0; i < HUBO_JOINT_COUNT; i++)
             {
                 H_ref.ref[i] = H_state.joint[i].ref;
@@ -3983,16 +3985,16 @@ void setJaemiParam(){
   H_jaemi_param.dir[LAR] = 1.0;
   H_jaemi_param.dir[RSP] = -1.0;
   H_jaemi_param.dir[RSR] = -1.0;
-  H_jaemi_param.dir[RSY] = 1.0;
+  H_jaemi_param.dir[RSY] = -1.0;
   H_jaemi_param.dir[REB] = 1.0;
   H_jaemi_param.dir[LSP] = 1.0;
   H_jaemi_param.dir[LSR] = -1.0;
-  H_jaemi_param.dir[LSY] = 1.0;
+  H_jaemi_param.dir[LSY] = -1.0;
   H_jaemi_param.dir[LEB] = -1.0;
-  H_jaemi_param.dir[RWY] = 1.0;
+  H_jaemi_param.dir[RWY] = -1.0;
   H_jaemi_param.dir[RWR] = 1.0;
   H_jaemi_param.dir[RWP] = 1.0;
-  H_jaemi_param.dir[LWY] = 1.0;
+  H_jaemi_param.dir[LWY] = -1.0;
   H_jaemi_param.dir[LWR] = 1.0;
   H_jaemi_param.dir[LWP] = 1.0;
   H_jaemi_param.dir[NKY] = 1.0;
